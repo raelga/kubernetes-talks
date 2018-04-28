@@ -1,0 +1,423 @@
+Kubernetes 101
+
+Slides based on [[https://kubernetes.io/docs/home/?path=users&persona=app-developer&level=foundational][_Kubernetes_ _Documentation_]]
+
+26 April 2018
+
+Rael Garcia
+
+Tags: docker, go, kubernetes, 101
+
+* Microservices
+
+.image 101/images/microservices.png _ 900
+
+.caption _Monolithic_vs_Microservices_ by [[https://www.weave.works][weave.works]]
+
+* Docker
+
+.image 101/images/docker-logo.png
+
+* Docker
+
+.image 101/images/docker.svg 500 _
+
+* 
+
+.image 101/images/kubernetes-logo.png
+
+* What does Kubernetes mean? K8s?
+
+The name Kubernetes originates from Greek, meaning steersman or pilot, and is the root of _governor_ and _cybernetic_.
+
+.image 101/images/kubernetes-greek-etymology.png
+
+K8s is an abbreviation derived by replacing the 8 letters “ubernete” with “8”.
+
+* What is Kubernetes?
+
+Kubernetes is a portable, extensible open-source *platform* *for* *managing* *containerized* *workloads* *and* *services*, that facilitates both declarative configuration and automation.
+
+It has a large, rapidly growing ecosystem. Kubernetes services, support, and tools are widely available since Google *open-sourced* the Kubernetes project in 2014.
+
+Kubernetes builds upon a decade and a half of experience that Google has with running production workloads at scale, combined with best-of-breed ideas and practices from the community.
+
+Kubernetes traces its lineage directly from *Borg*, Google’s long-rumored internal container-oriented cluster-management system.
+
+Many of the developers at Google working on Kubernetes were formerly developers on the Borg project.
+
+.link https://kubernetes.io/blog/2015/04/borg-predecessor-to-kubernetes  Borg: The Predecessor to Kubernetes 
+
+* Borg Architecture
+
+.image 101/images/borg-cluster.png 480 _
+
+.link https://research.google.com/pubs/pub43438.html Large-scale cluster management at Google with Borg
+
+* Kubernetes Architecture
+
+.image 101/images/kubernetes-cluster.png 480 _
+
+.link https://en.wikipedia.org/wiki/Kubernetes wikipedia / Kubernetes
+
+* Kubernetes Components: Masters (1)
+
+- *kube-apiserver*
+
+Component on the master that exposes the Kubernetes API. It is the front-end for the Kubernetes control plane.
+
+- *etcd*
+
+Consistent and highly-available key value store used as Kubernetes’ backing store for all cluster data.
+
+- *kube-scheduler*
+
+Component on the master that watches newly created pods that have no node assigned, and selects a node for them to run on.
+
+* Kubernetes Components: Masters (2)
+
+- *kube-controller-manager*
+
+Component on the master that runs controllers.
+
+*Node* *Controller*
+Responsible for noticing and responding when nodes go down.
+
+*Replication* *Controller*
+Responsible for maintaining the correct number of pods for every replication controller object in the system.
+
+*Endpoints* *Controller*
+Populates the Endpoints object (that is, joins Services & Pods).
+
+*Service* *Account* *&* *Token* *Controllers*
+Create default accounts and API access tokens for new namespaces.
+
+* Kubernetes Cloud Architecture
+
+.image 101/images/kubernetes-cloud-cluster.png 400 _
+
+.link https://kubernetes.io/docs/concepts/architecture/cloud-controller/ Concepts Underlying the Cloud Controller Manager
+
+* Kubernetes Components: Masters (3)
+
+- *cloud-controller-manager*
+
+Runs controllers that interact with the underlying cloud providers. 
+
+*Node* *Controller*
+For checking the cloud provider to determine if a node has been deleted in the cloud after it stops responding
+
+*Route* *Controller*
+For setting up routes in the underlying cloud infrastructure
+
+*Service* *Controller*
+For creating, updating and deleting cloud provider load balancers
+
+*Volume* *Controller*
+For creating, attaching, and mounting volumes, and interacting with the cloud provider to orchestrate volumes
+
+* Kubernetes Components: Nodes (1)
+
+Node components run on every node, maintaining running pods and providing the Kubernetes runtime environment.
+
+- *kubelet*
+
+An agent that runs on each node in the cluster. It makes sure that containers are running in a pod.
+
+The kubelet takes a set of PodSpecs that are provided through various mechanisms and ensures that the containers described in those PodSpecs are running and healthy.
+
+- *kube-proxy*
+
+kube-proxy enables the Kubernetes service abstraction by maintaining network rules on the host and performing connection forwarding.
+
+* Kubernetes Components: Nodes (2)
+
+- *Container* *Runtime*
+
+The container runtime is the software that is responsible for running containers.
+
+Kubernetes supports several runtimes: Docker, rkt, runc and any OCI runtime-spec implementation
+
+.image 101/images/kubernetes-node.svg 340 _
+
+* Pods
+
+- Is the basic building block of Kubernetes–the smallest and simplest unit in the Kubernetes object model that you create or deploy.
+
+- Encapsulates an application container (or multiple containers), storage resources, a unique network IP, and options that govern how the container(s) should run.
+
+- Represents a unit of deployment: a single instance of an application in Kubernetes, which might consist of either a single container or a small number of containers that are tightly coupled and that share resources.
+
+.image 101/images/pods.svg 250 _
+
+* Pods - Single container deployment
+
+- Pods that run a single container.
+
+The “one-container-per-Pod” model is the most common Kubernetes use case.
+
+You can think of a Pod as a wrapper around a single container, and Kubernetes manages the Pods rather than the containers directly.
+
+.code 101/yml/pod-single.yml
+.caption [[_101/yml/pod-single.yml_][101/yml/pod-single.yml]]
+
+* Pods - Multiple containers deployment (1)
+
+- Pods that run multiple containers that need to work together.
+
+A Pod might encapsulate an application composed of multiple co-located containers that are tightly coupled and *need* *to* *share* *resources*. The Pod wraps these containers and storage resources together as a single manageable entity.
+
+These co-located containers might form a single cohesive unit of service–one container serving files from a shared volume to the public, while a separate “*sidecar*” container refreshes or updates those files. 
+
+.image 101/images/pod.svg 250 _
+
+* Pods - Network
+
+- Each Pod is assigned a unique IP address.
+
+- Every container in a Pod shares the network namespace, including the IP address and network ports.
+
+- Containers inside a Pod can communicate with one another using localhost.
+
+- When containers in a Pod communicate with entities outside the Pod, they must coordinate how they use the shared network resources (such as ports).
+
+.image 101/images/pods-network.png 250 _
+
+* Pods - Storage
+
+- A Pod can specify a set of shared storage volumes.
+
+- All containers in the Pod can access the shared volumes, allowing those containers to share data. 
+
+- Volumes also allow persistent data in a Pod to survive in case one of the containers within needs to be restarted.
+
+.image 101/images/pods-storage.png 250 _
+
+* Pods - Multiple containers deployment
+
+.code 101/yml/pod-multi.yml
+.caption [[_101/yml/pod-multi.yml_][101/yml/pod-multi.yml]]
+
+* Pods - Lifecycle
+
+- *Pending*: The Pod has been accepted by the Kubernetes system, but one or more of the Container images has not been created. This includes time before being scheduled as well as time spent downloading images over the network, which could take a while.
+
+- *Running*: The Pod has been bound to a node, and all of the Containers have been created. At least one Container is still running, or is in the process of starting or restarting.
+
+- *Succeeded*: All Containers in the Pod have terminated in success, and will not be restarted.
+
+- *Failed*: All Containers in the Pod have terminated, and at least one Container has terminated in failure. That is, the Container either exited with non-zero status or was terminated by the system.
+
+- *Unknown*: For some reason the state of the Pod could not be obtained, typically due to an error in communicating with the host of the Pod.
+
+* Pods - Liveness Health check
+
+- Indicates whether the Container is running.
+
+- If the liveness probe fails, the kubelet kills the Container, and the Container is subjected to its restart policy.
+
+- If a Container does not provide a liveness probe, the default state is *Success*.
+
+.code 101/yml/pod-health-http-liveness.yml
+.caption [[_101/yml/pod-health-http-liveness.yml_][101/yml/pod-health-http-liveness.yml]]
+
+* Pods - Rediness Health check (1)
+
+- Indicates whether the Container is ready to service requests.
+
+- If the readiness probe fails, the endpoints controller removes the Pod’s IP address from the endpoints of all Services that match the Pod.
+
+- If configured *default* *state* of readiness before the initial delay is *Failure*.
+
+- If a Container does not provide a readiness probe, the default state is *Success*.
+
+
+* Pods - Rediness Health check (2)
+
+.code 101/yml/pod-health-cmd-readiness.yml
+.caption [[_101/yml/pod-health-cmd-readiness.yml_][101/yml/pod-health-cmd-readiness.yml]]
+
+
+* Pods - Health check use cases
+
+- If the process in your Container is able to crash on its own whenever it encounters an issue or becomes unhealthy; the *kubelet* will automatically perform the correct action in accordance with the Pod’s *restartPolicy*.
+
+- If you’d like your Container to be killed and restarted if a probe fails, then specify a *liveness* *probe*, and specify a *restartPolicy* of *Always* or *OnFailure*.
+
+- If you’d like to start sending traffic to a Pod only when a probe succeeds, specify a *readiness* *probe*. The readiness probe might be the same as the liveness probe, but the existence of the readiness probe in the spec means that the Pod will start without receiving any traffic until the probe starts succeeding.
+
+- If your Container needs to work on loading large data, configuration files, or migrations during startup, specify a *readiness* *probe*.
+
+- If you want your Container to be able to take itself down for maintenance, you can specify a *readiness* *probe* that checks an endpoint specific to readiness that is different from the liveness probe.
+
+* Pods - Health checks (3)
+
+.code 101/yml/pod-health-tcp-both.yml
+.caption [[_101/yml/pod-health-tcp-both.yml_][101/yml/pod-health-tcp-both.yml]]
+
+* Namespaces
+
+- Kubernetes supports multiple virtual clusters backed by the same physical cluster called namespaces.
+
+- Namespaces are intended for use in environments with many users spread across multiple teams, or projects.
+
+- Namespaces provide a scope for names. Names of resources need to be unique within a namespace.
+
+- Namespaces are a way to divide cluster resources between multiple users (via resource quota).
+
+- A service DNS entry is of the form <service-name>.<namespace-name>.svc.cluster.local, which means that if a container just uses <service-name>, it will resolve to the service which is local to a namespace.
+
+  $ kubectl --namespace=<namespace-name> get pods
+  $ kubectl config set-context $(kubectl config current-context) --namespace=<namespace-name>
+
+* Annotations
+
+- You can use Kubernetes annotations to attach arbitrary non-identifying metadata to objects.
+- Clients such as tools and libraries can retrieve this metadata.
+
+  metadata:
+    annotations:
+      key1: value1
+      key2: value2
+
+* Labels 
+
+- Labels are key/value pairs that are attached to objects, such as pods.
+- Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users, but do not directly imply semantics to the core system.
+- Labels can be used to organize and to select subsets of objects.
+- Labels can be attached to objects at creation time and subsequently added and modified at any time.
+
+- Each object can have a set of key/value labels defined.
+- Each Key must be unique for a given object.
+
+  metadata:
+    labels:
+      release: stable
+      environment: dev
+      tier: frontend
+
+* Label Selectors
+
+- Unlike names and UIDs, labels do not provide uniqueness. In general, we expect many objects to carry the same label(s).
+
+- Via a label selector, the client/user can identify a set of objects.
+
+- The label selector is the core grouping primitive in Kubernetes.
+
+- The API currently supports two types of selectors: equality-based and set-based. 
+
+- In the case of multiple requirements, all must be satisfied so the comma separator acts as a logical AND (&&) operator.
+
+- An empty label selector (that is, one with zero requirements) selects every object in the collection.
+
+* Label Selectors - Equality-based requirement
+
+Equality- or inequality-based requirements allow filtering by label keys and values.
+
+- Matching objects must satisfy all of the specified label constraints, though they may have additional labels as well. 
+
+- Three kinds of operators are admitted: *=* , *==* for equality, and *!=* for inequality.
+
+  $ kubectl get pods -l 'environment=production, tier!=frontend'
+
+.code 101/yml/pod-selector-equality.yml
+.caption [[_101/yml/pod-selector-equality.yml_][101/yml/pod-selector-equality.yml]]
+
+* Label Selectors - Set-based requirements
+
+- Set-based label requirements allow filtering keys according to a set of values. 
+ 
+- Three kinds of operators are supported: in, notin and exists (only the key identifier).
+
+  $ kubectl get pods -l 'environment in (production, qa)'
+
+.code 101/yml/pod-selector-set.yml
+.caption [[_101/yml/pod-selector-set.yml_][101/yml/pod-selector-set.yml]]
+
+* Pods - Reference
+
+.link https://coreos.com/kubernetes/docs/latest/pods.html Overview of a Pod
+
+.link https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/ Pod overview
+
+.link https://kubernetes.io/blog/2016/06/container-design-patterns Container design patterns
+
+.link https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns Patterns for Composite Containers
+
+.link https://kubernetes-v1-4.github.io/docs/user-guide/pods/single-container/ Creating Single-Container Pods
+
+.link https://kubernetes-v1-4.github.io/docs/user-guide/pods/multi-container/ Creating Multi-Container Pods
+
+.link https://www.mirantis.com/blog/multi-container-pods-and-container-communication-in-kubernetes/ Multi-container pods and container communication in Kubernetes
+
+* Controller
+
+A Controller can create and manage multiple Pods for you, handling replication and rollout and providing self-healing capabilities at cluster scope.
+
+* ReplicaSet and Replication Controller
+
+- ReplicaSet is the next-generation Replication Controller, which add the selector support.
+
+- ReplicaSet supports the new set-based selector requirements as described in the labels user guide whereas a Replication Controller only supports equality-based selector requirements.
+
+.code 101/yml/replicaset-selector-set.yml
+.caption [[_101/yml/replicaset-selector-set.yml_][101/yml/replicaset-selector-set.yml]]
+
+* Deployments
+
+- A Deployment controller provides declarative updates for Pods and ReplicaSets.
+
+- You describe a desired state in a Deployment object, and the Deployment controller changes the actual state to the desired state at a controlled rate.
+
+.code 101/yml/replicaset-deployment.yml
+.caption [[_101/yml/replicaset-deployment.yml_][101/yml/replicaset-deployment.yml]]
+
+* Deployments - Resource Limits
+
+- When Containers have resource requests specified, the scheduler can make better decisions about which nodes to place Pods on.
+
+- When en Containers have their limits specified, contention for resources on a node can be handled in a specified manner.
+
+.code 101/yml/deployment-resources.yml
+.caption [[_101/yml/deployment-resources.yml_][101/yml/deployment-resources.yml]]
+
+* Deployments - Strategy
+
+Specifies the strategy used to replace old Pods by new ones.
+
+- *Recreate* *Deployment*
+
+All existing Pods are killed before new ones are created when _.spec.strategy.type==Recreate_.
+
+- *Rolling* *Update* *Deployment*
+
+The Deployment updates Pods in a rolling update fashion when _.spec.strategy.type==RollingUpdate_. 
+
+You can specify *maxUnavailable* (the maximum number of Pods that can be unavailable during the update process) and *maxSurge* (the maximum number of Pods that can be created over the desired number of Pods) to control the rolling update process.
+
+.link https://kubernetes.io/docs/tutorials/kubernetes-basics/update-intro/ Kubernetes Rolling Updates
+
+* Deployments - Rollback
+
+- Sometimes you may want to rollback a Deployment; for example, when the Deployment is not stable, such as crash looping. 
+
+- By default, all of the Deployment’s rollout history is kept in the system so that you can rollback anytime you want (you can change that by modifying revision history limit).
+
+  $ kubectl rollout history deployment/nginx-deployment
+  deployments "nginx-deployment"
+  REVISION    CHANGE-CAUSE
+  1           kubectl create -f docs/user-guide/nginx-deployment.yaml --record
+  2           kubectl set image deployment/nginx-deployment nginx=nginx:1.9.1
+  3           kubectl set image deployment/nginx-deployment nginx=nginx:1.91
+
+  $ kubectl rollout undo deployment/nginx-deployment --to-revision=2
+  deployment "nginx-deployment" rolled back
+
+* Horizontal Pod Autoscaler
+
+- The Horizontal Pod Autoscaler automatically scales the number of pods in a replication controller, deployment or replica set based on observed CPU utilization (or, with custom metrics support, on some other application-provided metrics).
+
+- Note that Horizontal Pod Autoscaling does not apply to objects that can’t be scaled, for example, DaemonSets.
+
+.code 101/yml/replicaset-hpa.yml
+.caption [[_101/yml/replicaset-hpa.yml_][101/yml/replicaset-hpa.yml]]
