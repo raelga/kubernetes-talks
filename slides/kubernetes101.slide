@@ -1,4 +1,4 @@
-Kubernetes 101
+Kubernetes kubernetes101
 
 Slides based on [[https://kubernetes.io/docs/home/?path=users&persona=app-developer&level=foundational][_Kubernetes_ _Documentation_]]
 
@@ -6,11 +6,11 @@ Slides based on [[https://kubernetes.io/docs/home/?path=users&persona=app-develo
 
 Rael Garcia
 
-Tags: docker, go, kubernetes, 101
+Tags: docker, go, kubernetes, kubernetes101
 
 * Microservices
 
-.image 101/images/microservices.png _ 900
+.image kubernetes101/images/microservices.png _ 900
 
 .caption _Monolithic_vs_Microservices_ by [[https://www.weave.works][weave.works]]
 
@@ -40,7 +40,7 @@ But requires:
 
 From _named_ servers to _herds_ of machines
 
-.image 101/images/servers-pets-vs-cattle.jpg 420 _
+.image kubernetes101/images/servers-pets-vs-cattle.jpg 420 _
 
 .link http://cloudscaling.com/blog/cloud-computing/the-history-of-pets-vs-cattle/ The History of Pets vs Cattle and How to Use the Analogy Properly
 
@@ -68,27 +68,27 @@ From _named_ servers to _herds_ of machines
 
 * Infrastructure lifecycles
 
-.image 101/images/servers-to-serverless.png 500 _
+.image kubernetes101/images/servers-to-serverless.png 500 _
 
 .link https://www.contino.io/insights/how-will-docker-respond-to-the-serverless-future How Will Docker Respond to the Serverless Future?
 
 * Docker
 
-.image 101/images/docker-package-software.png 500 _
+.image kubernetes101/images/docker-package-software.png 500 _
 
 * Storage, Packaging and Distribution
 
-.image 101/images/obligatory-cointainer-boat-photo.png 500 _
+.image kubernetes101/images/obligatory-cointainer-boat-photo.png 500 _
 
 * Orchestration
 
-.image 101/images/kubernetes-logo.png
+.image kubernetes101/images/kubernetes-logo.png
 
 * What does Kubernetes mean? K8s?
 
 The name Kubernetes originates from Greek, meaning steersman or pilot, and is the root of _governor_ and _cybernetic_.
 
-.image 101/images/kubernetes-greek-etymology.png
+.image kubernetes101/images/kubernetes-greek-etymology.png
 
 K8s is an abbreviation derived by replacing the 8 letters “ubernete” with “8”.
 
@@ -108,13 +108,13 @@ Many of the developers at Google working on Kubernetes were formerly developers 
 
 * Borg Architecture
 
-.image 101/images/borg-cluster.png 480 _
+.image kubernetes101/images/borg-cluster.png 480 _
 
 .link https://research.google.com/pubs/pub43438.html Large-scale cluster management at Google with Borg
 
 * Kubernetes Architecture
 
-.image 101/images/kubernetes-cluster.png 480 _
+.image kubernetes101/images/kubernetes-cluster.png 480 _
 
 .link https://en.wikipedia.org/wiki/Kubernetes wikipedia / Kubernetes
 
@@ -152,7 +152,7 @@ Create default accounts and API access tokens for new namespaces.
 
 * Kubernetes Cloud Architecture
 
-.image 101/images/kubernetes-cloud-cluster.png 400 _
+.image kubernetes101/images/kubernetes-cloud-cluster.png 400 _
 
 .link https://kubernetes.io/docs/concepts/architecture/cloud-controller/ Concepts Underlying the Cloud Controller Manager
 
@@ -196,7 +196,7 @@ The container runtime is the software that is responsible for running containers
 
 Kubernetes supports several runtimes: Docker, rkt, runc and any OCI runtime-spec implementation
 
-.image 101/images/kubernetes-node.svg 340 _
+.image kubernetes101/images/kubernetes-node.svg 340 _
 
 * Pods
 
@@ -206,7 +206,7 @@ Kubernetes supports several runtimes: Docker, rkt, runc and any OCI runtime-spec
 
 - Represents a unit of deployment: a single instance of an application in Kubernetes, which might consist of either a single container or a small number of containers that are tightly coupled and that share resources.
 
-.image 101/images/pods.svg 250 _
+.image kubernetes101/images/pods.svg 250 _
 
 * Pods - Single container deployment
 
@@ -216,8 +216,8 @@ The “one-container-per-Pod” model is the most common Kubernetes use case.
 
 You can think of a Pod as a wrapper around a single container, and Kubernetes manages the Pods rather than the containers directly.
 
-.code 101/yml/pod-single.yml
-.caption [[_101/yml/pod-single.yml_][101/yml/pod-single.yml]]
+.code kubernetes101/yml/pod-single.yml
+.caption [[_kubernetes101/yml/pod-single.yml_][kubernetes101/yml/pod-single.yml]]
 
 * Pods - Multiple containers deployment (1)
 
@@ -227,7 +227,7 @@ A Pod might encapsulate an application composed of multiple co-located container
 
 These co-located containers might form a single cohesive unit of service–one container serving files from a shared volume to the public, while a separate “*sidecar*” container refreshes or updates those files. 
 
-.image 101/images/pod.svg 250 _
+.image kubernetes101/images/pod.svg 250 _
 
 * Pods - Network
 
@@ -239,7 +239,7 @@ These co-located containers might form a single cohesive unit of service–one c
 
 - When containers in a Pod communicate with entities outside the Pod, they must coordinate how they use the shared network resources (such as ports).
 
-.image 101/images/pods-network.png 250 _
+.image kubernetes101/images/pods-network.png 250 _
 
 * Pods - Storage
 
@@ -249,12 +249,12 @@ These co-located containers might form a single cohesive unit of service–one c
 
 - Volumes also allow persistent data in a Pod to survive in case one of the containers within needs to be restarted.
 
-.image 101/images/pods-storage.png 250 _
+.image kubernetes101/images/pods-storage.png 250 _
 
 * Pods - Multiple containers deployment
 
-.code 101/yml/pod-multi.yml
-.caption [[_101/yml/pod-multi.yml_][101/yml/pod-multi.yml]]
+.code kubernetes101/yml/pod-multi.yml
+.caption [[_kubernetes101/yml/pod-multi.yml_][kubernetes101/yml/pod-multi.yml]]
 
 * Pods - Lifecycle
 
@@ -276,8 +276,8 @@ These co-located containers might form a single cohesive unit of service–one c
 
 - If a Container does not provide a liveness probe, the default state is *Success*.
 
-.code 101/yml/pod-health-http-liveness.yml
-.caption [[_101/yml/pod-health-http-liveness.yml_][101/yml/pod-health-http-liveness.yml]]
+.code kubernetes101/yml/pod-health-http-liveness.yml
+.caption [[_kubernetes101/yml/pod-health-http-liveness.yml_][kubernetes101/yml/pod-health-http-liveness.yml]]
 
 * Pods - Rediness Health check (1)
 
@@ -292,8 +292,8 @@ These co-located containers might form a single cohesive unit of service–one c
 
 * Pods - Rediness Health check (2)
 
-.code 101/yml/pod-health-cmd-readiness.yml
-.caption [[_101/yml/pod-health-cmd-readiness.yml_][101/yml/pod-health-cmd-readiness.yml]]
+.code kubernetes101/yml/pod-health-cmd-readiness.yml
+.caption [[_kubernetes101/yml/pod-health-cmd-readiness.yml_][kubernetes101/yml/pod-health-cmd-readiness.yml]]
 
 
 * Pods - Health check use cases
@@ -310,8 +310,8 @@ These co-located containers might form a single cohesive unit of service–one c
 
 * Pods - Health checks (3)
 
-.code 101/yml/pod-health-tcp-both.yml
-.caption [[_101/yml/pod-health-tcp-both.yml_][101/yml/pod-health-tcp-both.yml]]
+.code kubernetes101/yml/pod-health-tcp-both.yml
+.caption [[_kubernetes101/yml/pod-health-tcp-both.yml_][kubernetes101/yml/pod-health-tcp-both.yml]]
 
 * Namespaces
 
@@ -378,8 +378,8 @@ Equality- or inequality-based requirements allow filtering by label keys and val
 
   $ kubectl get pods -l 'environment=production, tier!=frontend'
 
-.code 101/yml/pod-selector-equality.yml
-.caption [[_101/yml/pod-selector-equality.yml_][101/yml/pod-selector-equality.yml]]
+.code kubernetes101/yml/pod-selector-equality.yml
+.caption [[_kubernetes101/yml/pod-selector-equality.yml_][kubernetes101/yml/pod-selector-equality.yml]]
 
 * Label Selectors - Set-based requirements
 
@@ -389,8 +389,8 @@ Equality- or inequality-based requirements allow filtering by label keys and val
 
   $ kubectl get pods -l 'environment in (production, qa)'
 
-.code 101/yml/pod-selector-set.yml
-.caption [[_101/yml/pod-selector-set.yml_][101/yml/pod-selector-set.yml]]
+.code kubernetes101/yml/pod-selector-set.yml
+.caption [[_kubernetes101/yml/pod-selector-set.yml_][kubernetes101/yml/pod-selector-set.yml]]
 
 * Pods - Reference
 
@@ -418,8 +418,8 @@ A Controller can create and manage multiple Pods for you, handling replication a
 
 - ReplicaSet supports the new set-based selector requirements as described in the labels user guide whereas a Replication Controller only supports equality-based selector requirements.
 
-.code 101/yml/replicaset-selector-set.yml
-.caption [[_101/yml/replicaset-selector-set.yml_][101/yml/replicaset-selector-set.yml]]
+.code kubernetes101/yml/replicaset-selector-set.yml
+.caption [[_kubernetes101/yml/replicaset-selector-set.yml_][kubernetes101/yml/replicaset-selector-set.yml]]
 
 * Deployments
 
@@ -427,8 +427,8 @@ A Controller can create and manage multiple Pods for you, handling replication a
 
 - You describe a desired state in a Deployment object, and the Deployment controller changes the actual state to the desired state at a controlled rate.
 
-.code 101/yml/replicaset-deployment.yml
-.caption [[_101/yml/replicaset-deployment.yml_][101/yml/replicaset-deployment.yml]]
+.code kubernetes101/yml/replicaset-deployment.yml
+.caption [[_kubernetes101/yml/replicaset-deployment.yml_][kubernetes101/yml/replicaset-deployment.yml]]
 
 * Deployments - Resource Limits
 
@@ -436,8 +436,8 @@ A Controller can create and manage multiple Pods for you, handling replication a
 
 - When en Containers have their limits specified, contention for resources on a node can be handled in a specified manner.
 
-.code 101/yml/deployment-resources.yml
-.caption [[_101/yml/deployment-resources.yml_][101/yml/deployment-resources.yml]]
+.code kubernetes101/yml/deployment-resources.yml
+.caption [[_kubernetes101/yml/deployment-resources.yml_][kubernetes101/yml/deployment-resources.yml]]
 
 * Deployments - Strategy
 
@@ -477,5 +477,5 @@ You can specify *maxUnavailable* (the maximum number of Pods that can be unavail
 
 - Note that Horizontal Pod Autoscaling does not apply to objects that can’t be scaled, for example, DaemonSets.
 
-.code 101/yml/replicaset-hpa.yml
-.caption [[_101/yml/replicaset-hpa.yml_][101/yml/replicaset-hpa.yml]]
+.code kubernetes101/yml/replicaset-hpa.yml
+.caption [[_kubernetes101/yml/replicaset-hpa.yml_][kubernetes101/yml/replicaset-hpa.yml]]
