@@ -17,7 +17,7 @@ https://github.com/raelga/talks
 
 .image kubernetes101/images/microservices.png _ 900
 
-.caption _Monolithic_vs_Microservices_ by [[https://www.weave.works][weave.works]]
+.caption Monolithic vs Microservices by [[https://www.weave.works][weave.works]]
 
 * Microservices
 
@@ -47,7 +47,7 @@ From _named_ servers to _herds_ of machines
 
 .image kubernetes101/images/servers-pets-vs-cattle.jpg 420 _
 
-.link http://cloudscaling.com/blog/cloud-computing/the-history-of-pets-vs-cattle/ The History of Pets vs Cattle and How to Use the Analogy Properly
+.caption The History of Pets vs Cattle and How to Use the Analogy Properly by [[http://cloudscaling.com/blog/cloud-computing/the-history-of-pets-vs-cattle/][cloudscaling]]
 
 * Infrastructure lifecycles
 
@@ -75,7 +75,7 @@ From _named_ servers to _herds_ of machines
 
 .image kubernetes101/images/servers-to-serverless.png 500 _
 
-.link https://www.contino.io/insights/how-will-docker-respond-to-the-serverless-future How Will Docker Respond to the Serverless Future?
+.caption How Will Docker Respond to the Serverless Future? by [[https://www.contino.io/insights/how-will-docker-respond-to-the-serverless-future][contino.io]]
 
 * Docker
 
@@ -109,19 +109,19 @@ Kubernetes traces its lineage directly from *Borg*, Google’s long-rumored inte
 
 Many of the developers at Google working on Kubernetes were formerly developers on the Borg project.
 
-.link https://kubernetes.io/blog/2015/04/borg-predecessor-to-kubernetes  Borg: The Predecessor to Kubernetes 
+.caption Borg: The Predecessor to Kubernetes at [[https://kubernetes.io/blog/2015/04/borg-predecessor-to-kubernetes][kubernetes.io]]
 
 * Borg Architecture
 
 .image kubernetes101/images/borg-cluster.png 480 _
 
-.link https://research.google.com/pubs/pub43438.html Large-scale cluster management at Google with Borg
+.caption Large-scale cluster management at Google with Borg at [[https://research.google.com/pubs/pub43438.html][research.google.com]]
 
 * Kubernetes Architecture
 
 .image kubernetes101/images/kubernetes-cluster.png 480 _
 
-.link https://en.wikipedia.org/wiki/Kubernetes wikipedia / Kubernetes
+.caption Kubernetes by [[https://en.wikipedia.org/wiki/Kubernetes][wikipedia]]
 
 * Kubernetes Components: Masters (1)
 
@@ -159,7 +159,7 @@ Create default accounts and API access tokens for new namespaces.
 
 .image kubernetes101/images/kubernetes-cloud-cluster.png 400 _
 
-.link https://kubernetes.io/docs/concepts/architecture/cloud-controller/ Concepts Underlying the Cloud Controller Manager
+.caption Concepts Underlying the Cloud Controller Manager at [[https://kubernetes.io/docs/concepts/architecture/cloud-controller/][kubernetes,io]]
 
 * Kubernetes Components: Masters (3)
 
