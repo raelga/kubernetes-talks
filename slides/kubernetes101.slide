@@ -1,12 +1,17 @@
-Kubernetes kubernetes101
+Kubernetes 101
+Introduction to Kubernetes Architecture and Deployments
+26 Apr 2018
 
 Slides based on [[https://kubernetes.io/docs/home/?path=users&persona=app-developer&level=foundational][_Kubernetes_ _Documentation_]]
-
-26 April 2018
+Tags: kubernetes, docker, containers, microservices
 
 Rael Garcia
+Systems Engineer at CAPSiDE
+self@rael.io
 
-Tags: docker, go, kubernetes, kubernetes101
+@raelga
+
+https://github.com/raelga/talks
 
 * Microservices
 
