@@ -14,15 +14,73 @@ Tags: docker, go, kubernetes, 101
 
 .caption _Monolithic_vs_Microservices_ by [[https://www.weave.works][weave.works]]
 
+* Microservices
+
+Breaking the software in small chunks:
+
+- Reduces the build time
+
+- Speeds up development
+
+- Issues are isolated on the particular service
+
+- Each service can have their own cicle / release speed 
+
+But requires:
+
+- Automation (CI Pipelines)
+
+- Standarization (Containerization / Kubernetes)
+
+- Resource flexibility (Containerization / Kubernetes)
+
+- Service orchestration (Kubernetes)
+
+* Infrastructure lifecycles
+
+From _named_ servers to _herds_ of machines
+
+.image 101/images/servers-pets-vs-cattle.jpg 420 _
+
+.link http://cloudscaling.com/blog/cloud-computing/the-history-of-pets-vs-cattle/ The History of Pets vs Cattle and How to Use the Analogy Properly
+
+* Infrastructure lifecycles
+
+- Physical servers 
+
+ Hours/days to be deployed
+ Runs for years
+
+- Virtual machines
+
+ Minutes to be deployed
+ Runs for days/weeks
+
+- Containers
+
+ Seconds to be deployed
+ Runs for minutes/hours
+  
+- Serverless / Short living containers
+
+ Miliseconds/seconds to be deployed
+ Runs for seconds
+
+* Infrastructure lifecycles
+
+.image 101/images/servers-to-serverless.png 500 _
+
+.link https://www.contino.io/insights/how-will-docker-respond-to-the-serverless-future How Will Docker Respond to the Serverless Future?
+
 * Docker
 
-.image 101/images/docker-logo.png
+.image 101/images/docker-package-software.png 500 _
 
-* Docker
+* Storage, Packaging and Distribution
 
-.image 101/images/docker.svg 500 _
+.image 101/images/obligatory-cointainer-boat-photo.png 500 _
 
-* 
+* Orchestration
 
 .image 101/images/kubernetes-logo.png
 
