@@ -1,0 +1,26 @@
+---
+kind: Deployment
+apiVersion: apps/v1beta2
+metadata:
+  name: redis-master
+  labels:
+    app: redis
+    role: master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      role: master
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: master
+    spec:
+      containers:
+      - name: redis-master
+        image: redis:2.8.23
+        ports:
+        - name: redis-server
+          containerPort: 6379
