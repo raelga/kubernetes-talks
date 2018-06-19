@@ -343,3 +343,7 @@ Open Source implementation can be found at [[https://github.com/virtual-kubelet/
 - *GKE* at Google Cloud Platform
 
 Not implemented, yet.
+
+* Demo
+
+.image kubernetes-clouds/images/demo.png 500 _
