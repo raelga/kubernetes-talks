@@ -25,7 +25,7 @@ gcloud config set project
 ```
 
 ```bash
-gcloud config set compute/zone europe-west1-b
+gcloud config set compute/zone asia-northeast1-a
 ```
 
 - Enable billing for the project
