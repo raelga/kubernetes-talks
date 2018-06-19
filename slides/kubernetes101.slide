@@ -484,3 +484,10 @@ You can specify *maxUnavailable* (the maximum number of Pods that can be unavail
 
 .code kubernetes101/yml/replicaset-hpa.yml
 .caption [[_kubernetes101/yml/replicaset-hpa.yml_][kubernetes101/yml/replicaset-hpa.yml]]
+
+* Extra Slide : Kubernetes Comic
+
+
+.image kubernetes101/images/kubernetes-comic.png 500 _
+
+.caption [[https://cloud.google.com/kubernetes-engine/kubernetes-comic/][Kubernetes Comic]]
