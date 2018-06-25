@@ -9,13 +9,13 @@ self@rael.io
 
 @raelga
 
-https://github.com/raelga/talks
+https://github.com/raelga/kubernetes-talks
 
 
 
 * AKS at Microsoft Azure
 
-.image kubernetes-clouds/images/aks.png _ 960
+.image images/aks.png _ 960
 
 .caption [[https://azure.microsoft.com/en-us/services/kubernetes-service/][Azure Kubernetes Service (AKS)]]
 
@@ -23,7 +23,7 @@ https://github.com/raelga/talks
 
 * EKS at Microsoft Azure
 
-.image kubernetes-clouds/images/eks.png 500 _
+.image images/eks.png 500 _
 
 .caption [[https://aws.amazon.com/eks/features/][Amazon EKS Features]]
 
@@ -31,7 +31,7 @@ https://github.com/raelga/talks
 
 * GKE at Google Cloud Platform
 
-.image kubernetes-clouds/images/gke.png 500 _
+.image images/gke.png 500 _
 
 .caption [[https://cloud.google.com/kubernetes-engine/docs/concepts/multi-zone-and-regional-clusters][Multi-Zone and Regional Clusters]]
 
@@ -316,7 +316,7 @@ Kubernetes Engine is backed by Google security team of over 750 experts and is b
 
 * Extra Slide: Virtual Kubelet
 
-.image kubernetes-clouds/images/virtual-kubelet.svg 500 _
+.image images/virtual-kubelet.svg 500 _
 
 .caption [[https://github.com/virtual-kubelet/virtual-kubelet][Virtual Kubelet]]
 
@@ -346,4 +346,4 @@ Not implemented, yet.
 
 * Demo
 
-.image kubernetes-clouds/images/demo.png 500 _
+.image images/demo.png 500 _
