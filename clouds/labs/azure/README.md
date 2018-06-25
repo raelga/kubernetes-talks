@@ -18,6 +18,7 @@
         - [Create AKS Cluster](#create-aks-cluster)
         - [Configure AKS Kubectl context](#configure-aks-kubectl-context)
             - [Get information from the Kubernetes cluster](#get-information-from-the-kubernetes-cluster)
+        - [Clean up](#clean-up)
 
 <!-- /TOC -->
 
@@ -108,4 +109,12 @@ kubectl cluster-info
 
 ```bash
 kubectl get cs
+```
+
+### Clean up
+
+To remove the resources deployed, remove the resource group.
+
+```bash
+az group  delete --resource-group ${AZ_AKS_RG}
 ```
