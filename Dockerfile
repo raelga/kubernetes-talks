@@ -6,6 +6,10 @@ RUN apk --update add git openssh && \
 
 RUN go get golang.org/x/tools/cmd/present
 
-EXPOSE 3999
+COPY 101 /slides/101
+COPY clouds /slides/clouds
 
-CMD [ "present", "slides/" ]
+EXPOSE 3999
+WORKDIR /slides
+
+CMD ["present", "-http=0.0.0.0:3999", "-play=false"]
