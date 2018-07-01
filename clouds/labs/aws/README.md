@@ -47,6 +47,7 @@
     - [Amazon Web Services - eksctl (alpha)](#amazon-web-services---eksctl-alpha)
         - [Prerequisites for eksctl](#prerequisites-for-eksctl)
         - [Deploy eksctl cluster](#deploy-eksctl-cluster)
+            - [Set region variable for eksctl](#set-region-variable-for-eksctl)
             - [Create the SSH Public Key for the eksctl admin user](#create-the-ssh-public-key-for-the-eksctl-admin-user)
             - [Deploy the cluster](#deploy-the-cluster)
         - [eksctl cleanup](#eksctl-cleanup)
@@ -140,7 +141,7 @@ rm -v heptio-authenticator-aws
 The default region can be set with `aws configure`. To be explicit for this lab, will be defined on each AWS CLI call.
 
 ```bash
-export AWS_REGION='us-west-2'
+export AWS_REGION='us-east-1'
 ```
 
 #### Get the VPC information where the EKS will be deployed
@@ -554,15 +555,21 @@ You can create a cluster in minutes with just one command – `eksctl create clu
 
 ```bash
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
-sudo install -m 755 -o root -g root /tmp/eksctl /usr/local/bin
+sudo install -m 755 -o root /tmp/eksctl /usr/local/bin
 ```
 
 ### Deploy eksctl cluster
 
+#### Set region variable for eksctl
+
+```bash
+export AWS_EKSCTL_REGION='us-west-2'
+```
+
 #### Create the SSH Public Key for the eksctl admin user
 
 ```bash
-aws ec2 create-key-pair --key-name EKS-eksctl-key --region us-east-1 --query KeyMaterial --output text > ~/.ssh/eksctl_rsa
+aws ec2 create-key-pair --key-name EKS-eksctl-key --region ${AWS_EKSCTL_REGION} --query KeyMaterial --output text > ~/.ssh/eksctl_rsa
 ```
 
 #### Deploy the cluster
@@ -570,7 +577,7 @@ aws ec2 create-key-pair --key-name EKS-eksctl-key --region us-east-1 --query Key
 ```bash
 eksctl create cluster \
     --cluster-name eksctl \
-    --region us-east-1 \
+    --region ${AWS_EKSCTL_REGION} \
     --nodes-min 1 \
     --nodes-max 3 \
     --node-type t2.micro \
@@ -581,8 +588,8 @@ eksctl create cluster \
 ### eksctl cleanup
 
 ```bash
-aws ec2 delete-key-pair --key-name EKS-eksctl-key
-eksctl delete cluster --cluster-name eksctl
+aws --region ${AWS_EKSCTL_REGION} ec2 delete-key-pair --key-name EKS-eksctl-key
+eksctl delete cluster --cluster-name eksctl --region ${AWS_EKSCTL_REGION}
 ```
 
 ## Amazon Web Services - kops
