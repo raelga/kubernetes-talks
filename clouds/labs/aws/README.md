@@ -149,8 +149,7 @@ export AWS_EKS_SG=$(\
     aws ec2 describe-security-groups \
     --group-name ${AWS_EKS_SG_NAME} \
     --query 'SecurityGroups[].GroupId' \
-    --output text \
-    || aws ec2 create-security-group \
+    --output text 2>/dev/null \
     --group-name ${AWS_EKS_SG_NAME} \
     --description "EKS Security Group" \
     --vpc-id ${AWS_EKS_VPC} \
