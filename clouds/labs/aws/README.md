@@ -37,7 +37,7 @@
             - [Get Workers Instance Role](#get-workers-instance-role)
             - [Apply the AWS authenticator configuration map](#apply-the-aws-authenticator-configuration-map)
         - [Deploy Kubernetes Dashboard](#deploy-kubernetes-dashboard)
-        - [Deploy demo-app](#deploy-demo-app)
+        - [Deploy the demo-app](#deploy-the-demo-app)
             - [Apply the demo-app manifests](#apply-the-demo-app-manifests)
             - [Get the demo-app pods](#get-the-demo-app-pods)
             - [Get the demo-app services](#get-the-demo-app-services)
@@ -432,7 +432,7 @@ kubectl proxy
 http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
 ```
 
-### Deploy demo-app
+### Deploy the demo-app
 
 #### Apply the demo-app manifests
 
@@ -472,7 +472,7 @@ redis-slave-586b4c847c-m7nc8    0/1       ContainerCreating   0          10s
 #### Get the demo-app services
 
 ```bash
-ellie:aws rael$ kubectl get services
+kubectl get services
 ```
 
 Expected output:
