@@ -19,6 +19,6 @@ For the labs, the main object is having several clusters deployed all over the u
   - [AWS managed Kubernetes with EKS using eksctl](clouds/labs/aws/#amazon-web-services---eksctl-alpha)
   - [AWS non-managed on EC2 with Kops](clouds/labs/aws/#amazon-web-services---kops)
 - [Deploy Kubernetes in Google Cloud Platform](clouds/labs/gcp/#deploy-kubernetes-in-google-cloud-platform)
-  - [GCP managed Kubernetes with GKE](clouds/labs/#managed-kubernetes-with-google-kubernetes-engine-gke)
+  - [GCP managed Kubernetes with GKE](clouds/labs/gcp/#managed-kubernetes-with-google-kubernetes-engine-gke)
 - [Deploy Kubernetes in Azure](clouds/labs/azure/#deploy-kubernetes-in-microsoft-azure)
   - [Azure managed Kubernetes with AKS](clouds/labs/azure/#managed-kubernetes-with-azure-kubernetes-service-aks)

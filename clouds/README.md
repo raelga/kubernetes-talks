@@ -23,6 +23,6 @@ In the labs, you will found a step by step guide on how to deploy a kubernetes c
   - [AWS managed Kubernetes with EKS using eksctl](labs/aws/#amazon-web-services---eksctl-alpha)
   - [AWS non-managed on EC2 with Kops](labs/aws/#amazon-web-services---kops)
 - [Google Cloud Platform](labs/gcp/#deploy-kubernetes-in-google-cloud-platform)
-  - [GCP managed Kubernetes with GKE](labs/#managed-kubernetes-with-google-kubernetes-engine-gke)
+  - [GCP managed Kubernetes with GKE](labs/gcp#managed-kubernetes-with-google-kubernetes-engine-gke)
 - [Azure](labs/azure/#deploy-kubernetes-in-microsoft-azure)
   - [Azure managed Kubernetes with AKS](labs/azure/#managed-kubernetes-with-azure-kubernetes-service-aks)

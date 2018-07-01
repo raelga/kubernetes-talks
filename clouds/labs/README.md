@@ -9,6 +9,6 @@ On each provider folder, you will found a step by step guide on how to deploy a 
   - [AWS managed Kubernetes with EKS using eksctl](aws/#amazon-web-services---eksctl-alpha)
   - [AWS non-managed on EC2 with Kops](aws/#amazon-web-services---kops)
 - [Google Cloud Platform](gcp/#deploy-kubernetes-in-google-cloud-platform)
-  - [GCP managed Kubernetes with GKE](#managed-kubernetes-with-google-kubernetes-engine-gke)
+  - [GCP managed Kubernetes with GKE](gcp#managed-kubernetes-with-google-kubernetes-engine-gke)
 - [Azure](azure/#deploy-kubernetes-in-microsoft-azure)
   - [Azure managed Kubernetes with AKS](azure/#managed-kubernetes-with-azure-kubernetes-service-aks)
