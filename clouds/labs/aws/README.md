@@ -245,8 +245,7 @@ sudo pip install yq
 To create the Kubeconfig file we need the Kubernetes API endpoint and the Certificate Authority data.
 
 ```bash
-export AWS_EKS_ENDPOINT=$(aws eks describe-cluster --name ${AWS_EKS_NAME} --query cluster.endpoint --output text)
-export AWS_EKS_CERTAUTHDATA=$(aws eks describe-cluster --name ${AWS_EKS_NAME} --query cluster.certificateAuthority.data --output text)
+env | grep AWS_EKS
 ```
 
 > Gets the Kubernetes endpoint and Certificate Authority data from the EKS resource using the CLI.
