@@ -13,6 +13,8 @@
         - [Prerequisites for the EKS deploy](#prerequisites-for-the-eks-deploy)
             - [Update AWS CLI](#update-aws-cli)
             - [Install heptio-authenticator](#install-heptio-authenticator)
+                - [Install heptio-authenticator on Linux](#install-heptio-authenticator-on-linux)
+                - [Install heptio-authenticator on Mac](#install-heptio-authenticator-on-mac)
         - [Deploy the EKS Cluster](#deploy-the-eks-cluster)
             - [Get the VPC information where the EKS will be deployed](#get-the-vpc-information-where-the-eks-will-be-deployed)
             - [Create EKS Security Group](#create-eks-security-group)
@@ -102,13 +104,23 @@ pip install awscli --upgrade
 
 Amazon EKS clusters require kubectl and kubelet binaries and the Heptio Authenticator to allow IAM authentication for your Kubernetes cluster. Beginning with Kubernetes version 1.10, you can configure the stock kubectl client to work with Amazon EKS by installing the Heptio Authenticator and modifying your kubectl configuration file to use it for authentication.
 
+More information at [Configure kubectl for Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/configure-kubectl.html).
+
+##### Install heptio-authenticator on Linux
+
 ```bash
 curl -sqo ./heptio-authenticator-aws https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/linux/amd64/heptio-authenticator-aws
 sudo install -m 775 -o root -g root heptio-authenticator-aws /usr/local/bin/
 rm -v heptio-authenticator-aws
 ```
 
-More information at [Configure kubectl for Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/configure-kubectl.html).
+##### Install heptio-authenticator on Mac
+
+```bash
+curl -o heptio-authenticator-aws https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/darwin/amd64/heptio-authenticator-aws
+sudo install -m 775 -o root -g admin heptio-authenticator-aws /usr/local/bin/
+rm -v heptio-authenticator-aws
+```
 
 ### Deploy the EKS Cluster
 
