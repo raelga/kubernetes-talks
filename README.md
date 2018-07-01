@@ -14,11 +14,11 @@ The main subject of this talk is viewing the differences between each managed ku
 
 For the labs, the main object is having several clusters deployed all over the using each managed (or not) solution and deploy the same application using the common interface provided by Kubernetes.
 
-- [Deploy Kubernetes in Amazon Web services](clouds/lab/aws/#deploy-kubernetes-in-aws)
-  - [AWS managed Kubernetes with EKS](clouds/lab/aws/#managed-kubernetes-with-eks)
-  - [AWS managed Kubernetes with EKS using eksctl](clouds/lab/aws/#amazon-web-services---eksctl-alpha)
-  - [AWS non-managed on EC2 with Kops](clouds/lab/aws/#amazon-web-services---kops)
-- [Deploy Kubernetes in Google Cloud Platform](clouds/lab/gcp/#deploy-kubernetes-in-google-cloud-platform)
-  - [GCP managed Kubernetes with GKE](clouds/lab/#managed-kubernetes-with-google-kubernetes-engine-gke)
-- [Deploy Kubernetes in Azure](clouds/lab/azure/#deploy-kubernetes-in-microsoft-azure)
-  - [Azure managed Kubernetes with AKS](clouds/lab/azure/#managed-kubernetes-with-azure-kubernetes-service-aks)
+- [Deploy Kubernetes in Amazon Web services](clouds/labs/aws/#deploy-kubernetes-in-aws)
+  - [AWS managed Kubernetes with EKS](clouds/labs/aws/#managed-kubernetes-with-eks)
+  - [AWS managed Kubernetes with EKS using eksctl](clouds/labs/aws/#amazon-web-services---eksctl-alpha)
+  - [AWS non-managed on EC2 with Kops](clouds/labs/aws/#amazon-web-services---kops)
+- [Deploy Kubernetes in Google Cloud Platform](clouds/labs/gcp/#deploy-kubernetes-in-google-cloud-platform)
+  - [GCP managed Kubernetes with GKE](clouds/labs/#managed-kubernetes-with-google-kubernetes-engine-gke)
+- [Deploy Kubernetes in Azure](clouds/labs/azure/#deploy-kubernetes-in-microsoft-azure)
+  - [Azure managed Kubernetes with AKS](clouds/labs/azure/#managed-kubernetes-with-azure-kubernetes-service-aks)
