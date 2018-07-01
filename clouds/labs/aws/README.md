@@ -207,9 +207,35 @@ aws eks describe-cluster --name ${AWS_EKS_NAME}
 
 ### Configure EKS Kubectl context
 
+#### Install `jq` tool
+
+`jq` is like sed for JSON data - you can use it to slice and filter and map and transform structured data.
+
+More information and systems in [stedolan.github.io / Install and Set Up jq](https://stedolan.github.io/jq/download/),
+
+##### Install `jq` on Linux
+
+```bash
+curl -OL https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64
+sudo install -m 755 -o root -g root kubectl /usr/local/bin
+rm -v jq-linux64
+```
+
+##### Install `jq` on Mac
+
+```bash
+brew install jq
+```
+
+##### Install `jq` on Windows
+
+```bash
+chocolatey install jq
+```
+
 #### Install `yq` tool
 
-Install `yq`, like `jq` but for `yml` files. It will be used to create the kubeconfig file for the EKS cluster.
+Install `yq`, like `jq` but for `yml` files and requires `jq`. It will be used to create the kubeconfig file for the EKS cluster.
 
 ```bash
 sudo pip install yq
