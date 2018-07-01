@@ -119,7 +119,7 @@ export AWS_EKS_VPC=$(aws ec2 describe-vpcs --query 'Vpcs[?IsDefault].VpcId' --ou
 export AWS_EKS_VPC_SUBNETS_CSV=$(\
     aws ec2 describe-subnets \
     --query "Subnets[?VpcId=='${AWS_EKS_VPC}'] | [?ends_with(AvailabilityZone,'b') || ends_with(AvailabilityZone,'a')].SubnetId" \
-    --output text | sed 's/\t/,/g')
+    --output text | sed "s/$(printf '\t')/,/g")
 env | grep AWS_EKS_VPC
 ```
 
