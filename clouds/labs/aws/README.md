@@ -406,6 +406,59 @@ kubectl proxy
 http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
 ```
 
+### Deploy demo-app
+
+#### Apply the demo-app manifests
+
+```bash
+kubectl apply -f ../demo-app/k8s/
+```
+
+Expected Output:
+
+```bash
+deployment.apps/guestbook created
+service/guestbook created
+deployment.apps/redis-master created
+service/redis-master created
+deployment.apps/redis-slave created
+service/redis-slave created
+```
+
+#### Get the demo-app pods
+
+```bash
+kubectl get pods
+```
+
+Expected output:
+
+```bash
+NAME                            READY     STATUS              RESTARTS   AGE
+guestbook-574c46c86-4vvt9       1/1       Running             0          12s
+guestbook-574c46c86-d7bnc       1/1       Running             0          12s
+guestbook-574c46c86-qgj6g       1/1       Running             0          12s
+redis-master-5d8b66464f-jphkc   0/1       ContainerCreating   0          11s
+redis-slave-586b4c847c-gw2lq    0/1       ContainerCreating   0          10s
+redis-slave-586b4c847c-m7nc8    0/1       ContainerCreating   0          10s
+```
+
+#### Get the demo-app services
+
+```bash
+ellie:aws rael$ kubectl get services
+```
+
+Expected output:
+
+```bash
+NAME           TYPE           CLUSTER-IP      EXTERNAL-IP                                                              PORT(S)        AGE
+guestbook      LoadBalancer   10.100.236.49   a7e0fda097d5811e89be902c32f5cb30-939770222.us-west-2.elb.amazonaws.com   80:31540/TCP   2m
+kubernetes     ClusterIP      10.100.0.1      <none>                                                                   443/TCP        1h
+redis-master   ClusterIP      10.100.153.4    <none>                                                                   6379/TCP       2m
+redis-slave    ClusterIP      10.100.27.186   <none>                                                                   6379/TCP       2m
+```
+
 ### Cleanup EKS
 
 ```bash
