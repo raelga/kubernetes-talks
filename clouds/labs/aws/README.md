@@ -309,7 +309,7 @@ aws ec2 create-key-pair --key-name ${AWS_EKS_WORKERS_KEY} \
 
 ```bash
 export AWS_EKS_WORKERS_TYPE="t2.small"
-export AWS_EKS_WORKERS_AMI="ami-dea4d5a1"
+export AWS_EKS_WORKERS_AMI="$([[ ${AWS_REGION} == 'us-east-1' ]] && echo ami-dea4d5a1 || echo ami-73a6e20b)";
 export AWS_EKS_WORKERS_MIN="2"
 export AWS_EKS_WORKERS_MAX="4"
 export AWS_EKS_WORKERS_KEY="${AWS_EKS_WORKERS_KEY}"
