@@ -124,12 +124,23 @@ rm -v heptio-authenticator-aws
 
 ### Deploy the EKS Cluster
 
+#### Set region variable for AWS Cli
+
+The default region can be set with `aws configure`. To be explicit for this lab, will be defined on each AWS CLI call.
+
+```bash
+export AWS_REGION='us-west-2'
+```
+
 #### Get the VPC information where the EKS will be deployed
 
 ```bash
-export AWS_EKS_VPC=$(aws ec2 describe-vpcs --query 'Vpcs[?IsDefault].VpcId' --output text)
+export AWS_EKS_VPC=$(\
+    aws --region ${AWS_REGION} ec2 describe-vpcs \
+    --query 'Vpcs[?IsDefault].VpcId' \
+    --output text)
 export AWS_EKS_VPC_SUBNETS_CSV=$(\
-    aws ec2 describe-subnets \
+    aws --region ${AWS_REGION} ec2 describe-subnets \
     --query "Subnets[?VpcId=='${AWS_EKS_VPC}'] | [?ends_with(AvailabilityZone,'b') || ends_with(AvailabilityZone,'a')].SubnetId" \
     --output text | sed "s/$(printf '\t')/,/g")
 env | grep AWS_EKS_VPC
@@ -146,10 +157,11 @@ Before you can create an Amazon EKS cluster, you must create an IAM role that Ku
 ```bash
 export AWS_EKS_SG_NAME='AmazonEKSSecurityGroup'
 export AWS_EKS_SG=$(\
-    aws ec2 describe-security-groups \
+    aws --region ${AWS_REGION} ec2 describe-security-groups \
     --group-name ${AWS_EKS_SG_NAME} \
     --query 'SecurityGroups[].GroupId' \
     --output text 2>/dev/null \
+    || aws --region ${AWS_REGION} ec2 create-security-group \
     --group-name ${AWS_EKS_SG_NAME} \
     --description "EKS Security Group" \
     --vpc-id ${AWS_EKS_VPC} \
@@ -193,11 +205,11 @@ Now you can create your Amazon EKS cluster.
 
 ```bash
 export AWS_EKS_NAME='bcncloud-eks'
-aws eks create-cluster --name ${AWS_EKS_NAME} \
+aws --region ${AWS_REGION} eks create-cluster --name ${AWS_EKS_NAME} \
     --role-arn ${AWS_EKS_ROLE_ARN} \
     --resources-vpc-config subnetIds=${AWS_EKS_VPC_SUBNETS_CSV},securityGroupIds=${AWS_EKS_SG} \
-    && while true; do aws eks describe-cluster --name ${AWS_EKS_NAME} --query cluster.endpoint | grep -vq 'null' && break || sleep 10; done;
-aws eks describe-cluster --name ${AWS_EKS_NAME}
+    && while true; do aws --region ${AWS_REGION} eks describe-cluster --name ${AWS_EKS_NAME} --query cluster.endpoint | grep -vq 'null' && break || sleep 10; done;
+aws --region ${AWS_REGION} eks describe-cluster --name ${AWS_EKS_NAME}
 ```
 
 > Set the cluster name and stores it in `AWS_EKS_NAME` environment variable.
@@ -245,6 +257,8 @@ sudo pip install yq
 To create the Kubeconfig file we need the Kubernetes API endpoint and the Certificate Authority data.
 
 ```bash
+export AWS_EKS_ENDPOINT=$(aws --region ${AWS_REGION} eks describe-cluster --name ${AWS_EKS_NAME} --query cluster.endpoint --output text)
+export AWS_EKS_CERTAUTHDATA=$(aws --region ${AWS_REGION} eks describe-cluster --name ${AWS_EKS_NAME} --query cluster.certificateAuthority.data --output text)
 env | grep AWS_EKS
 ```
 
@@ -301,7 +315,7 @@ kubectl get all
 
 ```bash
 export AWS_EKS_WORKERS_KEY="EKS-${AWS_EKS_NAME}-ec2-key-pair"
-aws ec2 create-key-pair --key-name ${AWS_EKS_WORKERS_KEY} \
+aws --region ${AWS_REGION} ec2 create-key-pair --key-name ${AWS_EKS_WORKERS_KEY} \
     --query KeyMaterial --output text > ~/.ssh/eksctl_rsa
 ```
 
@@ -319,7 +333,7 @@ env | grep AWS_EKS_WORKERS
 ```bash
 export AWS_EKS_WORKERS_STACK="EKS-${AWS_EKS_NAME}-eks-nodes"
 
-aws cloudformation create-stack \
+aws --region ${AWS_REGION} cloudformation create-stack \
     --stack-name  ${AWS_EKS_WORKERS_STACK} \
     --capabilities CAPABILITY_IAM \
     --template-body file://eks/cloudformation/eks-nodegroup-cf-stack.yaml \
@@ -334,14 +348,15 @@ aws cloudformation create-stack \
         ParameterKey=ClusterControlPlaneSecurityGroup,ParameterValue="${AWS_EKS_SG}" \
         ParameterKey=VpcId,ParameterValue="${AWS_EKS_VPC}" \
         ParameterKey=Subnets,ParameterValue=\"${AWS_EKS_VPC_SUBNETS_CSV}\" &&
-    aws cloudformation wait stack-create-complete --stack-name  ${AWS_EKS_WORKERS_STACK}
+    aws --region ${AWS_REGION} cloudformation wait stack-create-complete \
+        --stack-name  ${AWS_EKS_WORKERS_STACK}
 ```
 
 #### Get Workers Instance Role
 
 ```bash
 export AWS_EKS_WORKERS_ROLE=$(\
-    aws cloudformation describe-stacks \
+    aws --region ${AWS_REGION} cloudformation describe-stacks \
     --stack-name  ${AWS_EKS_WORKERS_STACK} \
     --query "Stacks[].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" \
     --output text)
@@ -462,10 +477,10 @@ redis-slave    ClusterIP      10.100.27.186   <none>                            
 ### Cleanup EKS
 
 ```bash
-aws cloudformation delete-stack --stack-name ${AWS_EKS_WORKERS_STACK}
-aws ec2 delete-key-pair --key-name ${AWS_EKS_WORKERS_KEY}
-aws eks delete-cluster --name ${AWS_EKS_NAME}
-aws ec2 delete-security-group --group-id ${AWS_EKS_SG}
+aws --region ${AWS_REGION} cloudformation delete-stack --stack-name ${AWS_EKS_WORKERS_STACK}
+aws --region ${AWS_REGION} ec2 delete-key-pair --key-name ${AWS_EKS_WORKERS_KEY}
+aws --region ${AWS_REGION} eks delete-cluster --name ${AWS_EKS_NAME}
+aws --region ${AWS_REGION} ec2 delete-security-group --group-id ${AWS_EKS_SG}
 aws iam detach-role-policy --role-name ${AWS_EKS_ROLE_NAME} --policy-arn arn:aws:iam::aws:policy/AmazonEKSServicePolicy
 aws iam detach-role-policy --role-name ${AWS_EKS_ROLE_NAME} --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
 aws iam delete-role --role-name ${AWS_EKS_ROLE_NAME}
