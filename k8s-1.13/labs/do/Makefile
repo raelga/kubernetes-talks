@@ -7,6 +7,9 @@ SHELL := /bin/bash
 
 ## Installs  terraform providers based on the templates in ./tf/
 tf-init:
+DO_CLUSTER_JSON := .kube/do-cluster.json
+DO_CLUSTER_KUBECONFIG := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/.kube/do-cluster-config.yaml
+export KUBECONFIG=$(DO_CLUSTER_KUBECONFIG)
 	terraform init ./tf/
 
 ## Shows the plan for deploying the k8s cluster with terraform
@@ -30,8 +33,8 @@ tf-destroy:
 ## Configures kubectl for accessing the deployed k8s cluster
 k8s-login:
 	@mkdir -p .terraform/kube
-	terraform output --json | jq -r '.kube_config.value' > .terraform/kube/config
 	bash --rcfile <( echo 'export KUBECONFIG=`pwd`/.terraform/kube/config' );
+	terraform output --json | jq -r '.kube_config.value' > $(DO_CLUSTER_KUBECONFIG)
 
 ## Installs terraform in OSX using brew
 install-tf-osx:
