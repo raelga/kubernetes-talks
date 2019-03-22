@@ -33,10 +33,13 @@ tf-destroy: ## Destroys the k8s cluster with terraform
 	[[ -f terraform.tfstate ]] && rm terraform.tfstate
 	[[ -f terraform.tfstate.backup ]] && rm terraform.tfstate.backup
 
-	@mkdir -p .terraform/kube
-	bash --rcfile <( echo 'export KUBECONFIG=`pwd`/.terraform/kube/config' );
 tf-k8s-kubeconfig: ## Configures kubectl for accessing the deployed k8s cluster
 	terraform output --json | jq -r '.kube_config.value' > $(DO_CLUSTER_KUBECONFIG)
+	@bash --rcfile <(\
+		cat ~/.bashrc; \
+		echo 'PS1="(\$$(kubectl config current-context)) $$PS1"'; \
+		alias k='kubectl'; \
+	)
 
 install-tf-osx: ## Installs terraform in OSX using brew
 	@which -s terraform \
