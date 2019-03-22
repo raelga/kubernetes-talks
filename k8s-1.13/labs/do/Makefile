@@ -5,6 +5,50 @@ SHELL := /bin/bash
 
 .DEFAULT_GOAL := help
 
+KUBECONFIG := .kube/config
+DO_CLUSTER_JSON := .kube/do-cluster.json
+
+## Creates the cluster using only the Digital Ocean API
+do-api-create-cluster:
+	@curl -X POST  \
+		-H "Content-Type: application/json" \
+		-H "Authorization: Bearer ${DO_TOKEN}" \
+		--data @json/k8s-1.13-cluster.json \
+		"https://api.digitalocean.com/v2/kubernetes/clusters" \
+		> $(DO_CLUSTER_JSON)
+
+do-get-cluster-id:
+	$(eval CLUSTER_NAME := $(shell jq -r '.name' json/k8s-1.13-cluster.json))
+	$(eval CLUSTER_ID := $(shell \
+		curl -sSL -X GET \
+		-H "Content-Type: application/json" \
+		-H "Authorization: Bearer ${DO_TOKEN}" \
+		"https://api.digitalocean.com/v2/kubernetes/clusters" \
+		| jq -r --arg CLUSTER_NAME "$(CLUSTER_NAME)" '.kubernetes_clusters[] | select (.name==$$CLUSTER_NAME) | .id' \
+	))
+
+do-api-get-clusters:
+	@curl -sSL -X GET \
+	-H "Content-Type: application/json" \
+	-H "Authorization: Bearer ${DO_TOKEN}" \
+	"https://api.digitalocean.com/v2/kubernetes/clusters" \
+	| jq '.kubernetes_clusters[] | [ { name: .name, id: .id, status: .status.state, endpoint: .endpoint, creation: .created_at } ]'
+
+do-api-get-cluster: do-get-cluster-id
+	@curl -sSL -X GET \
+	-H "Content-Type: application/json" \
+	-H "Authorization: Bearer ${DO_TOKEN}" \
+	"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)" \
+	| jq '. | [ { name: .name, id: .id, status: .status.state, endpoint: .endpoint, creation: .created_at } ]'
+
+do-api-k8s-kubeconfig: do-get-cluster-id
+	@mkdir -p .kube
+	@curl -sSL -X GET \
+		-H "Content-Type: application/json" \
+		-H "Authorization: Bearer ${DO_TOKEN}" \
+		"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)/kubeconfig" > $(KUBECONFIG)
+	@bash --rcfile <( echo export KUBECONFIG=$(KUBECONFIG) );
+
 ## Installs  terraform providers based on the templates in ./tf/
 tf-init:
 	terraform init ./tf/
@@ -28,7 +72,7 @@ tf-destroy:
 	[[ -f terraform.tfstate.backup ]] && rm terraform.tfstate.backup
 
 ## Configures kubectl for accessing the deployed k8s cluster
-k8s-login:
+tf-k8s-kubeconfig:
 	@mkdir -p .terraform/kube
 	terraform output --json | jq -r '.kube_config.value' > .terraform/kube/config
 	bash --rcfile <( echo 'export KUBECONFIG=`pwd`/.terraform/kube/config' );
