@@ -1,0 +1,19 @@
+{
+  "name": "BarcelonaCloud-k8s-1-13",
+  "region": "lon1",
+  "version": "1.13.4-do.0",
+  "tags": [
+    "k8s-talks",
+    "barcelonaCloud"
+  ],
+  "node_pools": [
+    {
+      "size": "s-1vcpu-2gb",
+      "count": 1,
+      "name": "BarcelonaCloud-k8s-1-13-np",
+      "tags": [
+        "workers"
+      ]
+    }
+  ]
+}
