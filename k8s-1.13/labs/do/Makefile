@@ -15,86 +15,106 @@ help:
 	| sort \
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.do-api-check:
-	@echo 'There will be some checks here'
-#	@test ! -d .kube && mkdir -p .kube
-#	@test -z ${DO_TOKEN} && echo "Environment variable DO_TOKEN is undefined."
-#	@which -q jq || echo "jq tool is required"
+	| awk 'BEGIN {FS = ":.*?#\\*"}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-do-api-create-cluster: .do-api-check ## Creates the cluster using only the Digital Ocean API
+.common-checks:  ## Private target to check the targets common requirements
+	@test -d $(dir $(DO_CLUSTER_KUBECONFIG)) || mkdir -vp "$(dir $(DO_CLUSTER_KUBECONFIG))"
+	@test -n "${DIGITALOCEAN_TOKEN}" || { \
+		echo "Environment variable DIGITALOCEAN_TOKEN is undefined."; \
+		echo "Get your Digital Ocean API TOKEN at https://cloud.digitalocean.com/account/api/tokens"; \
+		exit 1; \
+	}
+	@which -s jq || { echo "This target requires jq."; exit 1; }
+
+##
+## Digital Ocean Native targets
+## https://developers.digitalocean.com/documentation/v2/
+##
+
+.do-checks: .common-checks ## Private target to check the api targets requirements
+	@which -s curl || { echo "This target requires curl."; exit 1; }
+do-create-cluster: .do-checks #* Creates the cluster using only the Digital Ocean API
 	@curl -sSL -X POST  \
 		-H "Content-Type: application/json" \
-		-H "Authorization: Bearer ${DO_TOKEN}" \
+		-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
 		--data @json/k8s-1.13-cluster.json \
 		"https://api.digitalocean.com/v2/kubernetes/clusters" \
 		> $(DO_CLUSTER_JSON)
 
-do-api-get-cluster-id: .do-api-check ## Retrieves the cluster id from Digital Ocean API
+do-get-cluster-id: .do-checks #* Retrieves the cluster id from Digital Ocean API
 	$(eval CLUSTER_NAME := $(shell jq -r '.name' json/k8s-1.13-cluster.json))
 	$(eval CLUSTER_ID := $(shell \
 		curl -sSL -X GET \
 		-H "Content-Type: application/json" \
-		-H "Authorization: Bearer ${DO_TOKEN}" \
+		-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
 		"https://api.digitalocean.com/v2/kubernetes/clusters" \
 		| jq -r --arg CLUSTER_NAME "$(CLUSTER_NAME)" '.kubernetes_clusters[] | select (.name==$$CLUSTER_NAME) | .id' \
 	))
 
-do-api-get-clusters: .do-api-check ## Retrieves all clusters information from Digital Ocean API
+do-get-clusters: .do-checks #* Retrieves all clusters information from Digital Ocean API
 	@curl -sSL -X GET \
 	-H "Content-Type: application/json" \
-	-H "Authorization: Bearer ${DO_TOKEN}" \
+	-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
 	"https://api.digitalocean.com/v2/kubernetes/clusters" \
 	| jq '.kubernetes_clusters[] | [ { name: .name, id: .id, status: .status.state, endpoint: .endpoint, creation: .created_at } ]'
 
-do-api-get-cluster: .do-api-check do-api-get-cluster-id ## Retrieves the cluster information from Digital Ocean API
+do-get-cluster: .do-checks do-get-cluster-id #* Retrieves the cluster information from Digital Ocean API
 	@curl -sSL -X GET \
 	-H "Content-Type: application/json" \
-	-H "Authorization: Bearer ${DO_TOKEN}" \
+	-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
 	"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)" \
 	| jq '.kubernetes_cluster | [ { name: .name, id: .id, status: .status.state, endpoint: .endpoint, creation: .created_at } ]'
 
-do-api-delete-cluster: .do-api-check do-api-get-cluster-id ## Deletes the cluster using the Digital Ocean API
+do-delete-cluster: .do-checks do-get-cluster-id #* Deletes the cluster using the Digital Ocean API
 	@echo -n "Ready to delete $(CLUSTER_NAME), are you sure? Ctrl+C to cancel " \
 	&& read ans
 	@curl -sSL -o /dev/null -w "%{http_code}" -X DELETE \
 	-H "Content-Type: application/json" \
-	-H "Authorization: Bearer ${DO_TOKEN}" \
+	-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
 	"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)" \
 	| grep '204' \
 		&& echo "Cluster $(CLUSTER_NAME) deleted." \
 		|| echo "Unable to delete $(CLUSTER_NAME) cluster (expected response HTTP 204)"
 
-do-api-k8s-kubeconfig: .do-api-check do-api-get-cluster-id ## Retrieves the kubeconfig from the Digital Ocean API
-	@mkdir -p .kube
+do-get-k8s-kubeconfig: .do-checks do-get-cluster-id #* Retrieves the kubeconfig from the Digital Ocean API
 	@curl -sSL -X GET \
 		-H "Content-Type: application/json" \
-		-H "Authorization: Bearer ${DO_TOKEN}" \
+		-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
 		"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)/kubeconfig" > $(DO_CLUSTER_KUBECONFIG)
+do-k8s-kubeconfig-bash: do-get-k8s-kubeconfig #* Spawns a shell with the cluster kubeconfig set
 	@bash --rcfile <(\
 		cat ~/.bashrc; \
 		echo 'PS1="(\$$(kubectl config current-context)) $$PS1"'; \
 		alias k='kubectl'; \
 	)
 
-tf-init: ## Installs  terraform providers based on the templates in ./tf/
+##
+## Terraform targets
+## https://www.terraform.io/docs/providers/do/index.html
+##
+
+.tf-checks: .common-checks  ## Private target to check the terraform targets requirements
+	@which -s terraform || { echo "This target requires terraform."; exit 1; }
+
+tf-init: .tf-checks #* Installs  terraform providers based on the templates in ./tf/
 	terraform init ./tf/
 
-tf-plan: ## Shows the plan for deploying the k8s cluster with terraform
+tf-plan: .tf-checks #* Shows the plan for deploying the k8s cluster with terraform
 	terraform plan ./tf/
 
-tf-apply: ## Deploys the k8s cluster with terraform (asks for confirmation)
+tf-apply: .tf-checks #* Deploys the k8s cluster with terraform (asks for confirmation)
 	$(eval plan := $(shell mktemp))
 	terraform plan -out $(plan) ./tf/
 	@echo -n "Ready to apply $(plan) plan, continue? Ctrl+C to cancel " \
 	&& read ans
 	terraform apply $(plan)
 
-tf-destroy: ## Destroys the k8s cluster with terraform
+tf-destroy: .tf-checks #* Destroys the k8s cluster with terraform
 	terraform destroy ./tf/
 	[[ -f terraform.tfstate ]] && rm terraform.tfstate
 	[[ -f terraform.tfstate.backup ]] && rm terraform.tfstate.backup
 
-tf-k8s-kubeconfig: ## Configures kubectl for accessing the deployed k8s cluster
+tf-get-k8s-kubeconfig: .do-checks do-get-cluster-id #* Retrieves the kubeconfig from the Digital Ocean API
 	terraform output --json | jq -r '.kube_config.value' > $(DO_CLUSTER_KUBECONFIG)
 	@bash --rcfile <(\
 		cat ~/.bashrc; \
