@@ -85,7 +85,6 @@ do-k8s-kubeconfig-bash: do-get-k8s-kubeconfig #* Spawns a shell with the cluster
 	@bash --rcfile <(\
 		cat ~/.bashrc; \
 		echo 'PS1="(\$$(kubectl config current-context)) $$PS1"'; \
-		alias k='kubectl'; \
 	)
 
 ##
@@ -119,6 +118,4 @@ tf-get-k8s-kubeconfig: .do-checks do-get-cluster-id #* Retrieves the kubeconfig 
 	@bash --rcfile <(\
 		cat ~/.bashrc; \
 		echo 'PS1="(\$$(kubectl config current-context)) $$PS1"'; \
-		alias k='kubectl'; \
-	)
 	)
