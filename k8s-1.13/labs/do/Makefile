@@ -5,7 +5,6 @@ SHELL := /bin/bash
 
 .DEFAULT_GOAL := help
 
-DO_CLUSTER_JSON := .kube/do-cluster.json
 DO_CLUSTER_KUBECONFIG := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/.kube/do-cluster-config.yaml
 export KUBECONFIG=$(DO_CLUSTER_KUBECONFIG)
 
@@ -39,7 +38,7 @@ do-create-cluster: .do-checks #* Creates the cluster using only the Digital Ocea
 		-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
 		--data @json/k8s-1.13-cluster.json \
 		"https://api.digitalocean.com/v2/kubernetes/clusters" \
-		> $(DO_CLUSTER_JSON)
+		| jq '.'
 
 do-get-cluster-id: .do-checks #* Retrieves the cluster id from Digital Ocean API
 	$(eval CLUSTER_NAME := $(shell jq -r '.name' json/k8s-1.13-cluster.json))
