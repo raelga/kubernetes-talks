@@ -83,7 +83,7 @@ do-get-k8s-kubeconfig: .do-checks do-get-cluster-id #* Retrieves the kubeconfig 
 		"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)/kubeconfig" > $(DO_CLUSTER_KUBECONFIG)
 do-k8s-kubeconfig-bash: do-get-k8s-kubeconfig #* Spawns a shell with the cluster kubeconfig set
 	@bash --rcfile <(\
-		cat ~/.bashrc; \
+		test -f ~/.bashrc && cat ~/.bashrc; \
 		echo 'PS1="(\$$(kubectl config current-context)) $$PS1"'; \
 	)
 
@@ -116,6 +116,6 @@ tf-destroy: .tf-checks #* Destroys the k8s cluster with terraform
 tf-get-k8s-kubeconfig: .do-checks do-get-cluster-id #* Retrieves the kubeconfig from the Digital Ocean API
 	terraform output --json | jq -r '.kube_config.value' > $(DO_CLUSTER_KUBECONFIG)
 	@bash --rcfile <(\
-		cat ~/.bashrc; \
+		test -f ~/.bashrc && cat ~/.bashrc; \
 		echo 'PS1="(\$$(kubectl config current-context)) $$PS1"'; \
 	)
