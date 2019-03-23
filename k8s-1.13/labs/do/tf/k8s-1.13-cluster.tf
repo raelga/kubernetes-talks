@@ -1,10 +1,10 @@
 resource "digitalocean_kubernetes_cluster" "k8s-cluster" {
-  name    = "BarcelonaCloud-k8s-1-13-tf"
+  name    = "barcelonacloud-k8s-1-13-tf"
   region  = "lon1"
   version = "1.13.4-do.0"
 
   node_pool {
-    name       = "BarcelonaCloud-k8s-1-13-np-tf"
+    name       = "barcelonacloud-k8s-1-13-np-tf"
     size       = "s-2vcpu-2gb"
     node_count = 1
   }
