@@ -101,21 +101,4 @@ tf-k8s-kubeconfig: ## Configures kubectl for accessing the deployed k8s cluster
 		echo 'PS1="(\$$(kubectl config current-context)) $$PS1"'; \
 		alias k='kubectl'; \
 	)
-
-install-tf-osx: ## Installs terraform in OSX using brew
-	@which -s terraform \
-		&&	echo "terraform is already installed." \
-		||	brew install terraform
-
-install-jq-osx: ## Installs jq in OSX using brew
-	@which -s jq \
-		&&	echo "jq is already installed." \
-		||	brew install jq
-
-# Installs doclt in OSX using brew
-install-doctl-osx:
-	@which -s doctl \
-		&&	echo "doctl is already installed." \
-		||	brew install doctl
-
-
+	)
