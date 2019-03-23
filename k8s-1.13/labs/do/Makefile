@@ -8,12 +8,9 @@ SHELL := /bin/bash
 DO_CLUSTER_KUBECONFIG := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/.kube/do-cluster-config.yaml
 export KUBECONFIG=$(DO_CLUSTER_KUBECONFIG)
 
-# Help
-help:
-	@grep --no-filename -E '^[a-zA-Z_0-9-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+help: #* Shows this help
+	@grep --no-filename -E '^[a-zA-Z_0-9-]+:.*?#\* .*$$' $(MAKEFILE_LIST) \
 	| sort \
-	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
 	| awk 'BEGIN {FS = ":.*?#\\*"}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .common-checks:  ## Private target to check the targets common requirements
@@ -32,6 +29,7 @@ help:
 
 .do-checks: .common-checks ## Private target to check the api targets requirements
 	@which -s curl || { echo "This target requires curl."; exit 1; }
+
 do-create-cluster: .do-checks #* Creates the cluster using only the Digital Ocean API
 	@curl -sSL -X POST  \
 		-H "Content-Type: application/json" \
