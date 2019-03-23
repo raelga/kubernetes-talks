@@ -76,9 +76,9 @@ do-delete-cluster: .do-checks do-get-cluster-id #* Deletes the cluster using the
 	-H "Content-Type: application/json" \
 	-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
 	"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)" \
-	| grep '204' \
+	| egrep -sq '20[0-9]' \
 		&& echo "Cluster $(CLUSTER_NAME) deleted." \
-		|| echo "Unable to delete $(CLUSTER_NAME) cluster (expected response HTTP 204)"
+		|| echo "Unable to delete $(CLUSTER_NAME) cluster (expected response HTTP 20[0-9])"
 
 do-get-k8s-kubeconfig: .do-checks do-get-cluster-id #* Retrieves the kubeconfig from the Digital Ocean API
 	@curl -sSL -X GET \
