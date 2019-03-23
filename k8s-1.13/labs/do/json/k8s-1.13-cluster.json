@@ -8,12 +8,12 @@
   ],
   "node_pools": [
     {
-      "size": "s-1vcpu-2gb",
-      "count": 1,
       "name": "BarcelonaCloud-k8s-1-13-np",
       "tags": [
         "workers"
       ]
+      "size": "s-2vcpu-2gb",
+      "count": 1
     }
   ]
 }

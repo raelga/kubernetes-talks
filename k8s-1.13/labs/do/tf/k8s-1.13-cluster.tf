@@ -4,8 +4,8 @@ resource "digitalocean_kubernetes_cluster" "k8s-cluster" {
   version = "1.13.4-do.0"
 
   node_pool {
-    size       = "s-1vcpu-2gb"
     name       = "BarcelonaCloud-k8s-1-13-np-tf"
+    size       = "s-2vcpu-2gb"
     node_count = 1
   }
 }
