@@ -111,8 +111,8 @@ tf-apply: .tf-checks #* Deploys the k8s cluster with terraform (asks for confirm
 
 tf-destroy: .tf-checks #* Destroys the k8s cluster with terraform
 	terraform destroy ./tf/
-	[[ -f terraform.tfstate ]] && rm terraform.tfstate
-	[[ -f terraform.tfstate.backup ]] && rm terraform.tfstate.backup
+	test ! -f terraform.tfstate || rm -v terraform.tfstate
+	test ! -f terraform.tfstate.backup || rm -v terraform.tfstate.backup
 
 tf-get-k8s-kubeconfig: .do-checks do-get-cluster-id #* Retrieves the kubeconfig from the Digital Ocean API
 	terraform output --json | jq -r '.kube_config.value' > $(DO_CLUSTER_KUBECONFIG)
