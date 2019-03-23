@@ -1,6 +1,6 @@
 {
   "name": "BarcelonaCloud-k8s-1-13",
-  "region": "lon1",
+  "region": "fra1",
   "version": "1.13.4-do.0",
   "node_pools": [
     {
