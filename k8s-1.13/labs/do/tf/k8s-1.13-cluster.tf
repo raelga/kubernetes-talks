@@ -1,11 +1,3 @@
-# Set the variable value in *.tfvars file
-# or using -var="do_token=..." CLI option
-variable "do_token" {}
-
-# Configure the DigitalOcean Provider
-provider "digitalocean" {
-  token = "${var.do_token}"
-}
 resource "digitalocean_kubernetes_cluster" "k8s-cluster" {
   name    = "BarcelonaCloud-k8s-1-13"
   region  = "lon1"
