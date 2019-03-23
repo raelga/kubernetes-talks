@@ -65,6 +65,13 @@ do-get-cluster: .do-checks do-get-cluster-id #* Retrieves the cluster informatio
 	"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)" \
 	| jq '.kubernetes_cluster | [ { name: .name, id: .id, status: .status.state, endpoint: .endpoint, creation: .created_at } ]'
 
+do-get-cluster-raw: .do-checks do-get-cluster-id #* Retrieves the cluster information from Digital Ocean API
+	@curl -sSL -X GET \
+	-H "Content-Type: application/json" \
+	-H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" \
+	"https://api.digitalocean.com/v2/kubernetes/clusters/$(CLUSTER_ID)" \
+	| jq '.'
+
 do-delete-cluster: .do-checks do-get-cluster-id #* Deletes the cluster using the Digital Ocean API
 	@echo -n "Ready to delete $(CLUSTER_NAME), are you sure? Ctrl+C to cancel " \
 	&& read ans
