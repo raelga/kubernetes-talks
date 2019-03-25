@@ -32,11 +32,11 @@ Traefik is an Edge Router, it means that it's the door to your platform, and tha
 
 It automatically discovers the right configuration for your services. The magic happens when Traefik inspects your infrastructure, where it finds relevant information and discovers which service serves which request.
 
-* WebUI
-
-The dashboard is the central place that shows you the current active routes
+* Dashboard
 
 .image images/traefik-concepts-webui.png _ 720
+
+The dashboard is the central place that shows you the current active routes
 
 * HTTPS & TLS
 
@@ -120,9 +120,9 @@ A *backend* can be composed by one or more *servers*, and by a load-balancing st
 
 Providers are the cluster technologies used as backend:
 
-- [[https://docs.traefik.io/v2.0/middlewares/docker][Docker]] -
-- [[https://docs.traefik.io/v2.0/middlewares/kubernetes][Kubernetes]] -
-- [[https://docs.traefik.io/v2.0/middlewares/file][File]] -
+- [[https://docs.traefik.io/v2.0/middlewares/docker][Docker]]
+- [[https://docs.traefik.io/v2.0/middlewares/kubernetes][Kubernetes]]
+- [[https://docs.traefik.io/v2.0/middlewares/file][File]]
 
 Providers only available in 1.0:
 
