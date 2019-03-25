@@ -1,0 +1,445 @@
+Traefik
+The Cloud Native Edge Router
+28 Mar 2018
+Tags: kubernetes, cloud native, traefik
+
+Rael Garcia
+Systems Engineer at CAPSiDE
+contact@rael.io
+
+@raelga
+
+https://rael.dev/kubernetes-talks
+
+
+* Traefik
+
+.image images/traefik-overview.png _ 760
+
+.caption [[https://docs.traefik.io/v2.0/][The Cloud Native Edge Router]]
+
+Traefik is an open-source Edge Router, it receives requests on behalf of your system and finds out which components are responsible for handling them.
+
+* Edge Router
+
+.image images/traefik-concepts-edge-router.png _ 560
+
+Traefik is an Edge Router, it means that it's the door to your platform, and that it intercepts and routes every incoming request: it knows all the logic and every rule that determine which services handle which requests (based on the path, the host, headers, and so on ...).
+
+* Auto Service Discovery
+
+.image images/traefik-concepts-auto-discovery.png _ 560
+
+It automatically discovers the right configuration for your services. The magic happens when Traefik inspects your infrastructure, where it finds relevant information and discovers which service serves which request.
+
+* WebUI
+
+The dashboard is the central place that shows you the current active routes
+
+.image images/traefik-concepts-webui.png _ 720
+
+* HTTPS & TLS
+
+- Traefik supports HTTPS & TLS, and is able to accept new certificates / updates over time (without being restarted).
+
+- TLS is enabled at the router level, but some options are configured in dedicated sections (tlsOptions & tlsStores).
+
+- You can configure Traefik to use an ACME provider (like Let's Encrypt) for automatic certificate generation.
+
+* Features
+
+- Continuously updates its configuration (No restarts!)
+- Supports multiple load balancing algorithms
+- Provides HTTPS to your microservices
+- Circuit breakers, retry
+- Clean web UI
+- Websocket, HTTP/2, GRPC ready
+- Provides metrics (Rest, Prometheus, Datadog, Statsd, InfluxDB)
+- Keeps access logs (JSON, CLF)
+- Fast
+- Exposes a Rest API
+- Packaged as a single binary file and available as a tiny official docker image
+
+* Traefik 1.0 - Internal architecture
+
+.image images/traefik-1.0-architecture.png _ 960
+
+.caption [[https://docs.traefik.io/basics/][Traefik 1.0 Internals]]
+
+* Traefik 1.0 - Internal architecture
+
+- Incoming requests end on *entrypoints*
+
+They are the network entry points into Traefik: _Listening_ _port_, _SSL_, _traffic_ _redirection..._
+
+- Traffic is then forwarded to a matching *frontend*.
+
+A *frontend* defines routes from entrypoints to *backends*.
+
+Routes are created using requests fields (_Host_, _Path_, _Headers..._) and can match or not a request.
+
+- The *frontend* will then send the request to a *backend*.
+
+A *backend* can be composed by one or more *servers*, and by a load-balancing strategy.
+
+- Finally, the *server* will forward the request to the corresponding *service*.
+
+* 
+
+.background images/traefik-2.0.png
+
+* Traefik 2.0 - Internal architecture
+
+.image images/traefik-2.0-architecture.png _ 960
+
+.caption [[https://docs.traefik.io/v2.0/routing/overview/][Traefik 2.0 Internals]]
+
+* Traefik 2.0 - Clear Responsibilities
+
+- [[https://docs.traefik.io/v2.0/providers/overview/][Providers]] discover the services that live on your infrastructure
+
+ IP, health, ...
+
+- [[https://docs.traefik.io/v2.0/routing/entrypoints/][Entrypoints]] listen for incomming traffic
+
+ ports, protocols, ...
+
+- [[https://docs.traefik.io/v2.0/routing/routers/][Routers]] analyse the requests
+
+ host, path, headers, SSL, ...
+
+- [[https://docs.traefik.io/v2.0/routing/services/][Services]] forward the request to your services
+
+ load balancing, ...
+
+- [[https://docs.traefik.io/v2.0/routing/middlewares/][Middlewares]] may update the request or make decisions based on the request
+
+ authentication, rate limiting, headers, ...
+
+* Traefik 2.0 - Providers
+
+Providers are the cluster technologies used as backend:
+
+- [[https://docs.traefik.io/v2.0/middlewares/docker][Docker]] -
+- [[https://docs.traefik.io/v2.0/middlewares/kubernetes][Kubernetes]] -
+- [[https://docs.traefik.io/v2.0/middlewares/file][File]] -
+
+Providers only available in 1.0:
+
+- Mesos / Marathon / Docker Swarm / Rancher
+- Consul Catalog / Consul / Etcd / Zookeeper / BoltDB / Eureka
+- Azure Service Fabric
+- Amazon ECS
+- Amazon DynamoDB
+- Rest
+
+* Traefik 2.0 - Configuration discovery
+
+Traefik uses your provider’s API to discover the routes to your services.
+
+.image images/traefik-2.0-architecture.png _ 960
+.caption [[https://docs.traefik.io/v2.0/providers/overview/][Traefik 2.0 Providers Overview]]
+
+* Traefik 2.0 - Entrypoints
+
+Entrypoints, in their most basic forms, are the open ports where requests will land.
+
+.image images/traefik-2.0-entrypoints.png _ 960
+.caption [[https://docs.traefik.io/v2.0/routing/entrypoints/][Traefik 2.0 Routing Entrypoints]]
+
+* Traefik 2.0 - Routers
+
+Routers connect incoming requests to your services.
+
+.image images/traefik-2.0-routers.png _ 960
+.caption [[https://docs.traefik.io/v2.0/routing/routers/][Traefik 2.0 Routing Routers]]
+
+* Traefik 2.0 - Routers
+
+Routers hold the rules that decide which service handles the request.
+
+- A router is in charge of connecting incoming requests to the services that can handle them.
+
+- In the process, routers may use pieces of *middleware* to update the request, or act before forwarding the request to the service.
+
+* Traefik 2.0 - Middleware
+
+Attached to the routers, pieces of middleware are a mean of tweaking the requests before they are sent to your service (or before the answer are sent to the clients).
+
+.image images/traefik-2.0-middleware.png _ 780
+.caption [[https://docs.traefik.io/v2.0/middlewares/overview/][Traefik 2.0 Middlewares]]
+
+* Traefik 2.0 - Middlewares
+
+*Middleware* *tool*
+
+- [[https://docs.traefik.io/v2.0/middlewares/chain][Chain]] -	Combine multiple pieces of middleware
+
+*Path* *Modifier*
+
+- [[https://docs.traefik.io/v2.0/middlewares/addprefix][AddPrefix]] -	Add a Path Prefix
+- [[https://docs.traefik.io/v2.0/middlewares/replacepath][ReplacePath]] -	Change the path of the request
+- [[https://docs.traefik.io/v2.0/middlewares/replacepathregex][ReplacePathRegex]] -	Change the path of the request
+- [[https://docs.traefik.io/v2.0/middlewares/stripprefix][StripPrefix]] -	Change the path of the request
+- [[https://docs.traefik.io/v2.0/middlewares/stripprefixregex][StripPrefixRegex]] -	Change the path of the request
+
+.image images/traefik-2.0-middleware-addprefix.png _ 640
+.caption [[https://docs.traefik.io/v2.0/middlewares/addprefix][AddPrefix - Prefixing the Path]]
+
+* Traefik 2.0 - Middlewares
+
+*Request* *lifecycle*
+
+- [[https://docs.traefik.io/v2.0/middlewares/buffering][Buffering]] -	Buffers the request/response
+- [[https://docs.traefik.io/v2.0/middlewares/circuitbreaker][CircuitBreaker]] -	Stop calling unhealthy services
+- [[https://docs.traefik.io/v2.0/middlewares/errorpages][ErrorPage]] -	Define custom error pages
+- [[https://docs.traefik.io/v2.0/middlewares/redirectscheme][RedirectScheme]] -	Redirecting the Client to a Different Scheme/Port
+- [[https://docs.traefik.io/v2.0/middlewares/redirectregex][RedirectRegex]] -	Redirecting the Client to a Different Location
+
+.image images/traefik-2.0-middleware-errorpage.png _ 640
+.caption [[https://docs.traefik.io/v2.0/middlewares/errorpages][ErrorPage - It Has Never Been Easier to Say That Something Went Wrong]]
+
+* Traefik 2.0 - Middlewares
+
+*Request* *lifecycle*
+
+- [[https://docs.traefik.io/v2.0/middlewares/ipwhitelist][IPWhiteList]] -	Limit the allowed client IPs
+- [[https://docs.traefik.io/v2.0/middlewares/maxconnection][MaxConnection]] -	Limiting the Number of Simultaneous Clients
+- [[https://docs.traefik.io/v2.0/middlewares/ratelimit][RateLimit]] -	Limit the call frequency
+- [[https://docs.traefik.io/v2.0/middlewares/retry][Retry]] -	Automatically retry the request in case of errors
+
+.image images/traefik-2.0-middleware-ratelimit.png _ 640
+.caption [[https://docs.traefik.io/v2.0/middlewares/ratelimit][RateLimit - Protection from Too Many Calls]]
+
+* Traefik 2.0 - Middlewares
+
+*Security*
+
+- [[https://docs.traefik.io/v2.0/middlewares/basicauth][BasicAuth]] -	Basic auth mechanism
+- [[https://docs.traefik.io/v2.0/middlewares/digestauth][DigestAuth]] -	Adds Digest Authentication
+- [[https://docs.traefik.io/v2.0/middlewares/forwardauth][ForwardAuth]] -	Authentication delegation
+
+*Content*
+
+- [[https://docs.traefik.io/v2.0/middlewares/headers][Headers]] -	Add / update
+- [[https://docs.traefik.io/v2.0/middlewares/compress][Compress]] -	Compress the response
+
+.image images/traefik-2.0-middleware-headers.png _ 640
+.caption [[https://docs.traefik.io/v2.0/middlewares/headers][Headers - Adding Headers to the Request / Response]]
+
+* Services
+
+Services represent the software hosted on your infrastructure.
+
+.image images/traefik-2.0-services.png _ 720
+.caption [[https://docs.traefik.io/v2.0/routing/services/][Traefik 2.0 Routing Services]]
+Traefik knows how to deal with multiple instances of your programs and use the services configuration to determine how to reach the actual program.
+
+* Traefik 2.0 - TCP Support
+
+Closes the [[https://github.com/containous/traefik/issues/10][GitHub Issue #10 - TCP support]]
+
+.image images/traefik-2.0-features-tcp.png _ 720
+.caption [[https://docs.traefik.io/v2.0/routing/routers/#configuring-tcp-routers][Traefik 2.0 TCP Routers]]
+
+Supports routing based on SNIs and multiple protocols in the same entrypoint
+
+* New in 2.0 - TCP Support
+
+  [entrypoints]
+    [entrypoints.the-one]
+        address = ":443"
+  [tcp]
+    [tcp.routers]
+        [tcp.routers.to-db-1]
+          rule = "HostSNI(`db-1.domain`)"
+          service = "db-1"
+          [tcp.routers.to-db-1.tls] # The route is for TLS requests only
+
+      [tcp.routers.to-db-2]
+         entrypoints = ["mongo-port"]
+         rule = "HostSNI(`db-2.domain`)"
+         service = "db-2"
+         [tcp.routers.to-db-2.tls] # The route is for TLS requests only
+
+  [http]
+    [http.routers]
+        [http.routers.my-api]
+          rule = "Host(`api.domain`)"
+          service = "my-api"
+
+* New in 2.0 - Kubernetes Custom Resource Definition (CRD)
+
+The Traefik Kubernetes provider used to be a *Kubernetes* *Ingress* *controller*, it would manage access to a cluster services by supporting the Ingress specification and was configured using *annotations* (lots of them in some situations).
+
+The Traefik *Kubernetes* *IngressRoute* *(CRD)* expands upon the functionality of the Ingress API, extending the specification to implement every Traefik feature.
+
+  apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    name: ingressroutes.traefik.containo.us
+
+  spec:
+    group: traefik.containo.us
+    version: v1alpha1
+    names:
+      kind: IngressRoute
+      plural: ingressroutes
+      singular: ingressroute
+    scope: Namespaced
+
+.caption [[https://docs.traefik.io/v2.0/providers/kubernetes-crd/][The Kubernetes Ingress Controller, The Custom Resource Way.]]
+
+* New in 2.0 - Kubernetes Custom Resource Definition (CRD)
+
+  apiVersion: traefik.containo.us/v1alpha1
+  kind: IngressRoute
+  metadata:
+    name: test.crd
+  spec:
+    entrypoints: [ web, web-secure ]
+    routes:
+      - match: Host(`traefik.io`) && PathPrefix(`/foo`)
+        kind: Rule
+        services:
+          - name: whoami1
+            port: 80
+            strategy: RoundRobin
+        middlewares:
+          - name: stripprefix
+      - match: Host(`containo.us`) && Method(`POST`)
+        kind: Rule
+        services:
+          - name: whoami2
+            port: 80
+    tls:
+      secretName: supersecret
+
+.caption [[https://docs.traefik.io/v2.0/providers/kubernetes-crd/][The Kubernetes Ingress Controller, The Custom Resource Way.]]
+
+* New in 2.0 - New Expressive Routing Rule Syntax
+
+An expressive syntax to define the router rules, with and, or, and parenthesis!
+
+.image images/traefik-2.0-features-syntax.png _ 720
+.caption [[https://docs.traefik.io/v2.0/routing/routers/#rule][Traefik 2.0 Routers Rules]]
+
+The available matchers being *Headers*, *HeadersRegexp*, *Host*, *HostRegexp*, *Method*, *Path*, *PathPrefix*, and *Query*. Since TCP is a whole different world, for now, it only supports a dedicated matcher: *HostSNI*.
+
+ rule = (Host(`api.domain`) && PathPrefix(`/v2`)) || Host(`api-v2.domain`)
+ rule = (Method(`DELETE`) || (Method(`POST`) && Query(`action`, `delete`))) && Host('api.domain')
+
+* New in 2.0 - Cross-Provider Support
+
+Allows to declare elements (middlewares, services, routers) in a provider, and to use them from a different one.
+
+.image images/traefik-2.0-features-cross-provider.png _ 640
+.caption [[https://docs.traefik.io/v2.0/providers/overview/][Traefik 2.0 Providers]]
+
+* New in 2.0 - Cross-Provider Support
+
+- Declare a router that point to a service in another provider
+
+- Share middleware configurations across providers
+
+Declare an authentication middleware in a configuration file...
+
+  [http.middlewares.my-users.basicauth]
+    users = ["test:$apr1$H6uskkkW$IgXLP6ewTrSuBkTrqE8wj/",
+            "test2:$apr1$d9hr9HBB$4HxwgUir3HP4EsggP/QNo0"]
+
+.caption Somewhere in a configuration file for the file *File* *provider*
+
+\...and use it from a Docker label:
+
+  your-container:
+      image: your-docker-image
+      labels:
+        - "traefik.http.routers.my-router.middlewares=file.my-users"
+
+.caption somewhere in a docker compose file, used by the *Docker* *provider*
+
+* New in 2.0 - TLS Termination per Route
+
+TLS termination or passthrough configuration is enabled on the Router level.
+
+.image images/traefik-2.0-features-tls-termination.png _ 640
+.caption [[https://docs.traefik.io/v2.0/routing/routers/#tls][Traefik 2.0 Routers TLS]]
+
+* New in 2.0 - TLS Termination per Route
+
+  [entrypoints]
+    [entrypoints.web-secure]
+        address = ":443"
+
+  [http]
+    [http.routers.to-service-1]
+        rule = "Host(`domain-1`)"
+        service = "service-1"
+        [http.routers.to-service-1.tls]
+          # terminates the tls connection and sends clear data to service 1
+  [tcp]
+
+    [tcp.routers.to-service-2]
+        rule = "HostSNI(`domain-2`)"
+        service = "service-2"
+        [tcp.routers.to-service-2.tls]
+          # terminates the tls connection and sends clear data to service 2
+
+    [tcp.routers.to-service-3]
+          rule = "HostSNI(`domain-3`)"
+          service = "service-3"
+          [tcp.routers.to-service-3.tls]
+            passthrough = true # sends encrypted data "as is" to service-3
+
+* New in 2.0 - A lot more comming
+
+- Remaining providers from 1.0 (2.0 only supports Docker, File and k8s)
+
+- TCP support on more providers (2.0 only support TCP on File provider)
+
+- Revamped Documentation
+
+- New WebUI
+
+- Labels, Key-Value Configuration, Tags, …
+
+- Metrics
+
+- UDP
+
+- YAML
+
+- TLS stores & options, canary, more documentation — everything is possible.
+
+Full changelog at [[https://github.com/containous/traefik/blob/master/CHANGELOG.md#v200-alpha1-2019-03-18][github.com/containous/traefik/blob/master/CHANGELOG.md]]
+
+* Credits, sources and more information
+
+- Traefik
+
+.link https://traefik.io/
+
+- Traefik GitHub
+
+.link https://github.com/containous/traefik
+
+- Back to Traefik 2.0 Containo.us blog post
+
+.link https://blog.containo.us/back-to-traefik-2-0-2f9aa17be305
+
+- Traefik 1.7 Documentation
+
+.link https://docs.traefik.io/v1.7/
+
+- Traefik 2.0 Documentation
+
+.link https://docs.traefik.io/v2.0/
+
+* Docker Demo
+
+.image images/traefik-examples-docker.png _ 680
+
+* Kubernetes Demo
+
+.image images/traefik-examples-kubernetes.png _ 920

@@ -22,3 +22,10 @@ For the labs, the main object is having several clusters deployed all over the u
   - [GCP managed Kubernetes with GKE](clouds/labs/gcp/#managed-kubernetes-with-google-kubernetes-engine-gke)
 - [Deploy Kubernetes in Azure](clouds/labs/azure/#deploy-kubernetes-in-microsoft-azure)
   - [Azure managed Kubernetes with AKS](clouds/labs/azure/#managed-kubernetes-with-azure-kubernetes-service-aks)
+
+## Traefik
+
+The main subject of this talk is introducing to the Traefik awesome Cloud Native Edge Router and the new features comming in Traefik 2.0.
+
+- [Traefik Slides Live](https://talks.godoc.org/github.com/raelga/kubernetes-talks/traefik/traefik.slide)
+-[Traefik Slides Source](traefik/)
