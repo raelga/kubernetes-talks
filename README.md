@@ -4,12 +4,14 @@
 
 The main subject of this talk is to have an overview on the microservices architectures. Then, starts an introduction to the kubernetes architecture, core services and objects: pods, controllers, deployments and sets.
 
-[Kubernetes 101 Slides](101/)
+[Kubernetes 101 Slides](https://talks.godoc.org/github.com/raelga/kubernetes-talks/101/kubernetes-101.slide)
+[Kubernetes 101 Slides Source](101/)
 
 ## Kubernetes Clouds
 
 The main subject of this talk is viewing the differences between each managed kubernetes solution offered by AWS, Azure and GCP.
 
+[Kubernetes Clouds Slides](https://talks.godoc.org/github.com/raelga/kubernetes-talks/clouds/kubernetes-clouds.slide)
 [Kubernetes Clouds Slides](clouds/)
 
 For the labs, the main object is having several clusters deployed all over the using each managed (or not) solution and deploy the same application using the common interface provided by Kubernetes.
@@ -27,5 +29,5 @@ For the labs, the main object is having several clusters deployed all over the u
 
 The main subject of this talk is introducing to the Traefik awesome Cloud Native Edge Router and the new features comming in Traefik 2.0.
 
-- [Traefik Slides Live](https://talks.godoc.org/github.com/raelga/kubernetes-talks/traefik/traefik.slide)
--[Traefik Slides Source](traefik/)
+- [Traefik Slides](https://talks.godoc.org/github.com/raelga/kubernetes-talks/traefik/traefik.slide)
+- [Traefik Slides Source](traefik/)

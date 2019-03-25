@@ -8,7 +8,7 @@ Live slides are available at:
 
 https://talks.godoc.org/github.com/raelga/kubernetes-talks/traefik/traefik.slide
 
-Plain text slides in [traefik.slide](ktraefik.slide).
+Plain text slides in [traefik.slide](traefik.slide).
 
 ## Traefik Labs
 
