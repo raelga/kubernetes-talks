@@ -1,0 +1,15 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kubernetes-dashboard.crd
+
+spec:
+  entrypoints:
+    - web
+  routes:
+  - match: Host(`dashboard.do.rael.io`)
+    kind: Rule
+    priority: 12
+    services:
+    - name: kubernetes-dashboard
+      port: 80

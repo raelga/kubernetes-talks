@@ -1,0 +1,12 @@
+{
+  "name": "barcelonacloud-k8s-1-13",
+  "region": "fra1",
+  "version": "1.13.4-do.0",
+  "node_pools": [
+    {
+      "name": "barcelonacloud-k8s-1-13-np",
+      "size": "s-2vcpu-2gb",
+      "count": 1
+    }
+  ]
+}
