@@ -20,7 +20,7 @@ help: #* Shows this help
 		echo "Get your Digital Ocean API TOKEN at https://cloud.digitalocean.com/account/api/tokens"; \
 		exit 1; \
 	}
-	@which -s jq || { echo "This target requires jq."; exit 1; }
+	@which jq > /dev/null || { echo "This target requires jq."; exit 1; }
 
 ##
 ## Digital Ocean Native targets
@@ -28,7 +28,7 @@ help: #* Shows this help
 ##
 
 .do-checks: .common-checks ## Private target to check the api targets requirements
-	@which -s curl || { echo "This target requires curl."; exit 1; }
+	@which curl > /dev/null || { echo "This target requires curl."; exit 1; }
 
 do-create-cluster: .do-checks #* Creates the cluster using only the Digital Ocean API
 	@curl -sSL -X POST  \
@@ -102,7 +102,7 @@ do-k8s-kubeconfig-bash: do-get-k8s-kubeconfig #* Spawns a shell with the cluster
 ##
 
 .tf-checks: .common-checks  ## Private target to check the terraform targets requirements
-	@which -s terraform || { echo "This target requires terraform."; exit 1; }
+	@which terraform > /dev/null|| { echo "This target requires terraform."; exit 1; }
 
 tf-init: .tf-checks #* Installs  terraform providers based on the templates in ./tf/
 	terraform init ./tf/
