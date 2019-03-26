@@ -9,6 +9,7 @@ RUN go get golang.org/x/tools/cmd/present
 COPY 101 /slides/101
 COPY clouds /slides/clouds
 COPY traefik /slides/traefik
+COPY providers /slides/providers
 
 EXPOSE 3999
 WORKDIR /slides

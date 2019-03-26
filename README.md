@@ -25,7 +25,18 @@ For the labs, the main object is having several clusters deployed all over the u
 - [Deploy Kubernetes in Azure](clouds/labs/azure/#deploy-kubernetes-in-microsoft-azure)
   - [Azure managed Kubernetes with AKS](clouds/labs/azure/#managed-kubernetes-with-azure-kubernetes-service-aks)
 
-## Traefik
+## Providers
+
+### Digital Ocean
+
+The main subject of this talk is introducing to the Digital Ocean cloud platform and their Managed Kubernetes solution.
+
+- [Digital Ocean Slides](https://talks.godoc.org/github.com/raelga/kubernetes-talks/providers/do/digital-ocean.slide)
+- [Digital Ocean Slides Source](providers/do/)
+
+## Tools
+
+### Traefik
 
 The main subject of this talk is introducing to the Traefik awesome Cloud Native Edge Router and the new features comming in Traefik 2.0.
 
