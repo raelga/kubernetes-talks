@@ -1,0 +1,239 @@
+Digital Ocean
+Cloud Computing, Simplicity at Scale
+28 Mar 2019
+Tags: kubernetes
+
+Rael Garcia
+Systems Engineer at CAPSiDE
+contact@rael.io
+
+@raelga
+
+https://rael.dev/kubernetes-talks
+
+* Digital Ocean
+
+.image images/do-logo.png _ 480
+
+* Digital Ocean
+
+DigitalOcean, Inc. is an American cloud infrastructure provider headquartered in New York City with data centers worldwide.
+
+.image images/do-main.png _ 960
+
+As of January 2018, DigitalOcean was the [[http://trends.netcraft.com/www.digitalocean.com][third-largest]] hosting company in the world in terms of web-facing computers.
+
+* Droplets
+
+Flexible Linux-based virtual machines (VMs) that run on top of virtualized hardware, up and running in less that 55 seconds.
+
+.image images/do-droplets.svg _ 500
+.caption [[https://www.digitalocean.com/docs/droplets/][DigitalOcean Droplets]]
+
+Pricing begins at $5/mo for 1 vCPU and 1 GB of RAM.
+
+* Droplets
+
+.image images/do-droplets-sizes.png _ 960
+.caption [[https://www.digitalocean.com/docs/droplets/][DigitalOcean Droplets]]
+
+* Custom Images
+
+Custom images let you import your custom Linux and Unix-like images. You can create Droplets based on any of your custom images (raw, qcow2, vdi, vmdk...).
+
+.image images/do-images.svg _ 480
+.caption [[https://www.digitalocean.com/docs/images/custom-images/][DigitalOcean Custom Images]]
+
+* Marketplace
+
+The home for One-Click applications, which are pre-built images that let you create Droplets with software and features already set up for you.
+
+.image images/do-marketplace.png _ 1024
+.caption [[https://www.digitalocean.com/products/marketplace/][DigitalOcean Marketplace]]
+
+* Block Storage Volumes
+
+Add more storage space to your Droplet or mix-and-match compute and storage to suit your application's needs.
+
+.image images/do-block-storage.svg _ 480
+.caption [[https://www.digitalocean.com/docs/volumes/][DigitalOcean Block Storage Volumes]]
+
+$0.10 per gigabyte per month.
+
+* Backups
+
+Affordable and easy-to-use automated system-level backups at regular intervals, allowing you to easily revert or spin up new instances off of the created images.
+
+.image images/do-droplets-backups.svg _ 480
+.caption [[https://www.digitalocean.com/docs/images/backups][DigitalOcean Image Backups]]
+
+Pricing for backups is 20% of the cost of the virtual machine.
+
+* Snapshots
+
+A snapshot could be taken prior to making any drastic changes to a server configuration, so that, you will have a version to revert back to.
+
+.image images/do-droplets-snapshots.svg _ 480
+.caption [[https://www.digitalocean.com/docs/images/snapshots][DigitalOcean Image Snapshots]]
+
+Pricing for snapshots is $0.05 per gigabyte per month.
+
+* Monitoring
+
+Collect metrics on visibility, monitor Droplet performance, and receive alerts when problems arise in your infrastructure .
+
+.image images/do-droplets-monitoring.svg _ 480
+.caption [[https://www.digitalocean.com/docs/monitoring/][DigitalOcean Monitoring]]
+
+No additional cost.
+
+* Cloud Firewalls
+
+Easily secure your infrastructure and define what services are visible on your Droplets or groups by identified by tag.
+
+.image images/do-droplets-firewalls.svg _ 480
+.caption [[https://www.digitalocean.com/docs/networking/firewalls/][DigitalOcean Network Firewalls]]
+
+Free and perfect for staging and production deployments.
+
+* Spaces Object Storage
+
+S3-compatible object storage with a built-in CDN that makes scaling easy, reliable, and affordable.
+
+.image images/do-spaces.svg _ 480
+.caption [[https://www.digitalocean.com/docs/spaces/overview/][DigitalOcean Spaces]]
+
+From $5 up to 250GB of data storage, $0.02 per additional GB stored.
+
+* Spaces Object Storage
+
+Spaces *$5* plan
+
+- Up to *250GB* of data storage
+- Up to *1TB* of outbound data transfer
+- No charge for inbound data transfer
+
+Monthly Overages Fees:
+
+- Data Storage: *$0.02* per GB
+- Outbound Data Transfer: *$0.01* per GB
+- Inbound Data Transfer: *Always* *free*
+
+Spaces are currently available in NYC3, AMS3, SFO2, and SGP1. The *Spaces* *CDN* is available in all regions where Spaces are available and many global edge locations.
+
+.link https://www.digitalocean.com/products/spaces/
+
+* Private networking
+
+DigitalOcean’s private networking creates a second network interface for Droplets that is unreachable from the internet.
+
+.image images/do-private-networks.png _ 760
+
+.caption [[https://www.digitalocean.com/docs/networking/private-networking/][DigitalOcean Private Networking]]
+
+Private networking support is provided at no cost. Traffic over private networks is free.
+
+* Floating IPs
+
+A DigitalOcean Floating IP is a publicly-accessible static IP address that you can assign to a Droplet. It provides an additional static address you can use to access a Droplet without replacing or changing the Droplet’s original public IP.
+
+.image images/do-floating-ip.svg _ 280
+.caption [[https://www.digitalocean.com/docs/networking/floating-ips/][DigitalOcean Domains and DNS]]
+
+Free when assigned to a Droplet, $0.006/hour if reserved but not assigned.
+
+* Load Balancers
+
+Load Balancers distribute incoming traffic across your infrastructure to increase your application's availability.
+
+.image images/do-load-balancers.svg _ 480
+.caption [[][DigitalOcean]]
+
+Load balancers cost $10/month, billed hourly at $0.015.
+
+* Load Balancers
+
+.background images/do-load-balancers-bg.svg
+
+- Supports TPC, HTTP, HTTPS and HTTP/2, with SSL termination or passthrough.
+
+- Backends defined by Droplet names or tags
+
+- Compatible with DigitalOcean Kubernetes
+
+- High Availability and Redundancy
+
+- Let’s Encrypt SSL Certificates
+
+- PROXY Protocol
+
+* Domains and DNS
+
+DigitalOcean is not a domain name registrar, but does provide a DNS hosting service. When you manage your infrastructure on DigitalOcean, you may find it more convenient to manage your domains here as well.
+
+.image images/do-domains.svg _ 480
+.caption [[https://www.digitalocean.com/docs/networking/dns/][DigitalOcean Domains and DNS]]
+
+DNS management is available at no additional cost.
+
+* Limited Availability products
+
+Limited Availability offerings are fully functional products and features that are enabled for specific user groups as part of an incremental roll-out strategy.
+
+- *Customer* *availability*: Rolled out to specific segments of users in addition to or in place of existing functionality.
+
+- *Support*: Same level of support as General Availability features and products.
+
+- *Production* *readiness*: They are expected, but not guaranteed, to perform for production-level workloads.
+
+- *Regions*: May or may not be available in all of DigitalOcean’s geographic regions.
+
+- *Charges*: Standard pricing and billing procedures and are charged (or not) in the same way that General Availability offerings are, except for SLA refunds.
+
+- *Retirement*: In the event we retire a product before General Availability, we will strive to follow the Retirement procedures outlined below.
+
+* Managed Databases (Limited Availability)
+
+Managed database service offers a database cluster approach that simplifies the creation of highly available, multi-region, redundant database services.
+
+.image images/do-managed-databases.png _ 860
+.caption [[https://www.digitalocean.com/docs/databases/][DigitalOcean Managed Databases]]
+
+Pricing begin at $15/month for a single node cluster with 1GB of RAM.
+
+* Managed Kubernetes (Limited Availability)
+
+.image images/do-managed-kubernetes.png _ 920
+.caption [[https://www.digitalocean.com/docs/kubernetes/][Kubernetes on DigitalOcean]]
+
+Pricing begin at $10/month for a single node cluster with 1 vCPU and 2GB of RAM.
+
+* Managed Kubernetes (Limited Availability)
+
+- Cloud Controller: *digitalocean-cloud-controller-manager*
+
+Kubernetes cloud-controller-manager for DigitalOcean (beta)
+
+.link ttps://github.com/digitalocean/digitalocean-cloud-controller-manager
+
+- Cluster Networking: *Cillium*
+
+Cilium is open source software for providing and transparently securing network connectivity and loadbalancing between application workloads such as application containers or processes.
+
+.link https://github.com/cilium/cilium/
+
+- Persistent Data: *DigitalOcean* *CSI* *plugin*
+
+A Container Storage Interface (CSI) Driver for DigitalOcean Block Storage.
+
+.link https://github.com/digitalocean/csi-digitalocean
+
+* Demo
+
+.background images/do-sammy-load.gif
+
+* Try at home
+
+.image images/do-credit.gif
+
+.caption $100 in credit over 60 days for Digital Ocean using [[https://do.rael.dev]]
