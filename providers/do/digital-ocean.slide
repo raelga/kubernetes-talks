@@ -228,6 +228,14 @@ A Container Storage Interface (CSI) Driver for DigitalOcean Block Storage.
 
 .link https://github.com/digitalocean/csi-digitalocean
 
+* Developer friendly
+
+Detailed guides. Clear documentation. Powerful endpoints.
+
+.image images/do-developers.png _ 980
+
+.link https://developers.digitalocean.com/documentation/
+
 * Community
 
 Library of DevOps, software development, and production systems tutorials—all based on free and open-source software.
