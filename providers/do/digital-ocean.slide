@@ -176,6 +176,32 @@ DigitalOcean is not a domain name registrar, but does provide a DNS hosting serv
 
 DNS management is available at no additional cost.
 
+* Developer friendly
+
+Detailed guides. Clear documentation. Powerful endpoints.
+
+.image images/do-developers.png _ 980
+
+.link https://developers.digitalocean.com/documentation/
+
+* Community
+
+Library of DevOps, software development, and production systems tutorials—all based on free and open-source software.
+
+.image images/do-community.png _ 860
+.caption [[https://www.digitalocean.com/community][Digital Ocean Community]]
+
+* Write for DOnations
+
+Write for DOnations is a program that *supports* *people* *who* *create* *content* for DigitalOcean’s public knowledge base.
+
+The typical payout for community authors in the program is $300 for tutorial content.
+
+And DigitalOcean additionally matches this payout in the form of a contribution from DigitalOcean to the author's choice of *tech-focused* *nonprofits*.
+
+.image images/do-write-for-donations.svg _ 540
+.caption [[https://www.digitalocean.com/write-for-donations/][Write for DOnations]]
+
 * Limited Availability products
 
 Limited Availability offerings are fully functional products and features that are enabled for specific user groups as part of an incremental roll-out strategy.
@@ -227,32 +253,6 @@ Cilium is open source software for providing and transparently securing network 
 A Container Storage Interface (CSI) Driver for DigitalOcean Block Storage.
 
 .link https://github.com/digitalocean/csi-digitalocean
-
-* Developer friendly
-
-Detailed guides. Clear documentation. Powerful endpoints.
-
-.image images/do-developers.png _ 980
-
-.link https://developers.digitalocean.com/documentation/
-
-* Community
-
-Library of DevOps, software development, and production systems tutorials—all based on free and open-source software.
-
-.image images/do-community.png _ 860
-.caption [[https://www.digitalocean.com/community][Digital Ocean Community]]
-
-* Write for DOnations
-
-Write for DOnations is a program that *supports* *people* *who* *create* *content* for DigitalOcean’s public knowledge base.
-
-The typical payout for community authors in the program is $300 for tutorial content.
-
-And DigitalOcean additionally matches this payout in the form of a contribution from DigitalOcean to the author's choice of *tech-focused* *nonprofits*.
-
-.image images/do-write-for-donations.svg _ 540
-.caption [[https://www.digitalocean.com/write-for-donations/][Write for DOnations]]
 
 * Demo
 
