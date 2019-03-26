@@ -228,6 +228,24 @@ A Container Storage Interface (CSI) Driver for DigitalOcean Block Storage.
 
 .link https://github.com/digitalocean/csi-digitalocean
 
+* Community
+
+Library of DevOps, software development, and production systems tutorials—all based on free and open-source software.
+
+.image images/do-community.png _ 860
+.caption [[https://www.digitalocean.com/community][Digital Ocean Community]]
+
+* Write for DOnations
+
+Write for DOnations is a program that *supports* *people* *who* *create* *content* for DigitalOcean’s public knowledge base.
+
+The typical payout for community authors in the program is $300 for tutorial content.
+
+And DigitalOcean additionally matches this payout in the form of a contribution from DigitalOcean to the author's choice of *tech-focused* *nonprofits*.
+
+.image images/do-write-for-donations.svg _ 540
+.caption [[https://www.digitalocean.com/write-for-donations/][Write for DOnations]]
+
 * Demo
 
 .background images/do-sammy-load.gif
