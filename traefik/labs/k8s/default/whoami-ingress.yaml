@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: whoami-web
+  namespace: default
+spec:
+  rules:
+  - host: whoami.traefik.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: whoami
+          servicePort: web

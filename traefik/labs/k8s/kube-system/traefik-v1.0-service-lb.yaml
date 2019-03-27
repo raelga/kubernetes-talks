@@ -1,0 +1,18 @@
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik-v1
+  namespace: kube-system
+spec:
+  type: LoadBalancer
+  selector:
+    k8s-app: traefik-v1
+  ports:
+    - protocol: TCP
+      port: 80
+      name: web
+    - protocol: TCP
+      port: 8080
+      name: admin

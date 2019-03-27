@@ -1,0 +1,16 @@
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: traefik-web-ui
+  namespace: kube-system
+spec:
+  rules:
+  - host: traefik-ui.traefik.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: traefik-v1
+          servicePort: web

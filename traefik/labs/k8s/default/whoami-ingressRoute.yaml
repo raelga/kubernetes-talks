@@ -1,0 +1,31 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: whoami-notls
+spec:
+  entrypoints:
+    - web
+  routes:
+  - match: Host(`whoami.traefik-v2.rael.io`) && PathPrefix(`/notls`)
+    kind: Rule
+    services:
+    - name: whoami
+      port: 80
+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: whoami-tls
+spec:
+  entrypoints:
+    - websecure
+  routes:
+  - match: Host(`whoami.traefik-v2.rael.io`) && PathPrefix(`/tls`)
+    kind: Rule
+    services:
+    - name: whoami
+      port: 80
+  tls:
+    secretName: ""
