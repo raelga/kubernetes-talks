@@ -4,7 +4,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: traefik-v1
-  namespace: kube-system
+  namespace: traefik
 spec:
   type: LoadBalancer
   selector:

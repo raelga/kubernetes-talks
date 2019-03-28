@@ -6,7 +6,7 @@ spec:
   entrypoints:
     - web
   routes:
-  - match: Host(`whoami.traefik-v2.rael.io`) && PathPrefix(`/notls`)
+  - match: Host(`whoami.traefik-v2.do.rael.io`) && PathPrefix(`/notls`)
     kind: Rule
     services:
     - name: whoami
@@ -22,10 +22,31 @@ spec:
   entrypoints:
     - websecure
   routes:
-  - match: Host(`whoami.traefik-v2.rael.io`) && PathPrefix(`/tls`)
+  - match: Host(`whoami.traefik-v2.do.rael.io`) && PathPrefix(`/tls`)
     kind: Rule
     services:
     - name: whoami
       port: 80
+  tls:
+    secretName: ""
+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: whoami-login
+spec:
+  entrypoints:
+    - websecure
+  routes:
+  - match: Host(`whoami.traefik-v2.do.rael.io`) && PathPrefix(`/login`)
+    kind: Rule
+    services:
+    - name: whoami
+      port: 80
+    middlewares:
+      - name: myheaders
+        namespace: traefik
   tls:
     secretName: ""

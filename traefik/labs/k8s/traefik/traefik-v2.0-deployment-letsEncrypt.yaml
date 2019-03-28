@@ -3,7 +3,7 @@
 kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
-  namespace: kube-system
+  namespace: traefik
   name: traefik-v2
   labels:
     app: traefik-v2
@@ -13,6 +13,8 @@ spec:
   selector:
     matchLabels:
       app: traefik-v2
+  strategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -22,13 +24,13 @@ spec:
       serviceAccountName: traefik-v2
       containers:
         - name: traefik
-          image: traefik:v2.0
+          image: traefik:v2.0.0-alpha2-alpine
           args:
             - --global.debug
             - --api
             - --accesslog
-            - --entrypoints=Name:web Address::8000
-            - --entrypoints=Name:websecure Address::4443
+            - --entrypoints=Name:web Address::80
+            - --entrypoints=Name:websecure Address::443
             - --providers.kubernetescrd
             - --providers.kubernetescrd.trace
             - --acme
@@ -43,8 +45,8 @@ spec:
             - --acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
           ports:
             - name: web
-              containerPort: 8000
+              containerPort: 80
             - name: websecure
-              containerPort: 4443
+              containerPort: 443
             - name: admin
               containerPort: 8080

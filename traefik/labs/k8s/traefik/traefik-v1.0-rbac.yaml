@@ -42,4 +42,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: traefik-v1
-  namespace: kube-system
+  namespace: traefik

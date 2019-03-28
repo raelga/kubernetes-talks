@@ -41,5 +41,11 @@ htpasswd -c htpasswd-secret traefik
 kubectl create secret generic super-secure-password --from-file htpasswd-secret
 ```
 
+## Install Traefik v2.0
+
+```
+
+```
 
 k logs -n kube-system -f $(k get pod -n kube-system -l name=traefik-v2 -o name)
+

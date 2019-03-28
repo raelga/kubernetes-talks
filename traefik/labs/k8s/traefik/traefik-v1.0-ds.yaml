@@ -3,15 +3,15 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: traefik-v1-controller
-  namespace: kube-system
+  name: traefik-v1
+  namespace: traefik
 
 ---
 kind: DaemonSet
 apiVersion: extensions/v1beta1
 metadata:
-  name: traefik-v1-controller
-  namespace: kube-system
+  name: traefik-v1
+  namespace: traefik
   labels:
     k8s-app: traefik-v1
 spec:
@@ -21,7 +21,7 @@ spec:
         k8s-app: traefik-v1
         name: traefik-v1
     spec:
-      serviceAccountName: traefik-v1-controller
+      serviceAccountName: traefik-v1
       terminationGracePeriodSeconds: 60
       containers:
       - image: traefik

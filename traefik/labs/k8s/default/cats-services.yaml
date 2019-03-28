@@ -1,0 +1,77 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: liam
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: cat
+    cat: liam
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lia
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: cat
+    cat: lia
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neu
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: cat
+    cat: neu
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blanca
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: cat
+    cat: blanca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gatet
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: cat
+    cat: gatet
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cat
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: cat

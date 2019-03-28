@@ -1,0 +1,47 @@
+# Cache-Control: no-cache, no-store, must-revalidate
+# Pragma: no-cache
+# Expires: 0
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: no-cache
+spec:
+  chain:
+    middlewares:
+      - cache-control-no
+      - pragma-no-cache
+      - expires-0
+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: cache-control-no
+spec:
+  headers:
+    customRequestHeaders:
+      Cache-Control: no-cache, no-store, must-revalidate
+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: pragma-no-cache
+spec:
+  headers:
+    customRequestHeaders: 
+      Pragma: no-cache
+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: expires-0
+spec:
+  headers:
+    customRequestHeaders:
+      Expires: "0"

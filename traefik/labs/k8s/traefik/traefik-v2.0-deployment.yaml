@@ -1,0 +1,52 @@
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  namespace: traefik
+  name: traefik-v2
+  labels:
+    app: traefik-v2
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik-v2
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: traefik-v2
+        name: traefik-v2
+    spec:
+      serviceAccountName: traefik-v2
+      containers:
+        - name: traefik
+          image: traefik:v2.0.0-alpha2-alpine
+          args:
+            - --global.debug
+            - --api
+            - --accesslog
+            - --entrypoints=Name:web Address::80
+            - --entrypoints=Name:websecure Address::443
+            - --providers.kubernetescrd
+            - --providers.kubernetescrd.trace
+            - --acme
+            - --acme.acmelogging
+            - --acme.tlschallenge
+            - --acme.onhostrule
+            - --acme.email=domains@rael.io
+            - --acme.entrypoint=websecure
+            - --acme.storage=acme.json
+            # Please note that this is the staging Let's Encrypt server. Once you get things
+            # working, you should remove that whole line altogether.
+            - --acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+          ports:
+            - name: web
+              containerPort: 80
+            - name: websecure
+              containerPort: 443
+            - name: admin
+              containerPort: 8080

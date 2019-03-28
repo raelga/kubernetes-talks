@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: catnary
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/service-weights: |
+      liam: 5
+      lia: 5
+      neu: 80
+      blanca: 5
+      gatet: 5
+spec:
+  rules:
+  - host: catnary.traefik-v1.do.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: liam
+          servicePort: http
+      - path: /
+        backend:
+          serviceName: lia
+          servicePort: http
+      - path: /
+        backend:
+          serviceName: neu
+          servicePort: http
+      - path: /
+        backend:
+          serviceName: blanca
+          servicePort: http
+      - path: /
+        backend:
+          serviceName: gatet
+          servicePort: http

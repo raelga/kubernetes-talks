@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cats-lb
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: cat

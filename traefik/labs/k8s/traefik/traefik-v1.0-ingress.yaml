@@ -4,7 +4,8 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: traefik-web-ui
-  namespace: kube-system
+  namespace: traefik
+  
 spec:
   rules:
   - host: traefik-ui.traefik.rael.io
