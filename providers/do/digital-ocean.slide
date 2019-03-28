@@ -155,7 +155,7 @@ Load balancers cost $10/month, billed hourly at $0.015.
 
 .background images/do-load-balancers-bg.svg
 
-- Supports TPC, HTTP, HTTPS and HTTP/2, with SSL termination or passthrough.
+- Supports TCP, HTTP, HTTPS and HTTP/2, with SSL termination or passthrough.
 
 - Backends defined by Droplet names or tags
 
