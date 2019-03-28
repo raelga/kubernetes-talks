@@ -1,0 +1,17 @@
+# file.toml
+
+[frontends]
+
+  [frontends.github]
+  backend = "github"
+  passHostHeader = false
+
+    [frontends.github.routes.main]
+    rule = "Host:chell.rael.io"
+
+[backends]
+
+        [backends.github]
+
+                [backends.github.servers.github]
+                url = "https://raelga.github.io:443"

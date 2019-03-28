@@ -1,0 +1,158 @@
+info:
+  title: GCE Instance template
+  author: Rael Garcia <me@rael.io>
+  description: Creates a Google Cloud Engine instance with disks, SA and firewall rules
+  version: 1.0
+
+properties:
+
+  description:
+    type: string
+    description: >
+      An optional description of this resource. Provide this property when you create the resource.
+
+  region:
+    type: string
+    default: europe-west1
+    description: >
+      The region where the instance resides.
+
+  zone:
+    type: string
+    default: europe-west1-b
+    description: >
+      The zone where the instance resides.
+
+  network:
+    type: string
+    default: default
+    description: >
+      The network where the interface will be attached.
+
+  subnetwork:
+    type: string
+    default: default
+    description: >
+      The subnetwork where the network interface will be attached.
+
+  bootDiskImage:
+    type: string
+    default: https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/family/debian-9
+    description: >
+      The source image to create the instance boot disk.
+
+  bootDiskSizeGb:
+    type: integer
+    minimum: 10
+    maximum: 100
+    default: 10
+    description: >
+      Specifies the size of the disk in base-2 GB.
+
+  machineType:
+    type: string
+    default: f1-micro
+    descripton: >
+      Full or partial URL of the machine type resource to use for this instance,
+      in the format: zones/zone/machineTypes/machine-type.
+
+  reservedPublicAddress:
+    type: boolean
+    default: false
+    description: >
+      Attach an ephemeral instance public IP address.
+
+  ephemeralPublicAddress:
+    type: boolean
+    default: false
+    description: >
+      Attach an ephemeral instance public IP address.
+
+  deletionProtection:
+    type: boolean
+    default: true
+    description: >
+      Whether the resource should be protected against deletion.
+
+  canIpForward:
+    type: boolean
+    default: false
+    description: >
+      Allows this instance to send and receive packets with non-matching
+      destination or source IPs. This is required if you plan to use this
+      instance to forward routes. For more information:
+        https://cloud.google.com/vpc/docs/using-routes#canipforward
+
+  preemptible:
+    type: boolean
+    default: false
+    description: >
+      Defines whether the instance is preemptible.
+      This can only be set during instance creation, it cannot be set or
+      changed after the instance has been created.
+
+  onHostMaintenance:
+    enum:
+      - MIGRATE
+      - TERMINATE
+    default: MIGRATE
+    description: >
+      Defines the maintenance behavior for this instance.
+      For standard instances, the default behavior is MIGRATE.
+      For preemptible instances, the only possible behavior is TERMINATE.
+      For more information, see Setting Instance Scheduling Options:
+        https://cloud.google.com/compute/docs/instances/setting-instance-scheduling-options
+
+  automaticRestart:
+    type: boolean
+    default: true
+    description: >
+      Specifies whether the instance should be automatically restarted if it
+      is terminated by Compute Engine (not terminated by a user).
+      You can only set the automatic restart option for standard instances.
+      Preemptible instances cannot be automatically restarted.
+
+  firewall:
+    type: array
+    default: []
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+          default: >
+            Human friendly rule name
+        policy:
+          enum:
+            - allow
+            - deny
+          default: allow
+          description: >
+            Each rule specifies a protocol and port-range tuple that describes
+            a permitted or denied connection.
+        protocol:
+          enum:
+            - tcp
+            - udp
+            - icmp
+            - esp
+            - ah
+            - ipip
+            - sctp
+          default: tcp
+          description: >
+            RThe IP protocol to which this rule applies.
+            The protocol type is  required when creating a firewall rule.
+            This value can either be one of the following well known protocol
+            strings (tcp, udp, icmp, esp, ah, ipip, sctp).
+        port:
+          type: array
+          items:
+            type: number
+            minimum: 0
+            maximum: 65535
+            description: >
+              An optional list of ports to which this rule applies.
+              This field is only applicable for UDP or TCP protocol.
+              Each entry must be either an integer or a range.
+              If not specified, this rule applies to connections through any port.

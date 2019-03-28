@@ -1,0 +1,36 @@
+# traefik.toml
+
+logLevel = "DEBUG"
+
+[entryPoints]
+
+  [entryPoints.http]
+  address = ":80"
+
+  [entryPoints.https]
+  address = ":443"
+
+  [entryPoints.mongo]
+  address = ":27017"
+
+[api]
+address = "traefik-v2.docker.rael.io:80"
+
+[providers]
+
+  [providers.docker]
+  domain = "traefik-v2.docker.rael.io"
+  watch = true
+
+[file]
+
+  [http.middlewares]
+
+    [http.middlewares.secured.chain]
+      middlewares = [ "known-ips", "auth-users" ]
+
+    [http.middlewares.auth-users.basicauth]
+      users = ["rael:$apr1$zK14IwpO$tctjsucQ4CcIlStnxT.R/."]
+
+    [http.middlewares.known-ips.ipWhiteList]
+      sourceRange = [ "54.246.153.221" ]

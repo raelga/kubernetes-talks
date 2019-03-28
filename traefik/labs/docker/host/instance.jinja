@@ -1,0 +1,141 @@
+resources:
+
+- name: {{ name }}-instance-sa
+  type: iam.v1.serviceAccount
+  properties:
+    accountId: {{ name }}-instance
+    displayName: VM Service Account for the {{ name }} instance
+
+- name: {{ name }}-internal-address
+  type: compute.v1.address
+  properties:
+    addressType: INTERNAL
+    region: {{ properties['region'] }}
+    subnetwork: {{ "projects/{}/regions/{}/subnetworks/{}".format(
+      env['project'], properties['region'], properties['subnetwork']
+    ) }}
+
+{% if properties['allowSSH'] %}
+- name: {{ name }}-allow-ssh-fw
+  type: compute.v1.firewall
+  properties:
+    network: {{ "projects/{}/global/networks/{}".format(
+      env['project'], properties['network']
+    ) }}
+    targetTags:
+      - {{ name }}-instance
+    allowed:
+      - IPProtocol: tcp
+        ports: [ 22 ]
+{% endif %}
+
+{% if properties['reservedPublicAddress'] %}
+- name: {{ name }}-external-address
+  type: compute.v1.address
+  properties:
+    addressType: EXTERNAL
+    region: {{ properties['region'] }}
+{% endif %}
+
+- name: {{ name }}
+  type: compute.v1.instance
+  properties:
+    zone: {{ properties['zone'] }}
+    machineType: {{ "projects/{}/zones/{}/machineTypes/{}".format(
+      env['project'], properties['zone'], properties['machineType']
+    ) }}
+    canIpForward: {{ properties['canIpForward'] }}
+    deletionProtection: {{ properties['deletionProtection'] }}
+    {# Scheduling #}
+    scheduling:
+      preemptible: {{ properties['preemptible'] }}
+      {% if properties['preemptible'] %}
+      onHostMaintenance: TERMINATE
+      automaticRestart: false
+      {% else %}
+      onHostMaintenance: {{ properties['onHostMaintenance'] }}
+      automaticRestart: {{ properties['automaticRestart'] }}
+      {% endif %}
+    {# Permissions #}
+    serviceAccounts:
+    - email: $(ref.{{ name }}-instance-sa.email)
+      scopes:
+      - https://www.googleapis.com/auth/devstorage.read_only
+      - https://www.googleapis.com/auth/logging.write
+      - https://www.googleapis.com/auth/monitoring.write
+      - https://www.googleapis.com/auth/servicecontrol
+      - https://www.googleapis.com/auth/service.management.readonly
+    {# Disks #}
+    disks:
+    - deviceName: boot
+      type: PERSISTENT
+      boot: true
+      autoDelete: true
+      sizeGb: {{ properties["bootDiskSizeGb"] }}
+      initializeParams:
+        diskName: {{ name }}-boot-disk
+        sourceImage: {{ properties['bootDiskImage'] }}
+    {% if properties['disks'] %}
+    {% for disk in properties['disks'] %}
+    - deviceName: {{ disk['name'] }}
+      boot: false
+      autoDelete: false
+      source: $(ref.{{ name }}-{{ disk['name'] }}-disk.selfLink)
+    {% endfor %}
+    {% endif %}
+    {# Network #}
+    networkInterfaces:
+    - networkIP: $(ref.{{ name }}-internal-address.address)
+      subnetwork: {{ "projects/{}/regions/{}/subnetworks/{}".format(
+        env['project'], properties['region'], properties['subnetwork']
+      ) }}
+      {% if properties['ephemeralPublicAddress'] or properties['reservedPublicAddress'] %}
+      accessConfigs:
+      - name: external-nat
+        type: ONE_TO_ONE_NAT
+        {% if properties['reservedPublicAddress'] %}
+        natIP: $(ref.{{ name }}-external-address.address)
+        {% endif %}
+      {% endif %}
+    tags:
+      items:
+        - {{ name }}-instance
+
+{% if properties['disks'] %}
+{% for disk in properties['disks'] %}
+- name: {{ name }}-{{ disk['name'] }}-disk
+  type: compute.v1.disk
+  properties:
+    sizeGb: {{ disk['size'] }}
+    zone: {{ properties['zone'] }}
+{% endfor %}
+{% endif %}
+
+{% for fw in properties['firewall'] %}
+- name: {{ name }}-{{ fw.policy }}-{{ fw.name }}-fw
+  type: compute.v1.firewall
+  properties:
+    network: {{ "projects/{}/global/networks/{}".format(
+      env['project'], properties['network']
+    ) }}
+    {% if fw.sourceRanges %}
+    sourceRanges: {{ fw.sourceRanges }}
+    {% endif %}
+    targetTags:
+      - {{ name }}-instance
+    {% if fw.policy == 'allow' %}
+    allowed:
+    {% else %}
+    denied:
+    {% endif %}
+      - IPProtocol: {{ fw.protocol }}
+        ports: {{ fw.ports }}
+{% endfor %}
+
+outputs:
+  - name: internalAddress
+    value: $(ref.{{ name }}-internal-address.address)
+  - name: externalAddress
+    value: $(ref.{{ name }}-external-address.address)
+  - name: serviceAccount
+    value: $(ref.{{ name }}-instance-sa.email)
