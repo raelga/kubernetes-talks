@@ -1,0 +1,32 @@
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: kslides
+  labels:
+    app: kslides
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kslides
+  template:
+    metadata:
+      labels:
+        app: kslides
+        version: v0.0.1
+    spec:
+      containers:
+      - name: cat
+        image: raelga/kslides:latest
+        ports:
+        - name: present
+          containerPort: 3999
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
