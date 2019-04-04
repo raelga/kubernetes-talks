@@ -1,0 +1,12 @@
+# file.toml
+
+[http.middlewares]
+
+  [http.middlewares.secured.chain]
+    middlewares = [ "known-ips", "auth-users" ]
+
+  [http.middlewares.auth-users.basicauth]
+    users = ["rael:$apr1$zK14IwpO$tctjsucQ4CcIlStnxT.R/."]
+
+  [http.middlewares.known-ips.ipWhiteList]
+    sourceRange = [ "54.246.153.221" ]

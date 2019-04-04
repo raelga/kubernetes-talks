@@ -1,0 +1,4 @@
+#   ttyd:
+#    image: tsl0922/ttyd
+#    labels:
+#      - "traefik.frontend.rule=Host:ttyd.do.rael.io;PathPrefixStrip:/ttyd"

@@ -1,0 +1,244 @@
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: liam
+  labels:
+    app: cat
+    cat: liam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cat
+      cat: liam
+  template:
+    metadata:
+      labels:
+        app: cat
+        cat: liam
+        version: v0.0.1
+    spec:
+      containers:
+      - name: cat
+        image: raelga/cats:liam
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
+
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: lia
+  labels:
+    app: cat
+    cat: lia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cat
+      cat: lia
+  template:
+    metadata:
+      labels:
+        app: cat
+        cat: lia
+        version: v0.0.1
+    spec:
+      containers:
+      - name: cat
+        image: raelga/cats:lia
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
+
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: neu
+  labels:
+    app: cat
+    cat: neu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cat
+      cat: neu
+  template:
+    metadata:
+      labels:
+        app: cat
+        cat: neu
+        version: v0.0.1
+    spec:
+      containers:
+      - name: cat
+        image: raelga/cats:neu
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
+
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: blanca
+  labels:
+    app: cat
+    cat: blanca
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cat
+      cat: blanca
+  template:
+    metadata:
+      labels:
+        app: cat
+        cat: blanca
+        version: v0.0.1
+    spec:
+      containers:
+      - name: cat
+        image: raelga/cats:blanca
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
+
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: neu
+  labels:
+    app: cat
+    cat: neu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cat
+      cat: neu
+  template:
+    metadata:
+      labels:
+        app: cat
+        cat: neu
+        version: v0.0.1
+    spec:
+      containers:
+      - name: cat
+        image: raelga/cats:neu
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
+
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: blanca
+  labels:
+    app: cat
+    cat: blanca
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cat
+      cat: blanca
+  template:
+    metadata:
+      labels:
+        app: cat
+        cat: blanca
+        version: v0.0.1
+    spec:
+      containers:
+      - name: cat
+        image: raelga/cats:blanca
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
+
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: gatet
+  labels:
+    app: cat
+    cat: gatet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cat
+      cat: gatet
+  template:
+    metadata:
+      labels:
+        app: cat
+        cat: gatet
+        version: v0.0.1
+    spec:
+      containers:
+      - name: cat
+        image: raelga/cats:gatet
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M

@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cats
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: liam.traefik-v1.do.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: liam
+          servicePort: http
+  - host: lia.traefik-v1.do.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: lia
+          servicePort: http
+  - host: neu.traefik-v1.do.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: neu
+          servicePort: http
+  - host: blanca.traefik-v1.do.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: blanca
+          servicePort: http
+  - host: gatet.traefik-v1.do.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: gatet
+          servicePort: http
+  - host: cat.traefik-v1.do.rael.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: cat
+          servicePort: http

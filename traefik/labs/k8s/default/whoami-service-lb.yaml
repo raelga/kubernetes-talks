@@ -1,0 +1,15 @@
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+
+spec:
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      name: web
+      port: 80
+  selector:
+    app: whoami

@@ -1,3 +1,4 @@
+kubectl create secret generic super-secure-password --from-file htpasswd-secret
 
 k8s-get-chell-traefik-token:
 	kubectl get -n kube-system -o json secrets \

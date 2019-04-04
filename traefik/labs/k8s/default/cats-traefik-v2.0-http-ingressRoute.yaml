@@ -1,0 +1,43 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: cats
+spec:
+  entrypoints:
+    - web
+  routes:
+  - match: Host(`lia.do.rael.io`)
+    kind: Rule
+    services:
+    - name: lia
+      port: 80
+  - match: Host(`blanca.do.rael.io`)
+    kind: Rule
+    services:
+    - name: blanca
+      port: 80
+  - match: Host(`liam.do.rael.io`)
+    kind: Rule
+    services:
+    - name: liam
+      port: 80
+  - match: Host(`lia.do.rael.io`)
+    kind: Rule
+    services:
+    - name: lia
+      port: 80
+  - match: Host(`neu.do.rael.io`)
+    kind: Rule
+    services:
+    - name: neu
+      port: 80
+  - match: Host(`gatet.do.rael.io`)
+    kind: Rule
+    services:
+    - name: gatet
+      port: 80
+  - match: Host(`any.do.rael.io`)
+    kind: Rule
+    services:
+    - name: cats-lb
+      port: 80
