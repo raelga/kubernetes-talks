@@ -1,0 +1,210 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-1
+  labels:
+    app: busybox
+    resources: both
+    id: "1"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-2
+  labels:
+    app: busybox
+    resources: both
+    id: "2"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-3
+  labels:
+    app: busybox
+    resources: both
+    id: "3"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-4
+  labels:
+    app: busybox
+    resources: both
+    id: "4"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-5
+  labels:
+    app: busybox
+    resources: both
+    id: "5"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-6
+  labels:
+    app: busybox
+    resources: both
+    id: "6"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-7
+  labels:
+    app: busybox
+    resources: both
+    id: "7"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-8
+  labels:
+    app: busybox
+    resources: both
+    id: "8"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-9
+  labels:
+    app: busybox
+    resources: both
+    id: "9"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-10
+  labels:
+    app: busybox
+    resources: both
+    id: "10"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "25m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"

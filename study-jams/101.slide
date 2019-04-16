@@ -1,0 +1,420 @@
+Kubernetes Study Jams
+
+Slides based on [[https://kubernetes.io/docs/home/?path=users&persona=app-developer&level=foundational][_Kubernetes_ _Documentation_]]
+Tags: kubernetes, docker, containers, microservices
+
+Rael Garcia
+Systems Engineer at CAPSiDE
+self@rael.io
+
+@raelga
+
+https://github.com/raelga/talks
+
+* Microservices
+
+.image images/microservices.png _ 900
+
+.caption Monolithic vs Microservices by [[https://www.weave.works][weave.works]]
+
+* Microservices
+
+Breaking the software in small chunks:
+
+- Reduces the build time
+
+- Speeds up development
+
+- Issues are isolated on the particular service
+
+- Each service can have their own cicle / release speed 
+
+But requires:
+
+- Automation (CI Pipelines)
+
+- Standarization (Containerization / Kubernetes)
+
+- Resource flexibility (Containerization / Kubernetes)
+
+- Service orchestration (Kubernetes)
+
+* Infrastructure lifecycles
+
+From _named_ servers to _herds_ of machines
+
+.image images/servers-pets-vs-cattle.jpg 420 _
+
+.caption The History of Pets vs Cattle and How to Use the Analogy Properly by [[http://cloudscaling.com/blog/cloud-computing/the-history-of-pets-vs-cattle/][cloudscaling]]
+
+* Infrastructure lifecycles
+
+- Physical servers 
+
+ Hours/days to be deployed
+ Runs for years
+
+- Virtual machines
+
+ Minutes to be deployed
+ Runs for days/weeks
+
+- Containers
+
+ Seconds to be deployed
+ Runs for minutes/hours
+  
+- Serverless / Short living containers
+
+ Miliseconds/seconds to be deployed
+ Runs for seconds
+
+* Infrastructure lifecycles
+
+.image images/servers-to-serverless.png 500 _
+
+.caption How Will Docker Respond to the Serverless Future? by [[https://www.contino.io/insights/how-will-docker-respond-to-the-serverless-future][contino.io]]
+
+* Docker
+
+.image images/docker-package-software.png 500 _
+
+* Storage, Packaging and Distribution
+
+.image images/obligatory-cointainer-boat-photo.png 500 _
+
+* Orchestration
+
+.image images/kubernetes-logo.png
+
+* What does Kubernetes mean? K8s?
+
+The name Kubernetes originates from Greek, meaning steersman or pilot, and is the root of _governor_ and _cybernetic_.
+
+.image images/kubernetes-greek-etymology.png
+
+K8s is an abbreviation derived by replacing the 8 letters “ubernete” with “8”.
+
+* What is Kubernetes?
+
+Kubernetes is a portable, extensible open-source *platform* *for* *managing* *containerized* *workloads* *and* *services*, that facilitates both declarative configuration and automation.
+
+It has a large, rapidly growing ecosystem. Kubernetes services, support, and tools are widely available since Google *open-sourced* the Kubernetes project in 2014.
+
+Kubernetes builds upon a decade and a half of experience that Google has with running production workloads at scale, combined with best-of-breed ideas and practices from the community.
+
+Kubernetes traces its lineage directly from *Borg*, Google’s long-rumored internal container-oriented cluster-management system.
+
+Many of the developers at Google working on Kubernetes were formerly developers on the Borg project.
+
+.caption Borg: The Predecessor to Kubernetes at [[https://kubernetes.io/blog/2015/04/borg-predecessor-to-kubernetes][kubernetes.io]]
+
+* Borg Architecture
+
+.image images/borg-cluster.png 480 _
+
+.caption Large-scale cluster management at Google with Borg at [[https://research.google.com/pubs/pub43438.html][research.google.com]]
+
+* Kubernetes Architecture
+
+.image images/kubernetes-cluster.png 480 _
+
+.caption Kubernetes by [[https://en.wikipedia.org/wiki/Kubernetes][wikipedia]]
+
+* Kubernetes Components: Masters (1)
+
+- *kube-apiserver*
+
+Component on the master that exposes the Kubernetes API. It is the front-end for the Kubernetes control plane.
+
+- *etcd*
+
+Consistent and highly-available key value store used as Kubernetes’ backing store for all cluster data.
+
+- *kube-scheduler*
+
+Component on the master that watches newly created pods that have no node assigned, and selects a node for them to run on.
+
+* Kubernetes Components: Masters (2)
+
+- *kube-controller-manager*
+
+Component on the master that runs controllers.
+
+*Node* *Controller*
+Responsible for noticing and responding when nodes go down.
+
+*Replication* *Controller*
+Responsible for maintaining the correct number of pods for every replication controller object in the system.
+
+*Endpoints* *Controller*
+Populates the Endpoints object (that is, joins Services & Pods).
+
+*Service* *Account* *&* *Token* *Controllers*
+Create default accounts and API access tokens for new namespaces.
+
+* Kubernetes Cloud Architecture
+
+.image images/kubernetes-cloud-cluster.png 400 _
+
+.caption Concepts Underlying the Cloud Controller Manager at [[https://kubernetes.io/docs/concepts/architecture/cloud-controller/][kubernetes,io]]
+
+* Kubernetes Components: Masters (3)
+
+- *cloud-controller-manager*
+
+Runs controllers that interact with the underlying cloud providers. 
+
+*Node* *Controller*
+For checking the cloud provider to determine if a node has been deleted in the cloud after it stops responding
+
+*Route* *Controller*
+For setting up routes in the underlying cloud infrastructure
+
+*Service* *Controller*
+For creating, updating and deleting cloud provider load balancers
+
+*Volume* *Controller*
+For creating, attaching, and mounting volumes, and interacting with the cloud provider to orchestrate volumes
+
+* Kubernetes Components: Nodes (1)
+
+Node components run on every node, maintaining running pods and providing the Kubernetes runtime environment.
+
+- *kubelet*
+
+An agent that runs on each node in the cluster. It makes sure that containers are running in a pod.
+
+The kubelet takes a set of PodSpecs that are provided through various mechanisms and ensures that the containers described in those PodSpecs are running and healthy.
+
+- *kube-proxy*
+
+kube-proxy enables the Kubernetes service abstraction by maintaining network rules on the host and performing connection forwarding.
+
+* Kubernetes Components: Nodes (2)
+
+- *Container* *Runtime*
+
+The container runtime is the software that is responsible for running containers.
+
+Kubernetes supports several runtimes: Docker, rkt, runc and any OCI runtime-spec implementation
+
+.image images/kubernetes-node.svg 340 _
+
+* Pods
+
+- Is the basic building block of Kubernetes–the smallest and simplest unit in the Kubernetes object model that you create or deploy.
+
+- Encapsulates an application container (or multiple containers), storage resources, a unique network IP, and options that govern how the container(s) should run.
+
+- Represents a unit of deployment: a single instance of an application in Kubernetes, which might consist of either a single container or a small number of containers that are tightly coupled and that share resources.
+
+.image images/pods.svg 250 _
+
+* Pods - Single container deployment
+
+- Pods that run a single container.
+
+The “one-container-per-Pod” model is the most common Kubernetes use case.
+
+You can think of a Pod as a wrapper around a single container, and Kubernetes manages the Pods rather than the containers directly.
+
+.code yml/pod-single.yml
+.caption [[_yml/pod-single.yml_][yml/pod-single.yml]]
+
+* Pods - Multiple containers deployment (1)
+
+- Pods that run multiple containers that need to work together.
+
+A Pod might encapsulate an application composed of multiple co-located containers that are tightly coupled and *need* *to* *share* *resources*. The Pod wraps these containers and storage resources together as a single manageable entity.
+
+These co-located containers might form a single cohesive unit of service–one container serving files from a shared volume to the public, while a separate “*sidecar*” container refreshes or updates those files. 
+
+.image images/pod.svg 250 _
+
+* Pods - Network
+
+- Each Pod is assigned a unique IP address.
+
+- Every container in a Pod shares the network namespace, including the IP address and network ports.
+
+- Containers inside a Pod can communicate with one another using localhost.
+
+- When containers in a Pod communicate with entities outside the Pod, they must coordinate how they use the shared network resources (such as ports).
+
+.image images/pods-network.png 250 _
+
+* Pods - Storage
+
+- A Pod can specify a set of shared storage volumes.
+
+- All containers in the Pod can access the shared volumes, allowing those containers to share data. 
+
+- Volumes also allow persistent data in a Pod to survive in case one of the containers within needs to be restarted.
+
+.image images/pods-storage.png 250 _
+
+* Pods - Multiple containers deployment
+
+.code yml/pod-multi.yml
+.caption [[_yml/pod-multi.yml_][yml/pod-multi.yml]]
+
+* Pods - Lifecycle
+
+- *Pending*: The Pod has been accepted by the Kubernetes system, but one or more of the Container images has not been created. This includes time before being scheduled as well as time spent downloading images over the network, which could take a while.
+
+- *Running*: The Pod has been bound to a node, and all of the Containers have been created. At least one Container is still running, or is in the process of starting or restarting.
+
+- *Succeeded*: All Containers in the Pod have terminated in success, and will not be restarted.
+
+- *Failed*: All Containers in the Pod have terminated, and at least one Container has terminated in failure. That is, the Container either exited with non-zero status or was terminated by the system.
+
+- *Unknown*: For some reason the state of the Pod could not be obtained, typically due to an error in communicating with the host of the Pod.
+
+* Pods - Liveness Health check
+
+- Indicates whether the Container is running.
+
+- If the liveness probe fails, the kubelet kills the Container, and the Container is subjected to its restart policy.
+
+- If a Container does not provide a liveness probe, the default state is *Success*.
+
+.code yml/pod-health-http-liveness.yml
+.caption [[_yml/pod-health-http-liveness.yml_][yml/pod-health-http-liveness.yml]]
+
+* Pods - Rediness Health check (1)
+
+- Indicates whether the Container is ready to service requests.
+
+- If the readiness probe fails, the endpoints controller removes the Pod’s IP address from the endpoints of all Services that match the Pod.
+
+- If configured *default* *state* of readiness before the initial delay is *Failure*.
+
+- If a Container does not provide a readiness probe, the default state is *Success*.
+
+
+* Pods - Rediness Health check (2)
+
+.code yml/pod-health-cmd-readiness.yml
+.caption [[_yml/pod-health-cmd-readiness.yml_][yml/pod-health-cmd-readiness.yml]]
+
+
+* Pods - Health check use cases
+
+- If the process in your Container is able to crash on its own whenever it encounters an issue or becomes unhealthy; the *kubelet* will automatically perform the correct action in accordance with the Pod’s *restartPolicy*.
+
+- If you’d like your Container to be killed and restarted if a probe fails, then specify a *liveness* *probe*, and specify a *restartPolicy* of *Always* or *OnFailure*.
+
+- If you’d like to start sending traffic to a Pod only when a probe succeeds, specify a *readiness* *probe*. The readiness probe might be the same as the liveness probe, but the existence of the readiness probe in the spec means that the Pod will start without receiving any traffic until the probe starts succeeding.
+
+- If your Container needs to work on loading large data, configuration files, or migrations during startup, specify a *readiness* *probe*.
+
+- If you want your Container to be able to take itself down for maintenance, you can specify a *readiness* *probe* that checks an endpoint specific to readiness that is different from the liveness probe.
+
+* Pods - Health checks (3)
+
+.code yml/pod-health-tcp-both.yml
+.caption [[_yml/pod-health-tcp-both.yml_][yml/pod-health-tcp-both.yml]]
+
+* Namespaces
+
+- Kubernetes supports multiple virtual clusters backed by the same physical cluster called namespaces.
+
+- Namespaces are intended for use in environments with many users spread across multiple teams, or projects.
+
+- Namespaces provide a scope for names. Names of resources need to be unique within a namespace.
+
+- Namespaces are a way to divide cluster resources between multiple users (via resource quota).
+
+- A service DNS entry is of the form <service-name>.<namespace-name>.svc.cluster.local, which means that if a container just uses <service-name>, it will resolve to the service which is local to a namespace.
+
+  $ kubectl --namespace=<namespace-name> get pods
+  $ kubectl config set-context $(kubectl config current-context) --namespace=<namespace-name>
+
+* Annotations
+
+- You can use Kubernetes annotations to attach arbitrary non-identifying metadata to objects.
+- Clients such as tools and libraries can retrieve this metadata.
+
+  metadata:
+    annotations:
+      key1: value1
+      key2: value2
+
+* Labels 
+
+- Labels are key/value pairs that are attached to objects, such as pods.
+- Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users, but do not directly imply semantics to the core system.
+- Labels can be used to organize and to select subsets of objects.
+- Labels can be attached to objects at creation time and subsequently added and modified at any time.
+
+- Each object can have a set of key/value labels defined.
+- Each Key must be unique for a given object.
+
+  metadata:
+    labels:
+      release: stable
+      environment: dev
+      tier: frontend
+
+* Label Selectors
+
+- Unlike names and UIDs, labels do not provide uniqueness. In general, we expect many objects to carry the same label(s).
+
+- Via a label selector, the client/user can identify a set of objects.
+
+- The label selector is the core grouping primitive in Kubernetes.
+
+- The API currently supports two types of selectors: equality-based and set-based. 
+
+- In the case of multiple requirements, all must be satisfied so the comma separator acts as a logical AND (&&) operator.
+
+- An empty label selector (that is, one with zero requirements) selects every object in the collection.
+
+* Label Selectors - Equality-based requirement
+
+Equality- or inequality-based requirements allow filtering by label keys and values.
+
+- Matching objects must satisfy all of the specified label constraints, though they may have additional labels as well. 
+
+- Three kinds of operators are admitted: *=* , *==* for equality, and *!=* for inequality.
+
+  $ kubectl get pods -l 'environment=production, tier!=frontend'
+
+.code yml/pod-selector-equality.yml
+.caption [[_yml/pod-selector-equality.yml_][yml/pod-selector-equality.yml]]
+
+* Label Selectors - Set-based requirements
+
+- Set-based label requirements allow filtering keys according to a set of values. 
+ 
+- Three kinds of operators are supported: in, notin and exists (only the key identifier).
+
+  $ kubectl get pods -l 'environment in (production, qa)'
+
+.code yml/pod-selector-set.yml
+.caption [[_yml/pod-selector-set.yml_][yml/pod-selector-set.yml]]
+
+* Pods - Reference
+
+.link https://coreos.com/kubernetes/docs/latest/pods.html Overview of a Pod
+
+.link https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/ Pod overview
+
+.link https://kubernetes.io/blog/2016/06/container-design-patterns Container design patterns
+
+.link https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns Patterns for Composite Containers
+
+.link https://kubernetes-v1-4.github.io/docs/user-guide/pods/single-container/ Creating Single-Container Pods
+
+.link https://kubernetes-v1-4.github.io/docs/user-guide/pods/multi-container/ Creating Multi-Container Pods
+
+.link https://www.mirantis.com/blog/multi-container-pods-and-container-communication-in-kubernetes/ Multi-container pods and container communication in Kubernetes
+
+
+* Extra Slide : Kubernetes Comic
+
+
+.image images/kubernetes-comic.png 500 _
+
+.caption [[https://cloud.google.com/kubernetes-engine/kubernetes-comic/][Kubernetes Comic]]

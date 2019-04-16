@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: helloWeb
+spec:
+  containers:
+    image: nginx
+    ports:
+    - containerPort: 80

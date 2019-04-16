@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: helloworld
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      tier: frontend
+    matchExpressions:
+      - {key: environmnt, operator: In, values: [pre, dev]}

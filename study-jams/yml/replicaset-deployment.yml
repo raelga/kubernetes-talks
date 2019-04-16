@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-deployment
+  labels:
+    app: hello-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello-app
+    spec:
+      containers:
+      - name: hello-world
+        image: hello
