@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-resources-both
+  labels:
+    app: busybox
+    resources: both
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 321']
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "100Mi"
+      limits:
+        cpu: "100m"
+        memory: "100Mi"

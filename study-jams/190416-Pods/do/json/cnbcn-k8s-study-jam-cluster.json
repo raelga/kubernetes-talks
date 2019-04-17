@@ -1,0 +1,12 @@
+{
+  "name": "cnbcn-k8s-study-jam",
+  "region": "fra1",
+  "version": "1.13.4-do.0",
+  "node_pools": [
+    {
+      "name": "cnbcn-k8s-study-jam-np",
+      "size": "s-2vcpu-2gb",
+      "count": 2
+    }
+  ]
+}
