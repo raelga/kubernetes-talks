@@ -1,0 +1,27 @@
+imports:
+  - path: instance.jinja
+
+resources:
+
+- name: traefik-docker-host
+  type: instance.jinja
+  properties:
+    description: "BCN Cloud Traefik instance"
+    machineType: n1-standard-1
+    bootDiskSize: 30
+    deletionProtection: false
+    reservedPublicAddress: true
+    allowSSH: true
+    firewall:
+      - name: web
+        ports: [ 80, 20080, 443, 20443 ]
+      - name: traefik
+        ports: [ 8080, 28080 ]
+      - name: mongo
+        ports: [ 27017 ]
+
+outputs:
+  - name: external-address
+    value: $(ref.traefik-docker-host.externalAddress)
+  - name: internal-address
+    value: $(ref.traefik-docker-host.internalAddress)

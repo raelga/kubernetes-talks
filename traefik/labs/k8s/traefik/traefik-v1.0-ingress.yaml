@@ -5,10 +5,10 @@ kind: Ingress
 metadata:
   name: traefik-web-ui
   namespace: traefik
-  
+
 spec:
   rules:
-  - host: traefik-ui.traefik.rael.io
+  - host: traefik-ui.traefik-v1.rael.io
     http:
       paths:
       - path: /

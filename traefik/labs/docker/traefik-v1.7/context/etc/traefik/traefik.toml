@@ -1,0 +1,26 @@
+# traefik.toml
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+
+  [entryPoints.https]
+  address = ":443"
+
+logLevel = "DEBUG"
+
+[traefikLog]
+format = "json"
+
+[accessLog]
+
+[api]
+address = "traefik-v1.docker.do.rael.io:80"
+
+[docker]
+domain = "traefik-v1.docker.do.rael.io"
+watch = true
+
+[file]
+watch = true
+filename = "/etc/traefik/file.toml"

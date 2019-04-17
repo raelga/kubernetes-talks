@@ -14,3 +14,7 @@ docker-shell:
 
 docker-present:
 	docker run -it --rm -p 3999:3999 kubernetes-slides
+
+docker-push:
+	docker tag kubernetes-slides:latest raelga/kslides:latest
+	docker push raelga/kslides:latest

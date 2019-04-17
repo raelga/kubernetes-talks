@@ -6,37 +6,37 @@ spec:
   entrypoints:
     - websecure
   routes:
-  - match: Host(`lia.do.rael.io`)
+  - match: Host(`lia.traefik-v2.do.rael.io`)
     kind: Rule
     services:
     - name: lia
       port: 80
-  - match: Host(`blanca.do.rael.io`)
+  - match: Host(`blanca.traefik-v2.do.rael.io`)
     kind: Rule
     services:
     - name: blanca
       port: 80
-  - match: Host(`liam.do.rael.io`)
+  - match: Host(`liam.traefik-v2.do.rael.io`)
     kind: Rule
     services:
     - name: liam
       port: 80
-  - match: Host(`lia.do.rael.io`)
+  - match: Host(`lia.traefik-v2.do.rael.io`)
     kind: Rule
     services:
     - name: lia
       port: 80
-  - match: Host(`neu.do.rael.io`)
+  - match: Host(`neu.traefik-v2.do.rael.io`)
     kind: Rule
     services:
     - name: neu
       port: 80
-  - match: Host(`gatet.do.rael.io`)
+  - match: Host(`gatet.traefik-v2.do.rael.io`)
     kind: Rule
     services:
     - name: gatet
       port: 80
-  - match: Host(`any.do.rael.io`)
+  - match: Host(`any.traefik-v2.do.rael.io`)
     kind: Rule
     services:
     - name: cats-lb

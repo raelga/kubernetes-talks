@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    image: containous/traefik:experimental-v2.0
+    restart: unless-stopped
+    command:
+      - "--api"
+      - "--providers.docker"
+      - "--providers.file.filename=/tls-certs.toml"
+      - "--entrypoints=Name:mongo Address::27017"
+    ports:
+      - "8080:8080"
+      - "27017:27017"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./certs:/certs
+      - ./tls-certs.toml:/tls-certs.toml
+
+  mongo1:
+    image: mongo
+    hostname: mongo1.local
+    restart: unless-stopped
+    labels:
+      - "traefik.tcp.routers.mongo1.rule=HostSNI(`mongo1.local`)"
+      - "traefik.tcp.routers.mongo1.tls=true"
+      - "traefik.tcp.routers.mongo1.entrypoints=mongo"
