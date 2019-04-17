@@ -31,7 +31,7 @@ https://github.com/raelga/kubernetes-talks/tree/master/101
 
 - `do` folder
 
-Contains all the commands required to deploy a cluster in Digital Ocean, but you can run the cluster anywhere.
+Contains all the commands required to deploy a cluster in Digital Ocean, but you can run the cluster anywhere. Check the [providers](/providers) for more information.
 
 - `docker` folder
 
