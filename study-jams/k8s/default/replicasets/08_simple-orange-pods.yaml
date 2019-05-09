@@ -1,0 +1,36 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-orange-pod-1
+  labels:
+    app: simple
+    color: orange
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:lia
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-orange-pod-2
+  labels:
+    app: simple
+    color: orange
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:lia
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-orange-pod-3
+  labels:
+    app: simple
+    color: orange
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:lia

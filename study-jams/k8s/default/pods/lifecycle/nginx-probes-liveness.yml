@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+    tier: frontend
+  namespace: kube-system
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.15.11-alpine
+    readinessProbe:
+    
