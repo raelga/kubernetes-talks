@@ -19,7 +19,7 @@ spec:
       periodSeconds: 1
   initContainers:
   - name: init-dummy-svc-wait
-    image: busybox
+    image: bash
     command: 
     - sh
     - -c
