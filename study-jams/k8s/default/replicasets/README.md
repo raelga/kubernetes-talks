@@ -1,14 +1,47 @@
 # `ReplicaSets`
 
+- [`ReplicaSets`](#replicasets)
+  - [Introduction](#introduction)
+    - [Learn more](#learn-more)
+    - [Some notes](#some-notes)
+  - [1 - Create a `ReplicaSet`](#1---create-a-replicaset)
+  - [2 - Scaling `ReplicaSets`](#2---scaling-replicasets)
+    - [Double the numbers of replicas with `kubectl scale`](#double-the-numbers-of-replicas-with-kubectl-scale)
+    - [Scale back to 1 replica](#scale-back-to-1-replica)
+    - [Update the `ReplicaSet` with the yaml definition](#update-the-replicaset-with-the-yaml-definition)
+    - [Scale to 50 replicas](#scale-to-50-replicas)
+    - [Scale down back to 5 replicas](#scale-down-back-to-5-replicas)
+  - [3 - Selectors and Pods](#3---selectors-and-pods)
+    - [Deploy some **blue** pods](#deploy-some-blue-pods)
+    - [Deploy a **blue** `ReplicaSet`](#deploy-a-blue-replicaset)
+    - [Run a _red_ pod](#run-a-red-pod)
+    - [`ReplicaSet` for non-colored pods only](#replicaset-for-non-colored-pods-only)
+    - [Let's acquire those fancy orange `pods`](#lets-acquire-those-fancy-orange-pods)
+    - [Remove a pod from the orange replicaset](#remove-a-pod-from-the-orange-replicaset)
+    - [Clean up](#clean-up)
+  - [4 - Container probes](#4---container-probes)
+    - [Readiness probe](#readiness-probe)
+    - [Liveness probe](#liveness-probe)
+    - [Clean up](#clean-up-1)
+  - [5 - Manual rolling update](#5---manual-rolling-update)
+    - [Deploy the initial `ReplicaSet`](#deploy-the-initial-replicaset)
+    - [Update the `ReplicaSet` pod template](#update-the-replicaset-pod-template)
+    - [Update the `ReplicaSet` `Pod` template with the fixed `ReadinessProbe`](#update-the-replicaset-pod-template-with-the-fixed-readinessprobe)
+    - [Clean up the failing versions and the old ones](#clean-up-the-failing-versions-and-the-old-ones)
+
+## Introduction
+
 >>>
 A ReplicaSet is defined with fields, including a selector that specifies how to identify Pods it can acquire, a number of replicas indicating how many Pods it should be maintaining, and a pod template specifying the data of new Pods it should create to meet the number of replicas criteria. A ReplicaSet then fulfills its purpose by creating and deleting Pods as needed to reach the desired number. When a ReplicaSet needs to create new Pods, it uses its Pod template.
 >>>
+
+### Learn more
 
 - https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 
 - https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#replicasetspec-v1-apps
 
-**Some notes**:
+### Some notes
 
 - Kubernetes is fast, specially when working with lightweight containers, so to see what is happening, we'll need to run `kubectl` commands fast.
 
@@ -19,7 +52,8 @@ That's why we will run the `kubectl` command to apply changes and if works, imme
 This will allow us to get the information on what is happening just after the command is applied:
 
 ```
-$ kubectl run --generator 'run-pod/v1' --image bash:5.0 --restart Never sleepy -- sleep 10 && kubectl get pods sleepy -w
+$ kubectl run --generator 'run-pod/v1' --image bash:5.0 --restart Never sleepy -
+- sleep 10 && kubectl get pods sleepy -w
 pod/sleepy created
 NAME     READY   STATUS              RESTARTS   AGE
 sleepy   0/1     ContainerCreating   0          0s
@@ -29,7 +63,7 @@ sleepy   0/1     Completed           0          12s
 
 This command creates a `Pod` called `sleepy` with a container using the image `bash:5.0` and running a `sleep 10`. Once the first command completes, the `kubectl get pods sleepy -w`, will `watch` a `Pod` called `sleepy` and print a new line for each change in the `Pod` status.
 
-## 1. Create a simple `ReplicaSet` with 1 pod
+## 1 - Create a `ReplicaSet`
 
 Create the `ReplicaSet` object:
 
@@ -49,6 +83,7 @@ spec:
         app: simple
     spec:
       containers:
+      
       - name: app
         image: raelga/cats:gatet
 ```
@@ -78,9 +113,9 @@ NAME     DESIRED   CURRENT   READY   AGE
 simple   1         1         1       29s
 ```
 
-## 2. Scaling `ReplicaSets`
+## 2 - Scaling `ReplicaSets`
 
-### 2.1. Double the numbers of replicas with `kubectl scale`
+### Double the numbers of replicas with `kubectl scale`
 
 ```
 $ kubectl scale rs/simple --replicas 2
@@ -100,7 +135,7 @@ simple-hfsgg   1/1     Running   0          74s
 simple-kj8k8   1/1     Running   0          3s
 ```
 
-### 2.2. Scale back to 1 replica
+### Scale back to 1 replica
 
 ```
 $ kubectl scale rs/simple --replicas 1
@@ -120,19 +155,21 @@ NAME           READY   STATUS    RESTARTS   AGE
 simple-hfsgg   1/1     Running   0          125s
 ```
 
-### 2.3. Update the `ReplicaSet` with the yaml definition
+### Update the `ReplicaSet` with the yaml definition
 
 We also add information about the resources needed by the app container of the pod, to let the scheduler know how many pods can fit into a node.
 
 ```diff
 $ kubectl diff -f 201_simple-rs-5.yaml 
 diff -u -N /tmp/LIVE-860683615/apps.v1.ReplicaSet.default.simple /tmp/MERGED-116908338/apps.v1.ReplicaSet.default.simple
---- /tmp/LIVE-860683615/apps.v1.ReplicaSet.default.simple       2019-05-11 11:05:20.751504492 +0000
+--
+- /tmp/LIVE-860683615/apps.v1.ReplicaSet.default.simple       2019-05-11 11:05:20.751504492 +0000
 +++ /tmp/MERGED-116908338/apps.v1.ReplicaSet.default.simple     2019-05-11 11:05:20.767506423 +0000
 @@ -5,14 +5,14 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"name":"simple","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"simple"}},"template":{"metadata":{"labels":{"app":"simple"}},"spec":{"containers":[{"image":"raelga/cats:gatet","name":"app"}]}}}}
    creationTimestamp: "2019-05-11T11:01:50Z"
+
 -  generation: 3
 +  generation: 4
    name: simple
@@ -141,15 +178,18 @@ diff -u -N /tmp/LIVE-860683615/apps.v1.ReplicaSet.default.simple /tmp/MERGED-116
    selfLink: /apis/apps/v1/namespaces/default/replicasets/simple
    uid: 2db859ed-73dc-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 1
 +  replicas: 5
    selector:
      matchLabels:
        app: simple
 @@ -26,7 +26,13 @@
+       
        - image: raelga/cats:gatet
          imagePullPolicy: IfNotPresent
          name: app
+
 -        resources: {}
 +        resources:
 +          limits:
@@ -189,17 +229,19 @@ simple-htdzs   1/1     Running   0          10s
 simple-rnbt6   1/1     Running   0          10s
 ```
 
-### 2.4. Scale to 50 replicas
+### Scale to 50 replicas
 
 ```diff
 $ kubectl diff -f 202_simple-rs-50.yaml
 diff -u -N /tmp/LIVE-082216881/apps.v1.ReplicaSet.default.simple /tmp/MERGED-524798300/apps.v1.ReplicaSet.default.simple
---- /tmp/LIVE-082216881/apps.v1.ReplicaSet.default.simple       2019-05-11 11:09:06.426174215 +0000
+--
+- /tmp/LIVE-082216881/apps.v1.ReplicaSet.default.simple       2019-05-11 11:09:06.426174215 +0000
 +++ /tmp/MERGED-524798300/apps.v1.ReplicaSet.default.simple     2019-05-11 11:09:06.440175724 +0000
 @@ -5,14 +5,14 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"name":"simple","namespace":"default"},"spec":{"replicas":5,"selector":{"matchLabels":{"app":"simple"}},"template":{"metadata":{"labels":{"app":"simple"}},"spec":{"containers":[{"image":"raelga/cats:gatet","name":"app","resources":{"limits":{"cpu":"1","memory":"100Mi"},"requests":{"cpu":"50m","memory":"50Mi"}}}]}}}}
    creationTimestamp: "2019-05-11T11:01:50Z"
+
 -  generation: 9
 +  generation: 10
    name: simple
@@ -208,6 +250,7 @@ diff -u -N /tmp/LIVE-082216881/apps.v1.ReplicaSet.default.simple /tmp/MERGED-524
    selfLink: /apis/apps/v1/namespaces/default/replicasets/simple
    uid: 2db859ed-73dc-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 5
 +  replicas: 50
    selector:
@@ -317,7 +360,11 @@ Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
                  node.kubernetes.io/unreachable:NoExecute for 300s
 Events:
   Type     Reason            Age                From               Message
-  ----     ------            ----               ----               -------
+  ---
+  -     -----
+  -            ---
+  -               ---
+  -               -------
   Warning  FailedScheduling  59s (x2 over 59s)  default-scheduler  0/2 nodes are available: 2 Insufficient cpu.
 ```
 
@@ -325,7 +372,7 @@ We can see that the *Pod* cannot be scheduled due to insufficient cpus in the no
 
 `Warning  FailedScheduling  41s (x6 over 3m58s)  default-scheduler  0/2 nodes are available: 2 Insufficient cpu.`
 
-### 2.5. Scale down back to 5 replicas
+### Scale down back to 5 replicas
 
 ```
 $ kubectl scale rs/simple --replicas 5 && kubectl get rs/simple -w
@@ -346,9 +393,9 @@ simple-xgq2x   1/1     Running   0          22m
 simple-xh5hm   1/1     Running   0          22m
 ```
 
-## 3. Selectors and Pods
+## 3 - Selectors and Pods
 
-### 3.1. Deploy some **blue** pods
+### Deploy some **blue** pods
 
 ```yaml
 ---
@@ -361,6 +408,7 @@ metadata:
     color: blue
 spec:
   containers:
+    
     - name: app
       image: raelga/cats:liam
 ...
@@ -428,7 +476,11 @@ Pod Template:
   Volumes:        <none>
 Events:
   Type    Reason            Age   From                   Message
-  ----    ------            ----  ----                   -------
+  ---
+  -    -----
+  -            ---
+  -  ---
+  -                   -------
   Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-1
   Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-2
   Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-3
@@ -442,7 +494,7 @@ We can see that the `ReplicaSet` terminated those *Pods*:
   Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-3
 ```
 
-### 3.2. Deploy a **blue** `ReplicaSet`
+### Deploy a **blue** `ReplicaSet`
 
 ```
 $ kubectl apply -f 302_simple-blue-rs.yaml && kubectl get pods -w
@@ -495,7 +547,7 @@ Now the *Pods* stay, but why?
 
 The selector is matching sets of pods, from most restrictive to less restrictive. So `rs/simple` with manage all pods with label: `app: simple` that doesn't match any other replicaset.
 
-### 3.3. Run a _red_ pod
+### Run a _red_ pod
 
 ```yaml
 ---
@@ -508,6 +560,7 @@ metadata:
     color: red
 spec:
   containers:
+    
     - name: app
       image: raelga/cats:liam
 ```
@@ -540,12 +593,14 @@ $ kubectl describe rs simple | grep simple-red-pod
 
 The **red** `Pod` is killed because:
 
+
 - Has the `app: simple` label selector
+
 - There is no any `ReplicaSet` for the `color: red` pods
 
 This pods matches `simple` `ReplicaSet` selector and there is already 5 pods pods matching the selector, so should be terminated.
 
-### 3.3. `ReplicaSet` for non-colored pods only
+### `ReplicaSet` for non-colored pods only
 
 The new selector for the `rs/simple-nocolor` will be a combination of a label and an expresion:
 
@@ -554,6 +609,7 @@ The new selector for the `rs/simple-nocolor` will be a combination of a label an
     matchLabels:
       app: simple
     matchExpressions:
+      
       - { key: color, operator: DoesNotExist }
 ```
 
@@ -651,7 +707,7 @@ simple-orange-pod-2    1/1     Running   0          11s
 simple-orange-pod-3    1/1     Running   0          10s
 ```
 
-### 3.4. Let's acquire those fancy orange `pods`
+### Let's acquire those fancy orange `pods`
 
 ```
 kubectl apply -f 307_simple-orange-rs.yaml
@@ -678,7 +734,7 @@ $ kubectl describe rs simple-orange | grep SuccessfulCreate
   Normal  SuccessfulCreate  67s   replicaset-controller  Created pod: simple-orange-vkclj
 ```
 
-### 3.5. Remove a pod from the orange replicaset
+### Remove a pod from the orange replicaset
 
 ```
 $ kubectl patch pod simple-orange-pod-1 --type='json' --patch='[{"op":"replace", "path":"/metadata/labels/color", "value":"pink"}]' && kubectl get pods -w -l color=orange
@@ -710,7 +766,7 @@ simple-orange-pod-1   1/1     Running   0          9m21s
 simple-orange-pod-2   1/1     Running   0          9m21s
 ```
 
-### 3.6. Clean up
+### Clean up
 
 ```
 $ kubectl delete rs simple-blue simple-nocolor simple-orange
@@ -737,20 +793,24 @@ $ kubectl get pods
 No resources found.
 ```
 
-## 4. Container probes
+## 4 - Container probes
 
-### 4.1. Readiness probe
+### Readiness probe
 
 Let's add a `ReadinessProbe`, on the port 80:
 
+
 - Wait 10 secs before start probing
+
 - Each 5 seconds, check the probe
+
 - Mark as healthy after 3 consecutive OK checks
 
 ```yaml
 ...
     spec:
       containers:
+      
       - name: app
         image: raelga/cats:neu
         readinessProbe:
@@ -775,8 +835,11 @@ probes-m2l5h   1/1     Running             0          24s
 
 After about 25 seconds, the `Pods` became `READY`:
 
+
 - Scheduling time (From `Pending` to `Running`)
+
 - 10 seconds of `initialDelaySeconds`
+
 - 15 seconds (5 `periodSeconds` x 3 `successThreshold`)
 
 Deploy some `Pods` with failing ReadinessProbes:
@@ -818,7 +881,11 @@ $ kubectl describe pods $(kubectl get pods | sed -n 's:\(\S\+\)\s\+0/1.*:\1:p')
 ...
 Events:
   Type     Reason     Age                From                                  Message
-  ----     ------     ----               ----                                  -------
+  ---
+  -     -----
+  -     ---
+  -               ---
+  -                                  -------
   Normal   Scheduled  109s               default-scheduler                     Successfully assigned default/probes-np7vg to cnbcn-k8s-study-jam-np-fw7x
   Normal   Pulled     107s               kubelet, cnbcn-k8s-study-jam-np-fw7x  Container image "raelga/cats:neu" already present on machine
   Normal   Created    107s               kubelet, cnbcn-k8s-study-jam-np-fw7x  Created container
@@ -828,18 +895,22 @@ Events:
 
 The good thing, is the failing `Pods` never get `READY` and won't receive any traffic.
 
-### 4.2. Liveness probe
+### Liveness probe
 
 Let's add a `LivenessProbe`, on the port 80:
 
+
 - Wait 10 secs before start probing
+
 - Each 5 seconds, check the probe
+
 - Mark as unhealthy after 2 consecutive failed checks
 
 ```yaml
 ...
     spec:
       containers:
+      
       - name: app
         image: raelga/cats:neu
         livenessProbe:
@@ -920,7 +991,7 @@ probes-fzbgb   0/1     CrashLoopBackOff    6          4m31s
 
 A `CrashloopBackOff` means that we have a pod starting, crashing, starting again, and then crashing again. Failed containers that are restarted by the kubelet are restarted with an exponential back-off delay (10s, 20s, 40s …) capped at five minutes, and is reset after ten minutes of successful execution.
 
-### 4.3. Clean up
+### Clean up
 
 ```
 $ kubectl delete rs probes && kubectl get pods -w -l app=probes
@@ -964,9 +1035,9 @@ $ kubectl get pods
 No resources found.
 ```
 
-## 5. Manual rolling update
+## 5 - Manual rolling update
 
-### 5.1. Deploy the initial `ReplicaSet`
+### Deploy the initial `ReplicaSet`
 
 ```
 $ kubectl apply -f 501_probes-images-rs.yaml && kubectl get pods -l app=probes-images -w
@@ -1001,19 +1072,21 @@ probes-images-h5wsz   raelga/cats:neu   Running   2019-05-11T16:20:36Z
 probes-images-jnck4   raelga/cats:neu   Running   2019-05-11T16:20:36Z
 ```
 
-### 5.2. Update the `ReplicaSet` pod template
+### Update the `ReplicaSet` pod template
 
 Let's update the `ReplicaSet` `Pod` template and include a new template, that will fail the `ReadinessProbe`.
 
 ```diff
 $ kubectl diff -f 502_probes-images-rs-update-image-ko.yaml 
 diff -u -N /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-353118084/apps.v1.ReplicaSet.default.probes-images
---- /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:21:15.916702182 +0000
+--
+- /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:21:15.916702182 +0000
 +++ /tmp/MERGED-353118084/apps.v1.ReplicaSet.default.probes-images      2019-05-11 16:21:15.929703344 +0000
 @@ -5,7 +5,7 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":3,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images"}},"spec":{"containers":[{"image":"raelga/cats:neu","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/","port":80},"initialDelaySeconds":2}}]}}}}
    creationTimestamp: "2019-05-11T16:20:36Z"
+
 -  generation: 1
 +  generation: 2
    labels:
@@ -1023,8 +1096,11 @@ diff -u -N /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.probes-images /tmp/MER
          app: probes-images
      spec:
        containers:
--      - image: raelga/cats:neu
-+      - image: raelga/cats:blanca
+
+-      
+- image: raelga/cats:neu
++      
+- image: raelga/cats:blanca
          imagePullPolicy: IfNotPresent
          livenessProbe:
            failureThreshold: 2
@@ -1032,6 +1108,7 @@ diff -u -N /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.probes-images /tmp/MER
          readinessProbe:
            failureThreshold: 3
            httpGet:
+
 -            path: /
 +            path: /bad-endpoint
              port: 80
@@ -1062,12 +1139,14 @@ Let's increase the number of replicas to 6:
 ```diff
 $ kubectl diff -f 503_probes-images-rs-6-update-image-ko.yaml 
 diff -u -N /tmp/LIVE-648056706/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-796264697/apps.v1.ReplicaSet.default.probes-images
---- /tmp/LIVE-648056706/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:23:07.606688192 +0000
+--
+- /tmp/LIVE-648056706/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:23:07.606688192 +0000
 +++ /tmp/MERGED-796264697/apps.v1.ReplicaSet.default.probes-images      2019-05-11 16:23:07.619689354 +0000
 @@ -5,7 +5,7 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":3,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/bad-endpoint","port":80},"initialDelaySeconds":2}}]}}}}
    creationTimestamp: "2019-05-11T16:20:36Z"
+
 -  generation: 2
 +  generation: 3
    labels:
@@ -1077,6 +1156,7 @@ diff -u -N /tmp/LIVE-648056706/apps.v1.ReplicaSet.default.probes-images /tmp/MER
    selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images
    uid: b57546b3-7408-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 3
 +  replicas: 6
    selector:
@@ -1130,17 +1210,19 @@ $ kubectl describe pods -l app=probes-images | grep Warning
   Warning  Unhealthy  1s (x20 over 3m11s)  kubelet, cnbcn-k8s-study-jam-np-fw7x  Readiness probe failed: HTTP probe failed with statuscode: 404
 ```
 
-### 5.3. Update the `ReplicaSet` `Pod` template with the fixed `ReadinessProbe`
+### Update the `ReplicaSet` `Pod` template with the fixed `ReadinessProbe`
 
 ```diff
 $ kubectl diff -f 504_probes-images-rs-9-update-image-ok.yaml 
 diff -u -N /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-362151945/apps.v1.ReplicaSet.default.probes-images
---- /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:30:04.733986406 +0000
+--
+- /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:30:04.733986406 +0000
 +++ /tmp/MERGED-362151945/apps.v1.ReplicaSet.default.probes-images      2019-05-11 16:30:04.746987569 +0000
 @@ -5,7 +5,7 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":6,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/bad-endpoint","port":80},"initialDelaySeconds":2}}]}}}}
    creationTimestamp: "2019-05-11T16:20:36Z"
+
 -  generation: 3
 +  generation: 4
    labels:
@@ -1150,6 +1232,7 @@ diff -u -N /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.probes-images /tmp/MER
    selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images
    uid: b57546b3-7408-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 6
 +  replicas: 9
    selector:
@@ -1159,6 +1242,7 @@ diff -u -N /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.probes-images /tmp/MER
          readinessProbe:
            failureThreshold: 3
            httpGet:
+
 -            path: /bad-endpoint
 +            path: /
              port: 80
@@ -1210,6 +1294,8 @@ probes-images-ssxzx   1/1     Running   0          60s
 ```
 
 The new `ReplicaSet` template is creating healthy `Pods`!
+
+### Clean up the failing versions and the old ones
 
 Now, let's clean up the failing `Pods` by scaling back to 6!
 
@@ -1322,12 +1408,14 @@ Let's scale back to 6, so we will have the 3 replicas with the old version and 3
 
 ```diff
 diff -u -N /tmp/LIVE-571681951/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-052727154/apps.v1.ReplicaSet.default.probes-images
---- /tmp/LIVE-571681951/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:58:39.800320854 +0000
+--
+- /tmp/LIVE-571681951/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:58:39.800320854 +0000
 +++ /tmp/MERGED-052727154/apps.v1.ReplicaSet.default.probes-images      2019-05-11 16:58:39.823322911 +0000
 @@ -5,7 +5,7 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":6,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/","port":80},"initialDelaySeconds":2}}]}}}}
    creationTimestamp: "2019-05-11T16:20:36Z"
+
 -  generation: 20
 +  generation: 21
    labels:
@@ -1337,6 +1425,7 @@ diff -u -N /tmp/LIVE-571681951/apps.v1.ReplicaSet.default.probes-images /tmp/MER
    selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images
    uid: b57546b3-7408-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 3
 +  replicas: 6
    selector:
@@ -1349,6 +1438,7 @@ diff -u -N /tmp/LIVE-571681951/apps.v1.ReplicaSet.default.probes-images /tmp/MER
 +        version: v2.0
      spec:
        containers:
+       
        - image: raelga/cats:blanca
 exit status 1
 ```
@@ -1431,7 +1521,8 @@ So let's update the `ReplicaSet` with the new selector!
 
 ```diff
 $ diff -U5 505_probes-images-rs-6-update-image-ok.yaml 506_probes-images-rs-update-selector.yaml 
---- 505_probes-images-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
+--
+- 505_probes-images-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
 +++ 506_probes-images-rs-update-selector.yaml   2019-05-11 17:09:35.580954662 +0000
 @@ -7,10 +7,11 @@
  spec:
@@ -1456,12 +1547,14 @@ As we already saw before, the `ReplicaSet` selector field is `immutable`, so we 
 
 ```diff
 $ diff -U5 505_probes-images-rs-6-update-image-ok.yaml 507_probes-images-v2.0-rs.yaml 
---- 505_probes-images-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
+--
+- 505_probes-images-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
 +++ 507_probes-images-v2.0-rs.yaml      2019-05-11 17:09:20.425599538 +0000
 @@ -1,16 +1,17 @@
  apiVersion: apps/v1
  kind: ReplicaSet
  metadata:
+
 -  name: probes-images
 +  name: probes-images-v2.0
    labels:
@@ -1527,12 +1620,14 @@ Let's scale down both `ReplicaSets` and see what happens:
 ```diff
 $ kubectl diff -f 508_probes-images-scale-down-both-rs.yaml 
 diff -u -N /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-238269447/apps.v1.ReplicaSet.default.probes-images
---- /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.probes-images        2019-05-11 17:41:33.346631258 +0000
+--
+- /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.probes-images        2019-05-11 17:41:33.346631258 +0000
 +++ /tmp/MERGED-238269447/apps.v1.ReplicaSet.default.probes-images      2019-05-11 17:41:33.360632510 +0000
 @@ -5,7 +5,7 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":6,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images","version":"v2.0"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/","port":80},"initialDelaySeconds":2}}]}}}}
    creationTimestamp: "2019-05-11T16:20:36Z"
+
 -  generation: 23
 +  generation: 24
    labels:
@@ -1542,18 +1637,21 @@ diff -u -N /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.probes-images /tmp/MER
    selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images
    uid: b57546b3-7408-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 6
 +  replicas: 2
    selector:
      matchLabels:
        app: probes-images
 diff -u -N /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.probes-images-v2.0 /tmp/MERGED-238269447/apps.v1.ReplicaSet.default.probes-images-v2.0
---- /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.probes-images-v2.0   2019-05-11 17:41:33.486643786 +0000
+--
+- /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.probes-images-v2.0   2019-05-11 17:41:33.486643786 +0000
 +++ /tmp/MERGED-238269447/apps.v1.ReplicaSet.default.probes-images-v2.0 2019-05-11 17:41:33.500645039 +0000
 @@ -5,7 +5,7 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images-v2.0","namespace":"default"},"spec":{"replicas":6,"selector":{"matchLabels":{"app":"probes-images","version":"v2.0"}},"template":{"metadata":{"labels":{"app":"probes-images","version":"v2.0"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/","port":80},"initialDelaySeconds":2}}]}}}}
    creationTimestamp: "2019-05-11T17:13:37Z"
+
 -  generation: 1
 +  generation: 2
    labels:
@@ -1563,6 +1661,7 @@ diff -u -N /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.probes-images-v2.0 /tm
    selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images-v2.0
    uid: 1d717f4e-7410-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 6
 +  replicas: 2
    selector:
@@ -1635,12 +1734,14 @@ And now scale both up!
 ```diff
 $ kubectl diff -f 509_probes-images-scale-up-both-rs.yaml   
 diff -u -N /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-606903056/apps.v1.ReplicaSet.default.probes-images
---- /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.probes-images        2019-05-11 17:43:39.257897487 +0000
+--
+- /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.probes-images        2019-05-11 17:43:39.257897487 +0000
 +++ /tmp/MERGED-606903056/apps.v1.ReplicaSet.default.probes-images      2019-05-11 17:43:39.278899367 +0000
 @@ -5,7 +5,7 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images","version":"v2.0"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/","port":80},"initialDelaySeconds":2}}]}}}}
    creationTimestamp: "2019-05-11T16:20:36Z"
+
 -  generation: 24
 +  generation: 25
    labels:
@@ -1650,18 +1751,21 @@ diff -u -N /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.probes-images /tmp/MER
    selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images
    uid: b57546b3-7408-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 2
 +  replicas: 4
    selector:
      matchLabels:
        app: probes-images
 diff -u -N /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.probes-images-v2.0 /tmp/MERGED-606903056/apps.v1.ReplicaSet.default.probes-images-v2.0
---- /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.probes-images-v2.0   2019-05-11 17:43:39.420912073 +0000
+--
+- /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.probes-images-v2.0   2019-05-11 17:43:39.420912073 +0000
 +++ /tmp/MERGED-606903056/apps.v1.ReplicaSet.default.probes-images-v2.0 2019-05-11 17:43:39.440913863 +0000
 @@ -5,7 +5,7 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images-v2.0","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"probes-images","version":"v2.0"}},"template":{"metadata":{"labels":{"app":"probes-images","version":"v2.0"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/","port":80},"initialDelaySeconds":2}}]}}}}
    creationTimestamp: "2019-05-11T17:13:37Z"
+
 -  generation: 2
 +  generation: 3
    labels:
@@ -1671,6 +1775,7 @@ diff -u -N /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.probes-images-v2.0 /tm
    selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images-v2.0
    uid: 1d717f4e-7410-11e9-9a36-eefc5b75fd0d
  spec:
+
 -  replicas: 2
 +  replicas: 4
    selector:
