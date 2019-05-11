@@ -1264,6 +1264,60 @@ Wow! It removed the new ones instead of the old ones! Why?
 
 In the first scenario, the `ReplicaSet` saw that some of the replicas weren't `READY` and removed then. But now, both the ones with the new image and the ones with the old are healthy, so in that scenario, will remove always the newest ones.
 
+[pkg/controller/replicaset/replica_set.go:getPodsToDelete](https://github.com/kubernetes/kubernetes/blob/ed2bdd53dc6f44f36f7912ed0e1a7e5ba800151b/pkg/controller/replicaset/replica_set.go#L684)
+```go
+func getPodsToDelete(filteredPods []*v1.Pod, diff int) []*v1.Pod {
+	// No need to sort pods if we are about to delete all of them.
+	// diff will always be <= len(filteredPods), so not need to handle > case.
+	if diff < len(filteredPods) {
+		// Sort the pods in the order such that not-ready < ready, unscheduled
+		// < scheduled, and pending < running. This ensures that we delete pods
+		// in the earlier stages whenever possible.
+		sort.Sort(controller.ActivePods(filteredPods))
+	}
+	return filteredPods[:diff]
+}
+```
+
+And the code for `ActivePods`:
+
+[pkg/controller/controller_utils.go:ActivePods](https://github.com/kubernetes/kubernetes/blob/ed2bdd53dc6f44f36f7912ed0e1a7e5ba800151b/pkg/controller/controller_utils.go#L735)
+```go
+func (s ActivePods) Less(i, j int) bool {
+	// 1. Unassigned < assigned
+	// If only one of the pods is unassigned, the unassigned one is smaller
+	if s[i].Spec.NodeName != s[j].Spec.NodeName && (len(s[i].Spec.NodeName) == 0 || len(s[j].Spec.NodeName) == 0) {
+		return len(s[i].Spec.NodeName) == 0
+	}
+	// 2. PodPending < PodUnknown < PodRunning
+	m := map[v1.PodPhase]int{v1.PodPending: 0, v1.PodUnknown: 1, v1.PodRunning: 2}
+	if m[s[i].Status.Phase] != m[s[j].Status.Phase] {
+		return m[s[i].Status.Phase] < m[s[j].Status.Phase]
+	}
+	// 3. Not ready < ready
+	// If only one of the pods is not ready, the not ready one is smaller
+	if podutil.IsPodReady(s[i]) != podutil.IsPodReady(s[j]) {
+		return !podutil.IsPodReady(s[i])
+	}
+	// TODO: take availability into account when we push minReadySeconds information from deployment into pods,
+	//       see https://github.com/kubernetes/kubernetes/issues/22065
+	// 4. Been ready for empty time < less time < more time
+	// If both pods are ready, the latest ready one is smaller
+	if podutil.IsPodReady(s[i]) && podutil.IsPodReady(s[j]) && !podReadyTime(s[i]).Equal(podReadyTime(s[j])) {
+		return afterOrZero(podReadyTime(s[i]), podReadyTime(s[j]))
+	}
+	// 5. Pods with containers with higher restart counts < lower restart counts
+	if maxContainerRestarts(s[i]) != maxContainerRestarts(s[j]) {
+		return maxContainerRestarts(s[i]) > maxContainerRestarts(s[j])
+	}
+	// 6. Empty creation time pods < newer pods < older pods
+	if !s[i].CreationTimestamp.Equal(&s[j].CreationTimestamp) {
+		return afterOrZero(&s[i].CreationTimestamp, &s[j].CreationTimestamp)
+	}
+	return false
+}
+```
+
 Let's scale back to 6, so we will have the 3 replicas with the old version and 3 replicas with the new template:
 
 ```diff
