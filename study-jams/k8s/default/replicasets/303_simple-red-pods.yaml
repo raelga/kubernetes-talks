@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-red-pod-1
+  labels:
+    app: simple
+    color: red
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:liam

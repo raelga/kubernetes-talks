@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: probes
+  name: probes-images
   labels:
-    app: probes
+    app: probes-images
 spec:
   replicas: 6
   selector:
     matchLabels:
-      app: probes
+      app: probes-images
   template:
     metadata:
       labels:
-        app: probes
+        app: probes-images
     spec:
       containers:
       - name: app

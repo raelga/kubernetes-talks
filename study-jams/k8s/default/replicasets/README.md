@@ -1,27 +1,86 @@
-## ReplicaSets
+# `ReplicaSets`
 
-## Create a simple replicaset with 1 pod
+>>>
+A ReplicaSet is defined with fields, including a selector that specifies how to identify Pods it can acquire, a number of replicas indicating how many Pods it should be maintaining, and a pod template specifying the data of new Pods it should create to meet the number of replicas criteria. A ReplicaSet then fulfills its purpose by creating and deleting Pods as needed to reach the desired number. When a ReplicaSet needs to create new Pods, it uses its Pod template.
+>>>
+
+- https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+
+- https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#replicasetspec-v1-apps
+
+**Some notes**:
+
+- Kubernetes is fast, specially when working with lightweight containers, so to see what is happening, we'll need to run `kubectl` commands fast.
+
+That's why we will run the `kubectl` command to apply changes and if works, immediately after, a `kubectl get` with the `-w, --watch` flag:
+
+`-w, --watch=false: After listing/getting the requested object, watch for changes. Uninitialized objects are excluded if no object name is provided.`
+
+This will allow us to get the information on what is happening just after the command is applied:
 
 ```
-$ kubectl apply -f 00_simple-rs.yaml
+$ kubectl run --generator 'run-pod/v1' --image bash:5.0 --restart Never sleepy -- sleep 10 && kubectl get pods sleepy -w
+pod/sleepy created
+NAME     READY   STATUS              RESTARTS   AGE
+sleepy   0/1     ContainerCreating   0          0s
+sleepy   1/1     Running             0          1s
+sleepy   0/1     Completed           0          12s
+```
+
+This command creates a `Pod` called `sleepy` with a container using the image `bash:5.0` and running a `sleep 10`. Once the first command completes, the `kubectl get pods sleepy -w`, will `watch` a `Pod` called `sleepy` and print a new line for each change in the `Pod` status.
+
+## 1. Create a simple `ReplicaSet` with 1 pod
+
+Create the `ReplicaSet` object:
+
+```yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: simple
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple
+  template:
+    metadata:
+      labels:
+        app: simple
+    spec:
+      containers:
+      - name: app
+        image: raelga/cats:gatet
+```
+
+Apply the `yaml`:
+
+```
+$ kubectl apply -f 101_simple-rs.yaml
 replicaset.apps/simple created
 ```
 
 ```
-$ kubectl get rs
-NAME     DESIRED   CURRENT   READY   AGE
-simple   1         1         1       7s
+$ kubectl get pods
+NAME           READY   STATUS              RESTARTS   AGE
+simple-hfsgg   0/1     ContainerCreating   0          3s
 ```
 
 ```
 $ kubectl get pods
 NAME           READY   STATUS    RESTARTS   AGE
-simple-s8n2f   1/1     Running   0          8s
+simple-hfsgg   1/1     Running   0          32s
 ```
 
-## Scaling ReplicaSets
+```
+$ kubectl get rs simple
+NAME     DESIRED   CURRENT   READY   AGE
+simple   1         1         1       29s
+```
 
-### Double the numbers of replicas with scale
+## 2. Scaling `ReplicaSets`
+
+### 2.1. Double the numbers of replicas with `kubectl scale`
 
 ```
 $ kubectl scale rs/simple --replicas 2
@@ -29,20 +88,19 @@ replicaset.extensions/simple scaled
 ```
 
 ```
-$ kubectl get pods
-NAME           READY   STATUS              RESTARTS   AGE
-simple-bs87n   0/1     ContainerCreating   0          1s
-simple-s8n2f   1/1     Running             0          4m17s
+$ k get rs simple
+NAME     DESIRED   CURRENT   READY   AGE
+simple   2         2         2       104s
 ```
 
 ```
 $ kubectl get pods
 NAME           READY   STATUS    RESTARTS   AGE
-simple-s8n2f   1/1     Running   0          113s
-simple-t4ldv   1/1     Running   0          3s
+simple-hfsgg   1/1     Running   0          74s
+simple-kj8k8   1/1     Running   0          3s
 ```
 
-## Scale back to 1 replica
+### 2.2. Scale back to 1 replica
 
 ```
 $ kubectl scale rs/simple --replicas 1
@@ -52,37 +110,106 @@ replicaset.extensions/simple scaled
 ```
 $ kubectl get pods
 NAME           READY   STATUS        RESTARTS   AGE
-simple-bpq7w   1/1     Terminating   0          30s
-simple-s8n2f   1/1     Running       0          3m15s
+simple-s8n2f   1/1     Terminating   0          48s
+simple-hfsgg   1/1     Running       0          119s
 ```
 
 ```
 $ kubectl get pods
 NAME           READY   STATUS    RESTARTS   AGE
-simple-s8n2f   1/1     Running   0          3m28s
+simple-hfsgg   1/1     Running   0          125s
 ```
 
-### Update the replica count with the yaml definition
+### 2.3. Update the `ReplicaSet` with the yaml definition
 
-```
-$ k diff -f 01_simple-rs-updated.yaml
-diff -u -N /tmp/LIVE-132357089/apps.v1.ReplicaSet.default.simple /tmp/MERGED-724057548/apps.v1.ReplicaSet.default.simple
---- /tmp/LIVE-132357089/apps.v1.ReplicaSet.default.simple       2019-05-09 16:00:06.496205700 +0200
-+++ /tmp/MERGED-724057548/apps.v1.ReplicaSet.default.simple     2019-05-09 16:00:06.596947400 +0200
+We also add information about the resources needed by the app container of the pod, to let the scheduler know how many pods can fit into a node.
+
+```diff
+$ kubectl diff -f 201_simple-rs-5.yaml 
+diff -u -N /tmp/LIVE-860683615/apps.v1.ReplicaSet.default.simple /tmp/MERGED-116908338/apps.v1.ReplicaSet.default.simple
+--- /tmp/LIVE-860683615/apps.v1.ReplicaSet.default.simple       2019-05-11 11:05:20.751504492 +0000
++++ /tmp/MERGED-116908338/apps.v1.ReplicaSet.default.simple     2019-05-11 11:05:20.767506423 +0000
 @@ -5,14 +5,14 @@
      kubectl.kubernetes.io/last-applied-configuration: |
        {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"name":"simple","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"simple"}},"template":{"metadata":{"labels":{"app":"simple"}},"spec":{"containers":[{"image":"raelga/cats:gatet","name":"app"}]}}}}
-   creationTimestamp: "2019-05-09T13:53:29Z"
--  generation: 11
-+  generation: 12
+   creationTimestamp: "2019-05-11T11:01:50Z"
+-  generation: 3
++  generation: 4
    name: simple
    namespace: default
-   resourceVersion: "87268"
+   resourceVersion: "1560"
    selfLink: /apis/apps/v1/namespaces/default/replicasets/simple
-   uid: d321dab8-7261-11e9-958d-2ad697fba57a
+   uid: 2db859ed-73dc-11e9-9a36-eefc5b75fd0d
  spec:
 -  replicas: 1
 +  replicas: 5
+   selector:
+     matchLabels:
+       app: simple
+@@ -26,7 +26,13 @@
+       - image: raelga/cats:gatet
+         imagePullPolicy: IfNotPresent
+         name: app
+-        resources: {}
++        resources:
++          limits:
++            cpu: "1"
++            memory: 100Mi
++          requests:
++            cpu: 100m
++            memory: 50Mi
+         terminationMessagePath: /dev/termination-log
+         terminationMessagePolicy: File
+       dnsPolicy: ClusterFirst
+exit status 1
+```
+
+```
+$ kubectl apply -f 201_simple-rs-5.yaml && kubectl get pods -w
+replicaset.apps/simple configured
+NAME           READY   STATUS              RESTARTS   AGE
+simple-dgksp   0/1     ContainerCreating   0          0s
+simple-hfsgg   1/1     Running             0          4m58s
+simple-hm6gj   0/1     ContainerCreating   0          0s
+simple-htdzs   0/1     ContainerCreating   0          0s
+simple-rnbt6   0/1     ContainerCreating   0          0s
+simple-htdzs   1/1     Running             0          2s
+simple-hm6gj   1/1     Running             0          3s
+simple-dgksp   1/1     Running             0          4s
+simple-rnbt6   1/1     Running             0          4s
+```
+
+```
+$ kubectl get pods
+NAME           READY   STATUS    RESTARTS   AGE
+simple-dgksp   1/1     Running   0          10s
+simple-hfsgg   1/1     Running   0          5m8s
+simple-hm6gj   1/1     Running   0          10s
+simple-htdzs   1/1     Running   0          10s
+simple-rnbt6   1/1     Running   0          10s
+```
+
+### 2.4. Scale to 50 replicas
+
+```diff
+$ kubectl diff -f 202_simple-rs-50.yaml
+diff -u -N /tmp/LIVE-082216881/apps.v1.ReplicaSet.default.simple /tmp/MERGED-524798300/apps.v1.ReplicaSet.default.simple
+--- /tmp/LIVE-082216881/apps.v1.ReplicaSet.default.simple       2019-05-11 11:09:06.426174215 +0000
++++ /tmp/MERGED-524798300/apps.v1.ReplicaSet.default.simple     2019-05-11 11:09:06.440175724 +0000
+@@ -5,14 +5,14 @@
+     kubectl.kubernetes.io/last-applied-configuration: |
+       {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"name":"simple","namespace":"default"},"spec":{"replicas":5,"selector":{"matchLabels":{"app":"simple"}},"template":{"metadata":{"labels":{"app":"simple"}},"spec":{"containers":[{"image":"raelga/cats:gatet","name":"app","resources":{"limits":{"cpu":"1","memory":"100Mi"},"requests":{"cpu":"50m","memory":"50Mi"}}}]}}}}
+   creationTimestamp: "2019-05-11T11:01:50Z"
+-  generation: 9
++  generation: 10
+   name: simple
+   namespace: default
+   resourceVersion: "2292"
+   selfLink: /apis/apps/v1/namespaces/default/replicasets/simple
+   uid: 2db859ed-73dc-11e9-9a36-eefc5b75fd0d
+ spec:
+-  replicas: 5
++  replicas: 50
    selector:
      matchLabels:
        app: simple
@@ -90,72 +217,69 @@ exit status 1
 ```
 
 ```
-$ k apply -f 01_simple-rs-updated.yaml
+$ k apply -f 202_simple-rs-50.yaml && kubectl get rs simple -w
 replicaset.apps/simple configured
-```
-
-```
-$ k get pods
-NAME           READY   STATUS    RESTARTS   AGE
-simple-4vv7f   1/1     Running   0          28s
-simple-s8n2f   1/1     Running   0          7m15s
-```
-
-### Scale to 50 replicas
-
-```
-$ k apply -f 02_simple-rs-50.yaml
-replicaset.apps/simple configured
-```
-
-```
-$ k get rs -w
 NAME     DESIRED   CURRENT   READY   AGE
-simple   50        50        18      9m16s
-simple   50        50        19      9m18s
-simple   50        50        20      9m18s
-simple   50        50        21      9m18s
-simple   50        50        22      9m18s
-simple   50        50        23      9m18s
-simple   50        50        24      9m19s
-simple   50        50        25      9m19s
-simple   50        50        26      9m19s
-simple   50        50        27      9m19s
-simple   50        50        28      9m20s
-simple   50        50        29      9m20s
-simple   50        50        30      9m21s
-simple   50        50        31      9m21s
-simple   50        50        32      9m22s
-simple   50        50        33      9m23s
-simple   50        50        34      9m24s
-simple   50        50        35      9m24s
+simple   50        5         5       12m
+simple   50        5         5       12m
+simple   50        50        5       12m
+simple   50        50        6       12m
+simple   50        50        7       12m
+simple   50        50        8       12m
+simple   50        50        9       12m
+simple   50        50        10      12m
+simple   50        50        11      12m
+simple   50        50        12      12m
+simple   50        50        13      12m
+simple   50        50        14      12m
+simple   50        50        15      12m
+simple   50        50        16      12m
+simple   50        50        17      12m
+simple   50        50        18      12m
+simple   50        50        19      13m
+simple   50        50        20      13m
+simple   50        50        21      13m
+simple   50        50        22      13m
+simple   50        50        23      13m
+simple   50        50        24      13m
+simple   50        50        25      13m
+simple   50        50        26      13m
+simple   50        50        27      13m
+simple   50        50        28      13m
+simple   50        50        29      13m
+simple   50        50        30      13m
+simple   50        50        31      13m
+simple   50        50        32      13m
+simple   50        50        33      13m
+simple   50        50        34      13m
+simple   50        50        35      13m
 ```
 
-Check the pods that are not `Running`
+Check the pods that are not `Running`:
 
 ```
-$ k get pods --field-selector='status.phase!=Running'
+$ kubectl get pods --field-selector='status.phase!=Running'
 NAME           READY   STATUS    RESTARTS   AGE
-simple-2dpnz   0/1     Pending   0          3m31s
-simple-5lqk2   0/1     Pending   0          3m31s
-simple-6q82m   0/1     Pending   0          3m31s
-simple-7j858   0/1     Pending   0          3m31s
-simple-7wvm8   0/1     Pending   0          3m32s
-simple-bwvbk   0/1     Pending   0          3m31s
-simple-gh57p   0/1     Pending   0          3m31s
-simple-gvlxt   0/1     Pending   0          3m31s
-simple-lrfzs   0/1     Pending   0          3m32s
-simple-qj97b   0/1     Pending   0          3m31s
-simple-rszsv   0/1     Pending   0          3m31s
-simple-tglzz   0/1     Pending   0          3m31s
-simple-xbzcl   0/1     Pending   0          3m31s
-simple-xfkhm   0/1     Pending   0          3m31s
-simple-zdd5x   0/1     Pending   0          3m31s
+simple-7fbc4   0/1     Pending   0          39s
+simple-9qsdq   0/1     Pending   0          39s
+simple-b2xlw   0/1     Pending   0          39s
+simple-bfdrl   0/1     Pending   0          39s
+simple-dsnb7   0/1     Pending   0          39s
+simple-f2jd6   0/1     Pending   0          38s
+simple-gn48j   0/1     Pending   0          39s
+simple-htlsv   0/1     Pending   0          39s
+simple-qdhhh   0/1     Pending   0          39s
+simple-rjvpm   0/1     Pending   0          39s
+simple-rnbs8   0/1     Pending   0          39s
+simple-s9msf   0/1     Pending   0          39s
+simple-snkvj   0/1     Pending   0          38s
+simple-th97b   0/1     Pending   0          39s
+simple-tzz9n   0/1     Pending   0          39s
 ```
 
 ```
-$ k describe $(k get pods --field-selector='status.phase!=Running' --output name | head -n1)
-Name:               simple-2dpnz
+$ kubectl describe $(kubectl get pods --field-selector='status.phase!=Running' --output name | head -n1)
+Name:               simple-7fbc4
 Namespace:          default
 Priority:           0
 PriorityClassName:  <none>
@@ -163,7 +287,7 @@ Node:               <none>
 Labels:             app=simple
 Annotations:        <none>
 Status:             Pending
-IP:
+IP:                 
 Controlled By:      ReplicaSet/simple
 Containers:
   app:
@@ -178,80 +302,103 @@ Containers:
       memory:     50Mi
     Environment:  <none>
     Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from default-token-sclqf (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-5mrjx (ro)
 Conditions:
   Type           Status
-  PodScheduled   False
+  PodScheduled   False 
 Volumes:
-  default-token-sclqf:
+  default-token-5mrjx:
     Type:        Secret (a volume populated by a Secret)
-    SecretName:  default-token-sclqf
+    SecretName:  default-token-5mrjx
     Optional:    false
 QoS Class:       Burstable
 Node-Selectors:  <none>
 Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
                  node.kubernetes.io/unreachable:NoExecute for 300s
 Events:
-  Type     Reason            Age                  From               Message
-  ----     ------            ----                 ----               -------
-  Warning  FailedScheduling  41s (x6 over 3m58s)  default-scheduler  0/2 nodes are available: 2 Insufficient cpu.
+  Type     Reason            Age                From               Message
+  ----     ------            ----               ----               -------
+  Warning  FailedScheduling  59s (x2 over 59s)  default-scheduler  0/2 nodes are available: 2 Insufficient cpu.
 ```
 
-We can see that the cannot be scheduled due to insufficient cpu count.
+We can see that the *Pod* cannot be scheduled due to insufficient cpus in the node pool.
 
 `Warning  FailedScheduling  41s (x6 over 3m58s)  default-scheduler  0/2 nodes are available: 2 Insufficient cpu.`
 
-### Scale down back to 5 replicas
-
+### 2.5. Scale down back to 5 replicas
 
 ```
-$ k scale rs/simple --replicas 5
+$ kubectl scale rs/simple --replicas 5 && kubectl get rs/simple -w
 replicaset.extensions/simple scaled
+NAME     DESIRED   CURRENT   READY   AGE
+simple   5         50        35      34m
+simple   5         50        35      34m
+simple   5         5         5       34m
 ```
 
 ```
-$ k get rs -w
-NAME     DESIRED   CURRENT   READY   AGE
-simple   5         50        35      16m
-simple   5         50        35      16m
-simple   5         5         5       16m
+$ kubectl get pods  
+NAME           READY   STATUS    RESTARTS   AGE
+simple-hfsgg   1/1     Running   0          34m
+simple-hzhpc   1/1     Running   0          22m
+simple-wjdf9   1/1     Running   0          22m
+simple-xgq2x   1/1     Running   0          22m
+simple-xh5hm   1/1     Running   0          22m
+```
+
+## 3. Selectors and Pods
+
+### 3.1. Deploy some **blue** pods
+
+```yaml
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-blue-pod-1
+  labels:
+    app: simple
+    color: blue
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:liam
+...
+```
+
+```
+$ kubectl apply -f 301_simple-blue-pods.yaml && kubectl get pods -w
+pod/simple-blue-pod-1 created
+pod/simple-blue-pod-2 created
+pod/simple-blue-pod-3 created
+NAME                READY   STATUS        RESTARTS   AGE
+simple-blue-pod-1   0/1     Terminating   0          1s
+simple-blue-pod-2   0/1     Terminating   0          0s
+simple-blue-pod-3   0/1     Terminating   0          0s
+simple-hfsgg        1/1     Running       0          107m
+simple-hzhpc        1/1     Running       0          95m
+simple-wjdf9        1/1     Running       0          95m
+simple-xgq2x        1/1     Running       0          95m
+simple-xh5hm        1/1     Running       0          95m
+simple-blue-pod-3   0/1     Terminating   0          2s
+simple-blue-pod-3   0/1     Terminating   0          2s
+simple-blue-pod-1   0/1     Terminating   0          5s
+simple-blue-pod-1   0/1     Terminating   0          5s
+simple-blue-pod-2   0/1     Terminating   0          11s
+simple-blue-pod-2   0/1     Terminating   0          11s
 ```
 
 ```
 $ k get pods
 NAME           READY   STATUS    RESTARTS   AGE
-simple-7vq5f   1/1     Running   0          7m48s
-simple-nprrb   1/1     Running   0          7m48s
-simple-qk847   1/1     Running   0          7m48s
-simple-qsgmr   1/1     Running   0          7m48s
-simple-rccqx   1/1     Running   0          16m
+simple-hfsgg   1/1     Running   0          108m
+simple-hzhpc   1/1     Running   0          96m
+simple-wjdf9   1/1     Running   0          96m
+simple-xgq2x   1/1     Running   0          96m
+simple-xh5hm   1/1     Running   0          96m
 ```
 
-## Selectors and Pods
-
-### Deploy some _blue_ pods
-
-```
-$ k apply -f 04_simple-blue-pods.yaml
-pod/simple-blue-pod-1 created
-pod/simple-blue-pod-2 created
-pod/simple-blue-pod-3 created
-```
-
-```
-$ k get pods
-NAME                READY   STATUS        RESTARTS   AGE
-simple-7vq5f        1/1     Running       0          8m50s
-simple-blue-pod-1   0/1     Terminating   0          3s
-simple-blue-pod-2   0/1     Terminating   0          3s
-simple-blue-pod-3   0/1     Terminating   0          3s
-simple-nprrb        1/1     Running       0          8m50s
-simple-qk847        1/1     Running       0          8m50s
-simple-qsgmr        1/1     Running       0          8m50s
-simple-rccqx        1/1     Running       0          17m
-```
-
-The new _blue_ pods get Terminated! Why??
+The new *blue* pods get `Terminated`! Why??
 
 ```
 $ k describe rs/simple
@@ -280,76 +427,127 @@ Pod Template:
     Mounts:       <none>
   Volumes:        <none>
 Events:
-  Type    Reason            Age                 From                   Message
-  ----    ------            ----                ----                   -------
-  Normal  SuccessfulCreate  21m                 replicaset-controller  Created pod: simple-rccqx
-  Normal  SuccessfulCreate  15m                 replicaset-controller  Created pod: simple-t5dv5
-  Normal  SuccessfulCreate  15m                 replicaset-controller  Created pod: simple-4b2q9
-  Normal  SuccessfulCreate  15m                 replicaset-controller  Created pod: simple-thbgb
-  Normal  SuccessfulCreate  15m                 replicaset-controller  Created pod: simple-9zjsh
-  Normal  SuccessfulCreate  15m                 replicaset-controller  Created pod: simple-crmk7
-  Normal  SuccessfulCreate  15m                 replicaset-controller  Created pod: simple-rjzgj
-  Normal  SuccessfulCreate  15m                 replicaset-controller  Created pod: simple-c6kj5
-  Normal  SuccessfulCreate  15m                 replicaset-controller  Created pod: simple-fqwn5
-  Normal  SuccessfulCreate  15m (x17 over 15m)  replicaset-controller  (combined from similar events): Created pod: simple-nsd4p
-  Normal  SuccessfulDelete  7s (x179 over 12m)  replicaset-controller  (combined from similar events): Deleted pod: simple-blue-pod-1
+  Type    Reason            Age   From                   Message
+  ----    ------            ----  ----                   -------
+  Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-1
+  Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-2
+  Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-3
 ```
 
-We can see that the ReplicaSet terminated those pods:
-
-`Normal  SuccessfulDelete  7s (x179 over 12m)  replicaset-controller  (combined from similar events): Deleted pod: simple-blue-pod-1`
-
-### Deploy a _blue_ replicaset
+We can see that the `ReplicaSet` terminated those *Pods*:
 
 ```
-$ k apply -f 05_simple-blue-rs.yaml
+  Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-1
+  Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-2
+  Normal  SuccessfulDelete  71s   replicaset-controller  Deleted pod: simple-blue-pod-3
+```
+
+### 3.2. Deploy a **blue** `ReplicaSet`
+
+```
+$ kubectl apply -f 302_simple-blue-rs.yaml && kubectl get pods -w
 replicaset.apps/simple-blue created
-```
-
-```
-$ k get pods
 NAME                READY   STATUS              RESTARTS   AGE
-simple-7vq5f        1/1     Running             0          13m
-simple-blue-bts4g   0/1     ContainerCreating   0          4s
-simple-blue-ndrn9   0/1     ContainerCreating   0          4s
-simple-blue-q87s9   0/1     ContainerCreating   0          4s
-simple-blue-rlccs   0/1     ContainerCreating   0          4s
-simple-blue-zgfr5   0/1     ContainerCreating   0          4s
-simple-nprrb        1/1     Running             0          13m
-simple-qk847        1/1     Running             0          13m
-simple-qsgmr        1/1     Running             0          13m
-simple-rccqx        1/1     Running             0          22m
+simple-blue-cff2b   0/1     Pending             0          0s
+simple-blue-dp26t   0/1     Pending             0          0s
+simple-blue-kfl7z   0/1     Pending             0          0s
+simple-blue-kr46r   0/1     Pending             0          0s
+simple-blue-nng6p   0/1     ContainerCreating   0          0s
+simple-hfsgg        1/1     Running             0          112m
+simple-hzhpc        1/1     Running             0          100m
+simple-wjdf9        1/1     Running             0          100m
+simple-xgq2x        1/1     Running             0          100m
+simple-xh5hm        1/1     Running             0          100m
+simple-blue-kfl7z   0/1     ContainerCreating   0          0s
+simple-blue-dp26t   0/1     ContainerCreating   0          0s
+simple-blue-cff2b   0/1     ContainerCreating   0          0s
+simple-blue-kr46r   0/1     ContainerCreating   0          0s
+simple-blue-cff2b   1/1     Running             0          2s
+simple-blue-kfl7z   1/1     Running             0          3s
+simple-blue-nng6p   1/1     Running             0          4s
+simple-blue-kr46r   1/1     Running             0          4s
+simple-blue-dp26t   1/1     Running             0          4s
 ```
 
 ```
-$ k get pods
+$ kubectl get pods
 NAME                READY   STATUS    RESTARTS   AGE
-simple-7vq5f        1/1     Running   0          13m
-simple-blue-bts4g   1/1     Running   0          9s
-simple-blue-ndrn9   1/1     Running   0          9s
-simple-blue-q87s9   1/1     Running   0          9s
-simple-blue-rlccs   1/1     Running   0          9s
-simple-blue-zgfr5   1/1     Running   0          9s
-simple-nprrb        1/1     Running   0          13m
-simple-qk847        1/1     Running   0          13m
-simple-qsgmr        1/1     Running   0          13m
-simple-rccqx        1/1     Running   0          22m
+simple-blue-cff2b   1/1     Running   0          11s
+simple-blue-dp26t   1/1     Running   0          11s
+simple-blue-kfl7z   1/1     Running   0          11s
+simple-blue-kr46r   1/1     Running   0          11s
+simple-blue-nng6p   1/1     Running   0          11s
+simple-hfsgg        1/1     Running   0          112m
+simple-hzhpc        1/1     Running   0          100m
+simple-wjdf9        1/1     Running   0          100m
+simple-xgq2x        1/1     Running   0          100m
+simple-xh5hm        1/1     Running   0          100m
 ```
 
 ```
-$ k get rs
+$ kubectl get rs
 NAME          DESIRED   CURRENT   READY   AGE
-simple        5         5         5       22m
-simple-blue   5         5         5       12s
+simple        5         5         5       112m
+simple-blue   5         5         5       34s
 ```
 
-Now the pods stay, but why?
+Now the *Pods* stay, but why?
 
-The selector is maching sets of pods, from most restrictive to less restrictive. So `rs/simple` with manage all pods with label: `app: simple` that doesn't match any other replicaset.
+The selector is matching sets of pods, from most restrictive to less restrictive. So `rs/simple` with manage all pods with label: `app: simple` that doesn't match any other replicaset.
 
-### ReplicaSet for non-colored pods only
+### 3.3. Run a _red_ pod
 
-The new selector for the `rs/simple-nocolor` will be:
+```yaml
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-red-pod-1
+  labels:
+    app: simple
+    color: red
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:liam
+```
+
+This new *Pods*, have a color label. Will be deleted?
+
+```
+$ kubectl apply -f 303_simple-red-pods.yaml && kubectl get pods -w
+pod/simple-red-pod-1 created
+NAME                READY   STATUS        RESTARTS   AGE
+simple-blue-cff2b   1/1     Running       0          75s
+simple-blue-dp26t   1/1     Running       0          75s
+simple-blue-kfl7z   1/1     Running       0          75s
+simple-blue-kr46r   1/1     Running       0          75s
+simple-blue-nng6p   1/1     Running       0          75s
+simple-hfsgg        1/1     Running       0          113m
+simple-hzhpc        1/1     Running       0          101m
+simple-red-pod-1    0/1     Terminating   0          0s
+simple-wjdf9        1/1     Running       0          101m
+simple-xgq2x        1/1     Running       0          101m
+simple-xh5hm        1/1     Running       0          101m
+simple-red-pod-1    0/1     Terminating   0          7s
+simple-red-pod-1    0/1     Terminating   0          7s
+```
+
+```
+$ kubectl describe rs simple | grep simple-red-pod
+  Normal  SuccessfulDelete  46s    replicaset-controller  Deleted pod: simple-red-pod-1
+```
+
+The **red** `Pod` is killed because:
+
+- Has the `app: simple` label selector
+- There is no any `ReplicaSet` for the `color: red` pods
+
+This pods matches `simple` `ReplicaSet` selector and there is already 5 pods pods matching the selector, so should be terminated.
+
+### 3.3. `ReplicaSet` for non-colored pods only
+
+The new selector for the `rs/simple-nocolor` will be a combination of a label and an expresion:
 
 ```yaml
   selector:
@@ -357,369 +555,917 @@ The new selector for the `rs/simple-nocolor` will be:
       app: simple
     matchExpressions:
       - { key: color, operator: DoesNotExist }
+```
 
+Let's try to update the `simple` `ReplicaSet`:
+
+```diff
+$ kubectl diff -f 304_simple-rs-nocolor-update.yaml 
+The ReplicaSet "simple" is invalid: spec.selector: Invalid value: v1.LabelSelector{MatchLabels:map[string]string{"app":"simple"}, MatchExpressions:[]v1.LabelSelectorRequirement{v1.LabelSelectorRequirement{Key:"color", Operator:"DoesNotExist", Values:[]string(nil)}}}: field is immutable
+```
+
+``ReplicaSets` are defined by the `.spec.selectors` and are inmmutable.`
+
+Let's create a new `ReplicaSet` then:
+
+```
+$ kubectl apply -f 305_simple-nocolor-rs.yaml
+replicaset.apps/simple-nocolor created
 ```
 
 ```
-$ k get rs
+$ kubectl get rs
 NAME             DESIRED   CURRENT   READY   AGE
-simple           5         5         5       28m
-simple-blue      5         5         5       5m33s
-simple-nocolor   5         5         5       5s
+simple           5         5         5       121m
+simple-blue      5         5         5       9m38s
+simple-nocolor   5         5         5       16s
 ```
 
-Let's create some orange pods:
+Let's create some orange `Pods`:
 
 ```
-$ k apply -f 08_simple-orange-pods.yaml
+$ kubectl apply -f 306_simple-orange-pods.yaml && kubectl get pods -w -l color=orange
 pod/simple-orange-pod-1 created
 pod/simple-orange-pod-2 created
 pod/simple-orange-pod-3 created
-```
-
-```
-$ k get pods -l color=orange
 NAME                  READY   STATUS        RESTARTS   AGE
-simple-orange-pod-1   0/1     Terminating   0          2s
-simple-orange-pod-2   0/1     Terminating   0          2s
-simple-orange-pod-3   0/1     Terminating   0          2s
+simple-orange-pod-1   0/1     Terminating   0          0s
+simple-orange-pod-2   0/1     Terminating   0          0s
+simple-orange-pod-3   0/1     Terminating   0          0s
 ```
 
 They are still getting delted by the `rs/simple` controller.
 
 ```
-$ k delete rs/simple
+$ kubectl describe rs simple | grep orange        
+  Normal  SuccessfulDelete  33s (x3 over 89s)  replicaset-controller  Deleted pod: simple-orange-pod-1
+  Normal  SuccessfulDelete  33s (x3 over 89s)  replicaset-controller  Deleted pod: simple-orange-pod-2
+  Normal  SuccessfulDelete  33s (x3 over 89s)  replicaset-controller  Deleted pod: simple-orange-pod-3
+```
+
+Let's remove the `simple` `ReplicaSet` then:
+
+```
+$ kubectl delete rs/simple            
 replicaset.extensions "simple" deleted
 ```
 
 ```
-$ k get pods -l color=orange
-NAME                  READY   STATUS    RESTARTS   AGE
-simple-orange-pod-1   1/1     Running   0          19s
-simple-orange-pod-2   1/1     Running   0          19s
-simple-orange-pod-3   1/1     Running   0          18s
+$ kubectl get rs          
+NAME             DESIRED   CURRENT   READY   AGE
+simple-blue      5         5         5       12m
+simple-nocolor   5         5         5       3m32s
 ```
 
-### Let's acquire those fancy orange hosts
+Let's create again the orange `Pods`.
 
 ```
-$ k apply -f 09_simple-orange-rs.yaml
+$ kubectl apply -f 306_simple-orange-pods.yaml && kubectl get pods -w -l color=orange
+pod/simple-orange-pod-1 created
+pod/simple-orange-pod-2 created
+pod/simple-orange-pod-3 created
+NAME                  READY   STATUS              RESTARTS   AGE
+simple-orange-pod-1   0/1     ContainerCreating   0          1s
+simple-orange-pod-2   0/1     ContainerCreating   0          1s
+simple-orange-pod-3   0/1     ContainerCreating   0          0s
+simple-orange-pod-2   1/1     Running             0          3s
+simple-orange-pod-3   1/1     Running             0          4s
+simple-orange-pod-1   1/1     Running             0          7s
+```
+
+```
+$ kubectl get pods
+NAME                   READY   STATUS    RESTARTS   AGE
+simple-blue-cff2b      1/1     Running   0          13m
+simple-blue-dp26t      1/1     Running   0          13m
+simple-blue-kfl7z      1/1     Running   0          13m
+simple-blue-kr46r      1/1     Running   0          13m
+simple-blue-nng6p      1/1     Running   0          13m
+simple-nocolor-pcf6d   1/1     Running   0          3m58s
+simple-nocolor-qfn9l   1/1     Running   0          3m58s
+simple-nocolor-rlkdl   1/1     Running   0          3m58s
+simple-nocolor-txglk   1/1     Running   0          3m58s
+simple-nocolor-vmxm5   1/1     Running   0          3m58s
+simple-orange-pod-1    1/1     Running   0          11s
+simple-orange-pod-2    1/1     Running   0          11s
+simple-orange-pod-3    1/1     Running   0          10s
+```
+
+### 3.4. Let's acquire those fancy orange `pods`
+
+```
+kubectl apply -f 307_simple-orange-rs.yaml
 replicaset.apps/simple-orange created
 ```
 
 ```
-$ k get pods -l color=orange
+$ kubectl get pods -l color=orange
 NAME                  READY   STATUS    RESTARTS   AGE
-simple-orange-5qclw   1/1     Running   0          8s
-simple-orange-bs9qn   1/1     Running   0          8s
-simple-orange-c92pj   1/1     Running   0          8s
-simple-orange-pod-1   1/1     Running   0          14m
-simple-orange-pod-2   1/1     Running   0          14m
-simple-orange-pod-3   1/1     Running   0          14m
+simple-orange-k72nq   1/1     Running   0          23s
+simple-orange-mlh9h   1/1     Running   0          23s
+simple-orange-pod-1   1/1     Running   0          2m14s
+simple-orange-pod-2   1/1     Running   0          2m14s
+simple-orange-pod-3   1/1     Running   0          2m13s
+simple-orange-vkclj   1/1     Running   0          23s
 ```
 
-## Container probes
+As you can see, the `ReplicaSet` only created the required pods to have 6 replicas:
 
-### Readiness probe
+```
+$ kubectl describe rs simple-orange | grep SuccessfulCreate
+  Normal  SuccessfulCreate  67s   replicaset-controller  Created pod: simple-orange-mlh9h
+  Normal  SuccessfulCreate  67s   replicaset-controller  Created pod: simple-orange-k72nq
+  Normal  SuccessfulCreate  67s   replicaset-controller  Created pod: simple-orange-vkclj
+```
 
-Let's add a readiness probe, on the port 80:
+### 3.5. Remove a pod from the orange replicaset
+
+```
+$ kubectl patch pod simple-orange-pod-1 --type='json' --patch='[{"op":"replace", "path":"/metadata/labels/color", "value":"pink"}]' && kubectl get pods -w -l color=orange
+pod/simple-orange-pod-1 patched
+NAME                  READY   STATUS              RESTARTS   AGE
+simple-orange-5s295   1/1     Running             0          4m2s
+simple-orange-6nd67   0/1     ContainerCreating   0          0s
+simple-orange-gzwjs   1/1     Running             0          4m3s
+simple-orange-pod-2   1/1     Running             0          4m6s
+simple-orange-pod-3   1/1     Running             0          4m6s
+simple-orange-v9lsm   1/1     Running             0          4m2s
+simple-orange-6nd67   1/1     Running             0          2s
+```
+
+The `simple-orange-pod-1` is no longer part of the `ReplicaSet` and the `simple-orange-6nd67` has been created to ensure that there are 6 replicas running.
+
+```
+$ kubectl patch pod simple-orange-pod-2 --type='json' --patch='[{"op":"replace", "path":"/metadata/labels/color", "value":"pink"}]' && kubectl get rs simple-orange -w
+pod/simple-orange-pod-2 patched
+NAME            DESIRED   CURRENT   READY   AGE
+simple-orange   6         6         5       8m13s
+simple-orange   6         6         6       8m15s
+```
+
+```
+$ kubectl get pods -l color=pink
+NAME                  READY   STATUS    RESTARTS   AGE
+simple-orange-pod-1   1/1     Running   0          9m21s
+simple-orange-pod-2   1/1     Running   0          9m21s
+```
+
+### 3.6. Clean up
+
+```
+$ kubectl delete rs simple-blue simple-nocolor simple-orange
+replicaset.extensions "simple-blue" deleted
+replicaset.extensions "simple-nocolor" deleted
+replicaset.extensions "simple-orange" deleted
+```
+
+```
+$ kubectl get pods
+NAME                  READY   STATUS    RESTARTS   AGE
+simple-orange-pod-1   1/1     Running   0          9m50s
+simple-orange-pod-2   1/1     Running   0          9m50s
+```
+
+```
+$ kubectl delete pods -l color=pink 
+pod "simple-orange-pod-1" deleted
+pod "simple-orange-pod-2" deleted
+```
+
+```
+$ kubectl get pods
+No resources found.
+```
+
+## 4. Container probes
+
+### 4.1. Readiness probe
+
+Let's add a `ReadinessProbe`, on the port 80:
 
 - Wait 10 secs before start probing
 - Each 5 seconds, check the probe
 - Mark as healthy after 3 consecutive OK checks
 
+```yaml
+...
+    spec:
+      containers:
+      - name: app
+        image: raelga/cats:neu
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 3
 ```
-$ k apply -f 10_probes-rs-readiness.yaml
+
+```
+$ kubectl apply -f 400_probes-rs-readiness.yaml && kubectl get pods -w -l app=probes
 replicaset.apps/probes created
-```
-
-```
-$ k get pods -l app=probes -w;
 NAME           READY   STATUS              RESTARTS   AGE
-probes-wx9l6   0/1     ContainerCreating   0          0s
-probes-xkblx   0/1     ContainerCreating   0          0s
-probes-xkblx   0/1     Running             0          2s
-probes-wx9l6   0/1     Running             0          3s
-probes-xkblx   1/1     Running             0          25s
-probes-wx9l6   1/1     Running             0          26s
+probes-m2l5h   0/1     ContainerCreating   0          0s
+probes-x56j5   0/1     ContainerCreating   0          0s
+probes-m2l5h   0/1     Running             0          2s
+probes-x56j5   0/1     Running             0          4s
+probes-x56j5   1/1     Running             0          24s
+probes-m2l5h   1/1     Running             0          24s
 ```
 
-Deploy some pods with failing ReadinessProbes:
+After about 25 seconds, the `Pods` became `READY`:
+
+- Scheduling time (From `Pending` to `Running`)
+- 10 seconds of `initialDelaySeconds`
+- 15 seconds (5 `periodSeconds` x 3 `successThreshold`)
+
+Deploy some `Pods` with failing ReadinessProbes:
 
 ```
-$ k apply -f 11_probes-rs-readiness-ko.yaml; k get pods -l app=probes -w
+$ kubectl apply -f 401_probes-rs-readiness-ko.yaml && kubectl get pods -l app=probes -w
 replicaset.apps/probes configured
 NAME           READY   STATUS              RESTARTS   AGE
-probes-fq42v   0/1     ContainerCreating   0          1s
-probes-lpz6d   0/1     ContainerCreating   0          1s
-probes-wx9l6   1/1     Running             0          85s
-probes-xkblx   1/1     Running             0          85s
-probes-fq42v   0/1     Running             0          2s
-probes-lpz6d   0/1     Running             0          3s
+probes-csqfn   0/1     ContainerCreating   0          0s
+probes-m2l5h   1/1     Running             0          51s
+probes-np7vg   0/1     Pending             0          0s
+probes-x56j5   1/1     Running             0          51s
+probes-np7vg   0/1     ContainerCreating   0          0s
+probes-csqfn   0/1     Running             0          2s
+probes-np7vg   0/1     Running             0          3s
 ```
 
-They are not getting ready
+They are not getting `READY` at all:
 
 ```
-$ k get pods
+$ kubectl get pods -l app=probes
 NAME           READY   STATUS    RESTARTS   AGE
-probes-fq42v   0/1     Running   0          40s
-probes-lpz6d   0/1     Running   0          40s
-probes-wx9l6   1/1     Running   0          2m4s
-probes-xkblx   1/1     Running   0          2m4s
+probes-csqfn   0/1     Running   0          86s
+probes-m2l5h   1/1     Running   0          2m17s
+probes-np7vg   0/1     Running   0          86s
+probes-x56j5   1/1     Running   0          2m17s
 ```
 
-And if we look the status of one of the `READY 0/1` pods, we'll see the reason in the `Events:` section:
-
-`Warning  Unhealthy  64s (x22 over 2m49s)  kubelet, cnbcn-k8s-study-jam-np-fq1k  Readiness probe failed: dial tcp 10.244.1.240:81: connect: connection refused`
-
-### Liveness probe
+And if we look the status of the `READY 0/1` pods, we'll see the reason in the `Events:` section:
 
 ```
-$ k apply -f 12_probes-rs-liveness.yaml
+$ kubectl describe pods $(kubectl get pods | sed -n 's:\(\S\+\)\s\+0/1.*:\1:p') | grep Warning
+  Warning  Unhealthy  2s (x17 over 82s)  kubelet, cnbcn-k8s-study-jam-np-fw7y  Readiness probe failed: dial tcp 10.244.1.225:81: connect: connection refused
+  Warning  Unhealthy  0s (x17 over 80s)  kubelet, cnbcn-k8s-study-jam-np-fw7x  Readiness probe failed: dial tcp 10.244.0.55:81: connect: connection refused
+```
+
+```
+$ kubectl describe pods $(kubectl get pods | sed -n 's:\(\S\+\)\s\+0/1.*:\1:p')
+...
+Events:
+  Type     Reason     Age                From                                  Message
+  ----     ------     ----               ----                                  -------
+  Normal   Scheduled  109s               default-scheduler                     Successfully assigned default/probes-np7vg to cnbcn-k8s-study-jam-np-fw7x
+  Normal   Pulled     107s               kubelet, cnbcn-k8s-study-jam-np-fw7x  Container image "raelga/cats:neu" already present on machine
+  Normal   Created    107s               kubelet, cnbcn-k8s-study-jam-np-fw7x  Created container
+  Normal   Started    107s               kubelet, cnbcn-k8s-study-jam-np-fw7x  Started container
+  Warning  Unhealthy  3s (x19 over 93s)  kubelet, cnbcn-k8s-study-jam-np-fw7x  Readiness probe failed: dial tcp 10.244.0.55:81: connect: connection refused
+```
+
+The good thing, is the failing `Pods` never get `READY` and won't receive any traffic.
+
+### 4.2. Liveness probe
+
+Let's add a `LivenessProbe`, on the port 80:
+
+- Wait 10 secs before start probing
+- Each 5 seconds, check the probe
+- Mark as unhealthy after 2 consecutive failed checks
+
+```yaml
+...
+    spec:
+      containers:
+      - name: app
+        image: raelga/cats:neu
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 2
+```
+
+```
+$ kubectl apply -f 402_probes-rs-liveness.yaml && kubectl get pods -l app=probes -w
 replicaset.apps/probes configured
-```
-
-```
-$ k get pods -w
-NAME           READY   STATUS    RESTARTS   AGE
-probes-dscfm   0/1     Running   0          20s
-probes-fq42v   0/1     Running   0          4m51s
-probes-lpz6d   0/1     Running   0          4m51s
-probes-wx9l6   1/1     Running   0          6m15s
-probes-xkblx   1/1     Running   0          6m15s
-probes-xkqhd   0/1     Running   0          20s
-probes-xkqhd   1/1     Running   0          23s
-probes-dscfm   1/1     Running   0          24s
-```
-
-```
-$ k apply -f 13_probes-rs-liveness-ko.yaml
-replicaset.apps/probes configured
-```
-
-```
-$ k get pods -w
-NAME           READY   STATUS    RESTARTS   AGE
-probes-dscfm   1/1     Running   0          4m44s
-probes-fq42v   0/1     Running   0          9m15s
-probes-lpz6d   0/1     Running   0          9m15s
-probes-nn4qx   0/1     Running   0          5s
-probes-wx9l6   1/1     Running   0          10m
-probes-xgsdw   0/1     Running   0          5s
-probes-xkblx   1/1     Running   0          10m
-probes-xkqhd   1/1     Running   0          4m44s
-probes-nn4qx   0/1     Running   1          19s
-probes-xgsdw   0/1     Running   1          23s
-probes-nn4qx   1/1     Running   1          29s
-probes-xgsdw   1/1     Running   1          32s
-probes-xgsdw   0/1     Running   2          37s
-probes-nn4qx   0/1     Running   2          40s
-probes-xgsdw   1/1     Running   2          47s
-probes-nn4qx   1/1     Running   2          49s
-probes-xgsdw   0/1     Running   3          52s
-probes-nn4qx   0/1     Running   3          59s
-probes-xgsdw   1/1     Running   3          62s
-```
-
-We will start seeing `CrashLoopBackOff` status:
-
-```
-$ k get pods
-NAME           READY   STATUS             RESTARTS   AGE
-probes-dscfm   1/1     Running            0          6m16s
-probes-fq42v   0/1     Running            0          10m
-probes-lpz6d   0/1     Running            0          10m
-probes-nn4qx   1/1     Running            4          97s
-probes-wx9l6   1/1     Running            0          12m
-probes-xgsdw   0/1     CrashLoopBackOff   3          97s
-probes-xkblx   1/1     Running            0          12m
-probes-xkqhd   1/1     Running            0          6m16s
-```
-
-```
-$ k get pods
-NAME           READY   STATUS             RESTARTS   AGE
-probes-dscfm   1/1     Running            0          24m
-probes-fq42v   0/1     Running            0          29m
-probes-lpz6d   0/1     Running            0          29m
-probes-nn4qx   0/1     CrashLoopBackOff   12         20m
-probes-wx9l6   1/1     Running            0          30m
-probes-xgsdw   0/1     CrashLoopBackOff   11         20m
-probes-xkblx   1/1     Running            0          30m
-probes-xkqhd   1/1     Running            0          24m
-```
-
-## Deploy a new image
-
-
-```
-$ k apply -f 15-probes-rs-update-image.yaml
-replicaset.apps/probes created
-(do-fra1-cnbcn-k8s-study-jam) rael@W001062:replicasets (master)
-$ k get pods
-NAME           READY   STATUS    RESTARTS   AGE
-probes-5r57b   1/1     Running   0          12s
-probes-pzj55   1/1     Running   0          12s
-probes-qpv5j   1/1     Running   0          12s
-```
-
-```
-$ k apply -f 16_probes-rs-update-image-ko.yaml
-replicaset.apps/probes configured
-```
-
-```
-$ k get pods
-NAME           READY   STATUS    RESTARTS   AGE
-probes-5r57b   1/1     Running   0          2m21s
-probes-pzj55   1/1     Running   0          2m21s
-probes-qpv5j   1/1     Running   0          2m21s
-(do-fra1-cnbcn-k8s-study-jam) rael@W001062:replicasets (master)
-$ $ k get pods -l app=probes -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase
-```
-
-```
-$ k get pods -l app=probes -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase
-NAME           IMAGE             STATUS
-probes-5r57b   raelga/cats:neu   Running
-probes-pzj55   raelga/cats:neu   Running
-probes-qpv5j   raelga/cats:neu   Running
-```
-
-```
-$ k get pods -l app=probes -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase
-NAME           IMAGE             STATUS
-probes-5r57b   raelga/cats:neu   Running
-probes-pzj55   raelga/cats:neu   Running
-probes-qpv5j   raelga/cats:neu   Running
-```
-
-```
-$ k apply -f 17_probes-rs-6-update-image-ko.yaml
-replicaset.apps/probes configured
-```
-
-```
-$ k get pods
 NAME           READY   STATUS              RESTARTS   AGE
-probes-5r57b   1/1     Running             0          3m19s
-probes-cj2ws   0/1     ContainerCreating   0          3s
-probes-dvpvr   0/1     ContainerCreating   0          3s
-probes-lnp7j   0/1     Running             0          3s
-probes-pzj55   1/1     Running             0          3m19s
-probes-qpv5j   1/1     Running             0          3m19s
+probes-csqfn   0/1     Running             0          2m19s
+probes-hhn5x   0/1     ContainerCreating   0          0s
+probes-m2l5h   1/1     Running             0          3m10s
+probes-np7vg   0/1     Running             0          2m19s
+probes-ntl94   0/1     ContainerCreating   0          0s
+probes-x56j5   1/1     Running             0          3m10s
+probes-hhn5x   1/1     Running             0          2s
+probes-ntl94   1/1     Running             0          2s
 ```
 
-```
-$ k get pods
-NAME           READY   STATUS    RESTARTS   AGE
-probes-5r57b   1/1     Running   0          3m22s
-probes-cj2ws   0/1     Running   0          6s
-probes-dvpvr   0/1     Running   0          6s
-probes-lnp7j   0/1     Running   0          6s
-probes-pzj55   1/1     Running   0          3m22s
-probes-qpv5j   1/1     Running   0          3m22s
-```
+The `Pods` using the `LivenessProbe` get `READY` in a few seconds, just when the container starts and responds the first probe request. Why don't we check the `failureThreshold` instead of the `successThreshold`?
+
+Because this only checks that the application is live, and if fails, will restart the container instead of keep re-checking untill the application to become ready again.
+
+Let's launch a failing `LivenessProbe` to see this behavior:
 
 ```
-$ k get pods
-NAME           READY   STATUS    RESTARTS   AGE
-probes-5r57b   1/1     Running   0          4m10s
-probes-cj2ws   0/1     Running   0          54s
-probes-dvpvr   0/1     Running   0          54s
-probes-lnp7j   0/1     Running   0          54s
-probes-pzj55   1/1     Running   0          4m10s
-probes-qpv5j   1/1     Running   0          4m10s
-```
-
-`  Warning  Unhealthy  8s (x4 over 38s)  kubelet, cnbcn-k8s-study-jam-np-fq1k  Readiness probe failed: HTTP probe failed with statuscode: 404`
-
-```
-$ k apply -f 18_probes-rs-9-update-image-ok.yaml
+$ kubectl apply -f 403_probes-rs-liveness-ko.yaml && kubectl get pods -l app=probes -w
 replicaset.apps/probes configured
+NAME           READY   STATUS              RESTARTS   AGE
+probes-csqfn   0/1     Running             0          7m10s
+probes-fzbgb   0/1     Pending             0          0s
+probes-hhn5x   1/1     Running             0          4m51s
+probes-m2l5h   1/1     Running             0          8m1s
+probes-np7vg   0/1     Running             0          7m10s
+probes-ntl94   1/1     Running             0          4m51s
+probes-tmlln   0/1     ContainerCreating   0          0s
+probes-x56j5   1/1     Running             0          8m1s
+probes-fzbgb   0/1     ContainerCreating   0          0s
+probes-fzbgb   0/1     Running             0          3s
+probes-tmlln   0/1     Running             0          3s
+probes-tmlln   0/1     Running             1          19s
+probes-fzbgb   0/1     Running             1          20s
+probes-tmlln   1/1     Running             1          33s
+probes-tmlln   0/1     Running             2          34s
+probes-fzbgb   1/1     Running             1          34s
+probes-fzbgb   0/1     Running             2          40s
+probes-tmlln   1/1     Running             2          48s
+probes-tmlln   0/1     Running             3          50s
+probes-fzbgb   1/1     Running             2          54s
+probes-fzbgb   0/1     Running             3          61s
+probes-tmlln   1/1     Running             3          63s
+probes-tmlln   0/1     CrashLoopBackOff    3          65s
+probes-fzbgb   1/1     Running             3          74s
+probes-fzbgb   0/1     Running             4          80s
+probes-tmlln   0/1     Running             4          94s
+probes-fzbgb   1/1     Running             4          94s
+probes-fzbgb   0/1     CrashLoopBackOff    4          100s
+probes-tmlln   1/1     Running             4          108s
+probes-tmlln   0/1     Running             5          109s
+probes-tmlln   1/1     Running             5          2m3s
+probes-tmlln   0/1     CrashLoopBackOff    5          2m5s
+probes-fzbgb   0/1     Running             5          2m28s
+probes-fzbgb   1/1     Running             5          2m39s
+probes-fzbgb   0/1     CrashLoopBackOff    5          2m45s
+probes-tmlln   0/1     Running             6          3m27s
+probes-tmlln   1/1     Running             6          3m38s
+probes-tmlln   0/1     CrashLoopBackOff    6          3m44s
+probes-fzbgb   0/1     Running             6          4m14s
+probes-fzbgb   1/1     Running             6          4m24s
+probes-fzbgb   0/1     CrashLoopBackOff    6          4m31s
+```
+
+A `CrashloopBackOff` means that we have a pod starting, crashing, starting again, and then crashing again. Failed containers that are restarted by the kubelet are restarted with an exponential back-off delay (10s, 20s, 40s …) capped at five minutes, and is reset after ten minutes of successful execution.
+
+### 4.3. Clean up
+
+```
+$ kubectl delete rs probes && kubectl get pods -w -l app=probes
+replicaset.extensions "probes" deleted
+NAME           READY   STATUS        RESTARTS   AGE
+probes-csqfn   0/1     Terminating   0          29m
+probes-fzbgb   0/1     Terminating   11         22m
+probes-hhn5x   1/1     Terminating   0          27m
+probes-m2l5h   1/1     Terminating   0          30m
+probes-np7vg   0/1     Terminating   0          29m
+probes-ntl94   1/1     Terminating   0          27m
+probes-tmlln   0/1     Terminating   11         22m
+probes-x56j5   1/1     Terminating   0          30m
+probes-x56j5   0/1     Terminating   0          30m
+probes-ntl94   0/1     Terminating   0          27m
+probes-np7vg   0/1     Terminating   0          30m
+probes-csqfn   0/1     Terminating   0          30m
+probes-hhn5x   0/1     Terminating   0          27m
+probes-m2l5h   0/1     Terminating   0          30m
+probes-m2l5h   0/1     Terminating   0          30m
+probes-tmlln   0/1     Terminating   11         22m
+probes-tmlln   0/1     Terminating   11         22m
+probes-csqfn   0/1     Terminating   0          30m
+probes-csqfn   0/1     Terminating   0          30m
+probes-hhn5x   0/1     Terminating   0          27m
+probes-hhn5x   0/1     Terminating   0          27m
+probes-fzbgb   0/1     Terminating   11         22m
+probes-fzbgb   0/1     Terminating   11         22m
+probes-m2l5h   0/1     Terminating   0          30m
+probes-m2l5h   0/1     Terminating   0          30m
+probes-x56j5   0/1     Terminating   0          30m
+probes-x56j5   0/1     Terminating   0          30m
+probes-ntl94   0/1     Terminating   0          27m
+probes-ntl94   0/1     Terminating   0          27m
+probes-np7vg   0/1     Terminating   0          30m
+probes-np7vg   0/1     Terminating   0          30m
 ```
 
 ```
-$ k get pods -l app=probes -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase
-NAME           IMAGE                STATUS
-probes-5r57b   raelga/cats:neu      Running
-probes-9fqt6   raelga/cats:blanca   Pending
-probes-cj2ws   raelga/cats:blanca   Running
-probes-ckhjt   raelga/cats:blanca   Pending
-probes-dvpvr   raelga/cats:blanca   Running
-probes-h5zgj   raelga/cats:blanca   Pending
-probes-lnp7j   raelga/cats:blanca   Running
-probes-pzj55   raelga/cats:neu      Running
-probes-qpv5j   raelga/cats:neu      Running
+$ kubectl get pods
+No resources found.
+```
+
+## 5. Manual rolling update
+
+### 5.1. Deploy the initial `ReplicaSet`
+
+```
+$ kubectl apply -f 501_probes-images-rs.yaml && kubectl get pods -l app=probes-images -w
+replicaset.apps/probes-images created
+NAME                  READY   STATUS    RESTARTS   AGE
+probes-images-dtfv4   0/1     Pending   0          0s
+probes-images-jnck4   0/1     Pending   0          0s
+probes-images-dtfv4   0/1     Pending   0          0s
+probes-images-h5wsz   0/1     Pending   0          0s
+probes-images-h5wsz   0/1     Pending   0          0s
+probes-images-jnck4   0/1     Pending   0          0s
+probes-images-dtfv4   0/1     ContainerCreating   0          0s
+probes-images-jnck4   0/1     ContainerCreating   0          0s
+probes-images-h5wsz   0/1     ContainerCreating   0          0s
+probes-images-h5wsz   0/1     Running             0          2s
+probes-images-jnck4   0/1     Running             0          3s
+probes-images-dtfv4   0/1     Running             0          3s
+probes-images-h5wsz   1/1     Running             0          7s
+probes-images-jnck4   1/1     Running             0          7s
+probes-images-dtfv4   1/1     Running             0          10s
+```
+
+Let's list the pods running, including the name of the first container image, using `custom-columns` output format: 
+
+`-o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime`
+
+```
+$ kubectl get pods -l app=probes-images -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime
+NAME                  IMAGE             STATUS    STARTED
+probes-images-dtfv4   raelga/cats:neu   Running   2019-05-11T16:20:36Z
+probes-images-h5wsz   raelga/cats:neu   Running   2019-05-11T16:20:36Z
+probes-images-jnck4   raelga/cats:neu   Running   2019-05-11T16:20:36Z
+```
+
+### 5.2. Update the `ReplicaSet` pod template
+
+Let's update the `ReplicaSet` `Pod` template and include a new template, that will fail the `ReadinessProbe`.
+
+```diff
+$ kubectl diff -f 502_probes-images-rs-update-image-ko.yaml 
+diff -u -N /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-353118084/apps.v1.ReplicaSet.default.probes-images
+--- /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:21:15.916702182 +0000
++++ /tmp/MERGED-353118084/apps.v1.ReplicaSet.default.probes-images      2019-05-11 16:21:15.929703344 +0000
+@@ -5,7 +5,7 @@
+     kubectl.kubernetes.io/last-applied-configuration: |
+       {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":3,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images"}},"spec":{"containers":[{"image":"raelga/cats:neu","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/","port":80},"initialDelaySeconds":2}}]}}}}
+   creationTimestamp: "2019-05-11T16:20:36Z"
+-  generation: 1
++  generation: 2
+   labels:
+     app: probes-images
+   name: probes-images
+@@ -25,7 +25,7 @@
+         app: probes-images
+     spec:
+       containers:
+-      - image: raelga/cats:neu
++      - image: raelga/cats:blanca
+         imagePullPolicy: IfNotPresent
+         livenessProbe:
+           failureThreshold: 2
+@@ -41,7 +41,7 @@
+         readinessProbe:
+           failureThreshold: 3
+           httpGet:
+-            path: /
++            path: /bad-endpoint
+             port: 80
+             scheme: HTTP
+           initialDelaySeconds: 2
+exit status 1
 ```
 
 ```
-$ k get pods
-NAME           READY   STATUS    RESTARTS   AGE
-probes-5r57b   1/1     Running   0          7m1s
-probes-9fqt6   1/1     Running   0          18s
-probes-cj2ws   0/1     Running   0          3m45s
-probes-ckhjt   1/1     Running   0          18s
-probes-dvpvr   0/1     Running   0          3m45s
-probes-h5zgj   1/1     Running   0          18s
-probes-lnp7j   0/1     Running   0          3m45s
-probes-pzj55   1/1     Running   0          7m1s
-probes-qpv5j   1/1     Running   0          7m1s
+$ kubectl apply -f 502_probes-images-rs-update-image-ko.yaml && kubectl get pods -l app=probes-images -w
+replicaset.apps/probes-images configured
+NAME                  READY   STATUS    RESTARTS   AGE
+probes-images-dtfv4   1/1     Running   0          56s
+probes-images-h5wsz   1/1     Running   0          56s
+probes-images-jnck4   1/1     Running   0          56s
+```
+
+Nothing happens, as the `ReplicaSet` only cares for the number of replicas, the new `Pod` template will be used for creating new `Pods` when required, but has no effect on the existing `ReplicaSet` `Pods`.
+
+```
+$ kubectl get rs probes-images
+NAME            DESIRED   CURRENT   READY   AGE
+probes-images   3         3         3       20m
+```
+
+Let's increase the number of replicas to 6:
+
+```diff
+$ kubectl diff -f 503_probes-images-rs-6-update-image-ko.yaml 
+diff -u -N /tmp/LIVE-648056706/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-796264697/apps.v1.ReplicaSet.default.probes-images
+--- /tmp/LIVE-648056706/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:23:07.606688192 +0000
++++ /tmp/MERGED-796264697/apps.v1.ReplicaSet.default.probes-images      2019-05-11 16:23:07.619689354 +0000
+@@ -5,7 +5,7 @@
+     kubectl.kubernetes.io/last-applied-configuration: |
+       {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":3,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/bad-endpoint","port":80},"initialDelaySeconds":2}}]}}}}
+   creationTimestamp: "2019-05-11T16:20:36Z"
+-  generation: 2
++  generation: 3
+   labels:
+     app: probes-images
+   name: probes-images
+@@ -14,7 +14,7 @@
+   selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images
+   uid: b57546b3-7408-11e9-9a36-eefc5b75fd0d
+ spec:
+-  replicas: 3
++  replicas: 6
+   selector:
+     matchLabels:
+       app: probes-images
+exit status 1
+```
+
+Now the start but never get `READY`, as they are not passing the `ReadinessProbe`:
+
+```
+$ kubectl apply -f 503_probes-images-rs-6-update-image-ko.yaml && kubectl get pods -l app=probes-images -w
+replicaset.apps/probes-images configured
+NAME                  READY   STATUS              RESTARTS   AGE
+probes-images-42vbb   0/1     ContainerCreating   0          0s
+probes-images-dhs88   0/1     ContainerCreating   0          0s
+probes-images-dtfv4   1/1     Running             0          3m21s
+probes-images-fhrlp   0/1     ContainerCreating   0          0s
+probes-images-h5wsz   1/1     Running             0          3m21s
+probes-images-jnck4   1/1     Running             0          3m21s
+probes-images-dhs88   0/1     Running             0          2s
+probes-images-42vbb   0/1     Running             0          2s
+probes-images-fhrlp   0/1     Running             0          2s
+```
+
+At this point, the old image is still running and serving requests. The new version is failing, but never gets traffic, as is not passing the `ReadinessProbe`.
+
+```
+$ kubectl get rs probes-images
+NAME            DESIRED   CURRENT   READY   AGE
+probes-images   6         6         3       4m25s
 ```
 
 ```
-$ k delete pods probes-dvpvr probes-lnp7j probes-cj2ws
-pod "probes-dvpvr" deleted
-pod "probes-lnp7j" deleted
-pod "probes-cj2ws" deleted
+$ kubectl get pods -l app=probes-images -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime
+NAME                  IMAGE                STATUS    STARTED
+probes-images-42vbb   raelga/cats:blanca   Running   2019-05-11T16:23:57Z
+probes-images-dhs88   raelga/cats:blanca   Running   2019-05-11T16:23:57Z
+probes-images-dtfv4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-fhrlp   raelga/cats:blanca   Running   2019-05-11T16:23:57Z
+probes-images-h5wsz   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-jnck4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+```
+
+We can see the `ReadinessProbe` error using `kubectl describe`:
+
+```
+$ kubectl describe pods -l app=probes-images | grep Warning
+  Warning  Unhealthy  9s (x19 over 3m9s)  kubelet, cnbcn-k8s-study-jam-np-fw7x  Readiness probe failed: HTTP probe failed with statuscode: 404
+  Warning  Unhealthy  3s (x19 over 3m3s)  kubelet, cnbcn-k8s-study-jam-np-fw7y  Readiness probe failed: HTTP probe failed with statuscode: 404
+  Warning  Unhealthy  1s (x20 over 3m11s)  kubelet, cnbcn-k8s-study-jam-np-fw7x  Readiness probe failed: HTTP probe failed with statuscode: 404
+```
+
+### 5.3. Update the `ReplicaSet` `Pod` template with the fixed `ReadinessProbe`
+
+```diff
+$ kubectl diff -f 504_probes-images-rs-9-update-image-ok.yaml 
+diff -u -N /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-362151945/apps.v1.ReplicaSet.default.probes-images
+--- /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:30:04.733986406 +0000
++++ /tmp/MERGED-362151945/apps.v1.ReplicaSet.default.probes-images      2019-05-11 16:30:04.746987569 +0000
+@@ -5,7 +5,7 @@
+     kubectl.kubernetes.io/last-applied-configuration: |
+       {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":6,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/bad-endpoint","port":80},"initialDelaySeconds":2}}]}}}}
+   creationTimestamp: "2019-05-11T16:20:36Z"
+-  generation: 3
++  generation: 4
+   labels:
+     app: probes-images
+   name: probes-images
+@@ -14,7 +14,7 @@
+   selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images
+   uid: b57546b3-7408-11e9-9a36-eefc5b75fd0d
+ spec:
+-  replicas: 6
++  replicas: 9
+   selector:
+     matchLabels:
+       app: probes-images
+@@ -41,7 +41,7 @@
+         readinessProbe:
+           failureThreshold: 3
+           httpGet:
+-            path: /bad-endpoint
++            path: /
+             port: 80
+             scheme: HTTP
+           initialDelaySeconds: 2
+exit status 1
 ```
 
 ```
-$ k get pods
-NAME           READY   STATUS    RESTARTS   AGE
-probes-5r57b   1/1     Running   0          8m21s
-probes-9fqt6   1/1     Running   0          98s
-probes-9nc28   1/1     Running   0          14s
-probes-ckhjt   1/1     Running   0          98s
-probes-h5zgj   1/1     Running   0          98s
-probes-hwbpj   1/1     Running   0          14s
-probes-ljv4j   1/1     Running   0          14s
-probes-pzj55   1/1     Running   0          8m21s
-probes-qpv5j   1/1     Running   0          8m21s
+$ kubectl apply -f 504_probes-images-rs-9-update-image-ok.yaml && kubectl get rs probes-images -w
+replicaset.apps/probes-images configured
+NAME            DESIRED   CURRENT   READY   AGE
+probes-images   9         9         3       11m
+probes-images   9         9         4       11m
+probes-images   9         9         5       11m
+probes-images   9         9         6       11m
+```
+
+The `ReplicaSet` now has 9 replicas, 6 of them with the new image:
+
+```
+$ kubectl get pods -l app=probes-images -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime --sort-by=.status.startTime
+NAME                  IMAGE                STATUS    STARTED
+probes-images-jnck4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-dtfv4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-h5wsz   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-dhs88   raelga/cats:blanca   Running   2019-05-11T16:23:57Z
+probes-images-fhrlp   raelga/cats:blanca   Running   2019-05-11T16:23:57Z
+probes-images-42vbb   raelga/cats:blanca   Running   2019-05-11T16:23:57Z
+probes-images-7g9cc   raelga/cats:blanca   Running   2019-05-11T16:32:04Z
+probes-images-r87pj   raelga/cats:blanca   Running   2019-05-11T16:32:04Z
+probes-images-ssxzx   raelga/cats:blanca   Running   2019-05-11T16:32:04Z
+```
+
+And the last 3 replicas, with the fixed `ReadinessProbe`, are `READY`:
+
+```
+$ kubectl get pods --sort-by=.status.startTime
+NAME                  READY   STATUS    RESTARTS   AGE
+probes-images-jnck4   1/1     Running   0          12m
+probes-images-dtfv4   1/1     Running   0          12m
+probes-images-h5wsz   1/1     Running   0          12m
+probes-images-dhs88   0/1     Running   0          9m7s
+probes-images-fhrlp   0/1     Running   0          9m7s
+probes-images-42vbb   0/1     Running   0          9m7s
+probes-images-7g9cc   1/1     Running   0          60s
+probes-images-r87pj   1/1     Running   0          60s
+probes-images-ssxzx   1/1     Running   0          60s
+```
+
+The new `ReplicaSet` template is creating healthy `Pods`!
+
+Now, let's clean up the failing `Pods` by scaling back to 6!
+
+```
+$ kubectl scale rs/probes-images --replicas 6
+replicaset.extensions/probes-images scaled
 ```
 
 ```
-$ k get pods -l app=probes -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase
-NAME           IMAGE                STATUS
-probes-5r57b   raelga/cats:neu      Running
-probes-9fqt6   raelga/cats:blanca   Running
-probes-cj2ws   raelga/cats:blanca   Running
-probes-ckhjt   raelga/cats:blanca   Running
-probes-dvpvr   raelga/cats:blanca   Running
-probes-h5zgj   raelga/cats:blanca   Running
-probes-lnp7j   raelga/cats:blanca   Running
-probes-pzj55   raelga/cats:neu      Running
-probes-qpv5j   raelga/cats:neu      Running
+$ kubectl get pods
+NAME                  READY   STATUS        RESTARTS   AGE
+probes-images-42vbb   0/1     Terminating   0          13m
+probes-images-7g9cc   1/1     Running       0          5m27s
+probes-images-dhs88   0/1     Terminating   0          13m
+probes-images-dtfv4   1/1     Running       0          16m
+probes-images-fhrlp   0/1     Terminating   0          13m
+probes-images-h5wsz   1/1     Running       0          16m
+probes-images-jnck4   1/1     Running       0          16m
+probes-images-r87pj   1/1     Running       0          5m27s
+probes-images-ssxzx   1/1     Running       0          5m27s
 ```
 
 ```
-$ k delete pods probes-pzj55 probes-qpv5j probes-5r57b
-pod "probes-pzj55" deleted
-pod "probes-qpv5j" deleted
-pod "probes-5r57b" deleted
+$ kubectl get pods -l app=probes-images -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime --sort-by=.status.startTime
+NAME                  IMAGE                STATUS    STARTED
+probes-images-dtfv4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-h5wsz   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-jnck4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-7g9cc   raelga/cats:blanca   Running   2019-05-11T16:32:04Z
+probes-images-r87pj   raelga/cats:blanca   Running   2019-05-11T16:32:04Z
+probes-images-ssxzx   raelga/cats:blanca   Running   2019-05-11T16:32:04Z
+```
+
+Let's now clean the old version by scaling back to 3!
+
+```
+$ kubectl scale rs/probes-images --replicas 3    
+replicaset.extensions/probes-images scaled
 ```
 
 ```
-$ k get pods -l app=probes -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase
-NAME           IMAGE                STATUS
-probes-9fqt6   raelga/cats:blanca   Running
-probes-9nc28   raelga/cats:blanca   Running
-probes-ckhjt   raelga/cats:blanca   Running
-probes-h5zgj   raelga/cats:blanca   Running
-probes-hjd2m   raelga/cats:blanca   Running
-probes-hwbpj   raelga/cats:blanca   Running
-probes-ljv4j   raelga/cats:blanca   Running
-probes-n7mhl   raelga/cats:blanca   Running
-probes-w9sgv   raelga/cats:blanca   Running
+$ kubectl get pods
+NAME                  READY   STATUS        RESTARTS   AGE
+probes-images-dtfv4   1/1     Running       0          20m
+probes-images-h5wsz   1/1     Running       0          20m
+probes-images-jnck4   1/1     Running       0          20m
+probes-images-r87pj   0/1     Terminating   0          9m13s
+probes-images-ssxzx   0/1     Terminating   0          9m13s
 ```
+
+Wow! It removed the new ones instead of the old ones! Why?
+
+In the first scenario, the `ReplicaSet` saw that some of the replicas weren't `READY` and removed then. But now, both the ones with the new image and the ones with the old are healthy, so in that scenario, will remove always the newest ones.
+
+Let's scale back to 6, so we will have the 3 replicas with the old version and 3 replicas with the new template:
+
+```diff
+diff -u -N /tmp/LIVE-571681951/apps.v1.ReplicaSet.default.probes-images /tmp/MERGED-052727154/apps.v1.ReplicaSet.default.probes-images
+--- /tmp/LIVE-571681951/apps.v1.ReplicaSet.default.probes-images        2019-05-11 16:58:39.800320854 +0000
++++ /tmp/MERGED-052727154/apps.v1.ReplicaSet.default.probes-images      2019-05-11 16:58:39.823322911 +0000
+@@ -5,7 +5,7 @@
+     kubectl.kubernetes.io/last-applied-configuration: |
+       {"apiVersion":"apps/v1","kind":"ReplicaSet","metadata":{"annotations":{},"labels":{"app":"probes-images"},"name":"probes-images","namespace":"default"},"spec":{"replicas":6,"selector":{"matchLabels":{"app":"probes-images"}},"template":{"metadata":{"labels":{"app":"probes-images"}},"spec":{"containers":[{"image":"raelga/cats:blanca","livenessProbe":{"failureThreshold":2,"httpGet":{"path":"/","port":80},"initialDelaySeconds":10,"periodSeconds":5},"name":"app","readinessProbe":{"httpGet":{"path":"/","port":80},"initialDelaySeconds":2}}]}}}}
+   creationTimestamp: "2019-05-11T16:20:36Z"
+-  generation: 20
++  generation: 21
+   labels:
+     app: probes-images
+   name: probes-images
+@@ -14,7 +14,7 @@
+   selfLink: /apis/apps/v1/namespaces/default/replicasets/probes-images
+   uid: b57546b3-7408-11e9-9a36-eefc5b75fd0d
+ spec:
+-  replicas: 3
++  replicas: 6
+   selector:
+     matchLabels:
+       app: probes-images
+@@ -23,6 +23,7 @@
+       creationTimestamp: null
+       labels:
+         app: probes-images
++        version: v2.0
+     spec:
+       containers:
+       - image: raelga/cats:blanca
+exit status 1
+```
+
+```
+$ kubectl apply -f 505_probes-images-rs-6-update-image-ok.yaml && kubectl get pods -l app=probes-images -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime --sort-by=.status.startTime -w
+replicaset.apps/probes-images configured
+NAME                  IMAGE                STATUS    STARTED
+probes-images-dtfv4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-h5wsz   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-jnck4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-pbltv   raelga/cats:blanca   Pending   2019-05-11T17:00:12Z
+probes-images-sv698   raelga/cats:blanca   Pending   2019-05-11T17:00:12Z
+probes-images-vbrqc   raelga/cats:blanca   Pending   2019-05-11T17:00:12Z
+probes-images-pbltv   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-sv698   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-vbrqc   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-sv698   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-pbltv   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-vbrqc   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+```
+
+```
+$ kubectl get pods -l app=probes-images -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime --sort-by=.status.startTime
+NAME                  IMAGE                STATUS    STARTED
+probes-images-dtfv4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-h5wsz   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-jnck4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
+probes-images-pbltv   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-sv698   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-vbrqc   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+```
+
+As we added a new label to the template, is easy to identify the new replicas:
+
+```
+$ kubectl get pods -l app=probes-images,version=v2.0  
+NAME                  READY   STATUS    RESTARTS   AGE
+probes-images-pbltv   1/1     Running   0          55s
+probes-images-sv698   1/1     Running   0          55s
+probes-images-vbrqc   1/1     Running   0          55s
+```
+
+And now, we can remove the old version and the `ReplicaSet` will replace the terminated `pods` with new ones, using the `ReplicaSet` template:
+
+```
+$ kubectl get pods -l app=probes-images,version!=v2.0
+NAME                  READY   STATUS    RESTARTS   AGE
+probes-images-dtfv4   1/1     Running   0          41m
+probes-images-h5wsz   1/1     Running   0          41m
+probes-images-jnck4   1/1     Running   0          41m
+```
+
+```
+$ kubectl delete  pods -l app=probes-images,version!=v2.0
+pod "probes-images-dtfv4" deleted
+pod "probes-images-h5wsz" deleted
+pod "probes-images-jnck4" deleted
+```
+
+```
+$  kubectl get pods -l app=probes-images -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime --sort-by=.status.startTime   
+NAME                  IMAGE                STATUS    STARTED
+probes-images-pbltv   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-sv698   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-vbrqc   raelga/cats:blanca   Running   2019-05-11T17:00:12Z
+probes-images-62v48   raelga/cats:blanca   Running   2019-05-11T17:02:53Z
+probes-images-bs6z9   raelga/cats:blanca   Running   2019-05-11T17:02:53Z
+probes-images-ndhd7   raelga/cats:blanca   Running   2019-05-11T17:02:53Z
+```
+
+```
+$ kubectl get pods -l app=probes-images,version!=v2.0
+No resources found.
+```
+
+That worked! The problem, is that now the `ReplicaSet` selector is not the same as the labels defined in the `Pod` template, so another if another `ReplicaSet` is created with the exact match, this `ReplicaSet` will lose the `Pods`.
+
+So let's update the `ReplicaSet` with the new selector!
+
+```diff
+$ diff -U5 505_probes-images-rs-6-update-image-ok.yaml 506_probes-images-rs-update-selector.yaml 
+--- 505_probes-images-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
++++ 506_probes-images-rs-update-selector.yaml   2019-05-11 17:09:35.580954662 +0000
+@@ -7,10 +7,11 @@
+ spec:
+   replicas: 6
+   selector:
+     matchLabels:
+       app: probes-images
++      version: v2.0
+   template:
+     metadata:
+       labels:
+         app: probes-images
+         version: v2.0
+```
+
+```
+$ kubectl apply -f 506_probes-images-rs-update-selector.yaml
+The ReplicaSet "probes-images" is invalid: spec.selector: Invalid value: v1.LabelSelector{MatchLabels:map[string]string{"app":"probes-images", "version":"v2.0"}, MatchExpressions:[]v1.LabelSelectorRequirement(nil)}: field is immutable
+```
+
+As we already saw before, the `ReplicaSet` selector field is `immutable`, so we need to create a new `ReplicaSet`.
+
+```diff
+$ diff -U5 505_probes-images-rs-6-update-image-ok.yaml 507_probes-images-v2.0-rs.yaml 
+--- 505_probes-images-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
++++ 507_probes-images-v2.0-rs.yaml      2019-05-11 17:09:20.425599538 +0000
+@@ -1,16 +1,17 @@
+ apiVersion: apps/v1
+ kind: ReplicaSet
+ metadata:
+-  name: probes-images
++  name: probes-images-v2.0
+   labels:
+     app: probes-images
+ spec:
+   replicas: 6
+   selector:
+     matchLabels:
+       app: probes-images
++      version: v2.0
+   template:
+     metadata:
+       labels:
+         app: probes-images
+         version: v2.0
+```
+
+Let's check the current status:
+
+```
+$ kubectl get rs -l app=probes-images
+NAME            DESIRED   CURRENT   READY   AGE
+probes-images   6         6         6       52m
+```
+
+Let's add the new `ReplicaSet`!
+
+```
+$ kubectl apply -f 507_probes-images-v2.0-rs.yaml && kubectl get rs -l app=probes-images -w
+replicaset.apps/probes-images-v2.0 unchanged
+NAME                 DESIRED   CURRENT   READY   AGE
+probes-images        6         6         6       53m
+probes-images-v2.0   6         6         2       10s
+probes-images-v2.0   6         6         3       10s
+probes-images-v2.0   6         6         4       11s
+probes-images-v2.0   6         6         5       13s
+probes-images-v2.0   6         6         6       14s
+```
+
+We changed the `ReplicaSet`, so new replicas have been created with the `ReplicaSet` name prefix.
+
+```
+$ kubectl get pods
+NAME                       READY   STATUS    RESTARTS   AGE
+probes-images-62v48        1/1     Running   0          11m
+probes-images-bs6z9        1/1     Running   0          11m
+probes-images-ndhd7        1/1     Running   0          11m
+probes-images-pbltv        1/1     Running   0          14m
+probes-images-sv698        1/1     Running   0          14m
+probes-images-v2.0-86shb   1/1     Running   0          57s
+probes-images-v2.0-9kpln   1/1     Running   0          57s
+probes-images-v2.0-dnl2k   1/1     Running   0          57s
+probes-images-v2.0-dxj4v   1/1     Running   0          57s
+probes-images-v2.0-hg8xb   1/1     Running   0          57s
+probes-images-v2.0-mmvzr   1/1     Running   0          57s
+probes-images-vbrqc        1/1     Running   0          14m
+```
+
+It starts to become clear that `ReplicaSet` is not meant to be used to execute `Rolling Updates` or deploy new versions of our application, just to keep a number of replicas of a `Pod` running.
+
+For manage application *deployments*, we need another kind of Kubernetes object that should work with `ReplicaSets`... Lucky for us, Kubernetes has an object for that called... you guessed... `Deployments`.

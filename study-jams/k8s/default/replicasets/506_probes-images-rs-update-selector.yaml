@@ -1,29 +1,29 @@
-
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: probes
+  name: probes-images
   labels:
-    app: probes
+    app: probes-images
 spec:
   replicas: 6
   selector:
     matchLabels:
-      app: probes
+      app: probes-images
+      version: v2.0
   template:
     metadata:
       labels:
-        app: probes
+        app: probes-images
+        version: v2.0
     spec:
       containers:
       - name: app
-        image: raelga/cats:neu
+        image: raelga/cats:blanca
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /
             port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          successThreshold: 3
+          initialDelaySeconds: 2
         livenessProbe:
           httpGet:
             path: /
