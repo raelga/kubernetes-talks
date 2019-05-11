@@ -1,2 +1,6 @@
-## Proper documentation is being written describing how to deploy the cluster, create the images and use the k8s yamls.
-## Once ready, it will be announced on Twitter at @raelga and we will send a message to all the meetup attendees.
+## This is a work in progress!
+
+This folder contains all the resources used during the Cloud Native Barcelona Kubernetes Study Jams.
+
+- [Cloud Native Barcelona - April 26th](https://www.meetup.com/Cloud-Native-Barcelona/events/260422493/)
+- [Cloud Native Barcelona - May 9th](https://www.meetup.com/Cloud-Native-Barcelona/events/260756033/)
