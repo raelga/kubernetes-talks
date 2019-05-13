@@ -1,0 +1,111 @@
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.15
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
+
+---
+
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: apache
+  labels:
+    app: apache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apache
+  template:
+    metadata:
+      labels:
+        app: apache
+    spec:
+      containers:
+      - name: apache
+        image: httpd:2.4
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32M
+          limits:
+            cpu: 100m
+            memory: 64M
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: nginx
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: apache
+spec:
+  ports:
+  - name: http
+    targetPort: 80
+    port: 80
+  selector:
+    app: apache
+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: headers
+spec:
+  entrypoints:
+    - web
+    - websecure
+  routes:
+  - match: Headers(`X-ROUTE`,`Apache`)
+    kind: Rule
+    services:
+    - name: apache
+      port: 80
+  - match: Headers(`X-ROUTE`,`nginx`)
+    kind: Rule
+    services:
+    - name: nginx
+      port: 80
