@@ -7,6 +7,13 @@ The main subject of this talk is to have an overview on the microservices archit
 - [Kubernetes 101 Slides](https://talks.godoc.org/github.com/raelga/kubernetes-talks/101/kubernetes-101.slide)
 - [Kubernetes 101 Slides Source](101/)
 
+## Kubernetes from Scratch
+
+The main subject of this talk is understanding the Kubernetes Control Plane by spinning up a cluster, component by component.
+
+- [Kubernetes from scratch Slides](https://go.rael.dev/cnbcn-extending-k8s)
+- [Kubernetes from scratch Lab](https://github.com/raelga/kubernetes-talks/tree/master/k8s-from-scratch)
+
 ## Kubernetes Clouds
 
 The main subject of this talk is viewing the differences between each managed kubernetes solution offered by AWS, Azure and GCP.
