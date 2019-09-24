@@ -3,5 +3,4 @@ kind: Greeting
 metadata:
   name: example-greeting
 spec:
-  # Add fields here
-  size: 3
+  replicas: 3
