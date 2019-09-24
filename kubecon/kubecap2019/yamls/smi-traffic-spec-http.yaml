@@ -1,0 +1,12 @@
+apiVersion: specs.smi-spec.io/v1alpha1
+kind: HTTPRouteGroup
+metadata:
+  name: the-routes
+matches:
+- name: metrics
+  pathRegex: "/metrics"
+  methods:
+  - GET
+- name: health
+  pathRegex: "/ping"
+  methods: ["*"]

@@ -1,0 +1,19 @@
+kind: TrafficTarget
+apiVersion: access.smi-spec.io/v1alpha1
+metadata:
+  name: path-specific
+  namespace: default
+destination:
+  kind: ServiceAccount
+  name: service-a
+  namespace: default
+  port: 8080
+specs:
+- kind: HTTPRouteGroup
+  name: the-routes
+  matches:
+  - metrics
+sources:
+- kind: ServiceAccount
+  name: prometheus
+  namespace: default

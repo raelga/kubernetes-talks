@@ -1,0 +1,13 @@
+apiVersion: "cluster.k8s.io/v1alpha1"
+kind: MachineDeployment
+metadata:
+ name: my-first-machine-deployment
+spec:
+ replias: 3
+ template:
+ ...
+ strategy:
+ type: RollingUpdate
+ rollingUpdate:
+ maxUnavailable: 0
+ maxSurge: 1

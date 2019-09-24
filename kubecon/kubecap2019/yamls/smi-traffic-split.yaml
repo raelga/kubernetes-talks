@@ -1,0 +1,16 @@
+apiVersion: split.smi-spec.io/v1alpha1
+kind: TrafficSplit
+metadata:
+  name: my-weights
+spec:
+  # The root service that clients use to connect to the destination application.
+  service: numbers
+  # Services inside the namespace with their own selectors, endpoints and configuration.
+  backends:
+  - service: one
+    # Identical to resources, 1 = 1000m
+    weight: 10m
+  - service: two
+    weight: 100m
+  - service: three
+    weight: 1500m
