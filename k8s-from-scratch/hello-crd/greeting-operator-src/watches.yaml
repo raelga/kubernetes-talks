@@ -1,0 +1,5 @@
+---
+- version: v1
+  group: k8s.rael.io
+  kind: Greeting
+  role: /opt/ansible/roles/greeting

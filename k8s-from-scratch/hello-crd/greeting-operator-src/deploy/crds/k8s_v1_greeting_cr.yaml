@@ -1,0 +1,7 @@
+apiVersion: k8s.rael.io/v1
+kind: Greeting
+metadata:
+  name: example-greeting
+spec:
+  # Add fields here
+  size: 3
