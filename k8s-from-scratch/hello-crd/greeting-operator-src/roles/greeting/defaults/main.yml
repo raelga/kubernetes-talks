@@ -1,2 +1,15 @@
 ---
-# defaults file for greeting
+# defaults file for the greetins operator
+replicas: 2
+greeting: "Default operator hello"
+
+# Base settings
+service_type: NodePort
+nginx_image: nginx:1.17-alpine
+echo_image: alpine:3.9
+echo_cmd: >
+  while true;
+  do
+    echo "<h1>$GREETING from $HOSTNAME at `date`</h1>" | tee -a /tmp/html/index.html;
+  sleep 10;
+  done;
