@@ -3,3 +3,5 @@
   group: k8s.rael.io
   kind: Greeting
   role: /opt/ansible/roles/greeting
+  reconcilePeriod: 10s
+  manageStatus: true
