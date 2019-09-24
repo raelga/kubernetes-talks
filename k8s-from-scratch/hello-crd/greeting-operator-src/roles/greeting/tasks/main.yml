@@ -1,2 +1,104 @@
 ---
-# tasks file for greeting
+# tasks file for greetings custom resource
+
+- name: Apply ConfigMap manifest for {{ meta.name }} Custom Resource
+  k8s_raw:
+    state: present
+    resource_definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: '{{ meta.name }}-greet-cm'
+        namespace: '{{ meta.namespace }}'
+        labels:
+          greet: '{{ meta.name }}'
+          operator: greetings.k8s.rael.io
+      data:
+        GREETING: '{{ greeting }}'
+
+- name: Apply Service manifest for {{ meta.name }} Custom Resource
+  k8s_raw:
+    state: present
+    resource_definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: '{{ meta.name }}-greet-svc'
+        namespace: '{{ meta.namespace }}'
+        labels:
+          greet: '{{ meta.name }}'
+          operator: greetings.k8s.rael.io
+      spec:
+        selector:
+          greet: '{{ meta.name }}'
+          operator: greetings.k8s.rael.io
+        ports:
+        - name: http
+          protocol: TCP
+          port: 80
+          targetPort: 80
+        type: '{{ service_type }}'
+
+- name: Apply Deployment manifest for {{ meta.name }} Custom Resource
+  k8s_raw:
+    state: present
+    resource_definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: '{{ meta.name }}-greet-dep'
+        namespace: '{{ meta.namespace }}'
+        labels:
+          greet: '{{ meta.name }}'
+          operator: greetings.k8s.rael.io
+        annotations:
+          notes: "This annotation is intentional to show the Operator resource."
+      spec:
+        replicas: '{{ replicas }}'
+        selector:
+          matchLabels:
+            greet: '{{ meta.name }}'
+            operator: greetings.k8s.rael.io
+        template:
+          metadata:
+            annotations:
+              greeting: '{{ greeting }}'
+            labels:
+              greet: '{{ meta.name }}'
+              operator: greetings.k8s.rael.io
+          spec:
+            containers:
+            - name: nginx
+              image: '{{ nginx_image }}'
+              volumeMounts:
+              - name: html
+                mountPath: "/usr/share/nginx/html"
+              resources: 
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+            - name: echo
+              image: '{{ echo_image }}'
+              command:
+              - "/bin/sh"
+              - "-c"
+              args:
+              - '{{ echo_cmd }}'
+              envFrom:
+              - configMapRef:
+                  name: '{{ meta.name }}-greet-cm'
+              volumeMounts:
+              - name: html
+                mountPath: "/tmp/html"
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 32Mi
+                limits:
+                  cpu: 75m
+                  memory: 96Mi
+            volumes:
+            - name: html
