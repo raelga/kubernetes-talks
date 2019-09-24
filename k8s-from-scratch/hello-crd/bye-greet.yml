@@ -1,6 +1,6 @@
 apiVersion: k8s.rael.io/v1
 kind: Greeting
 metadata:
-  name: hello
+  name: bye
 spec:
-  greeting: "Hello Cloud Natives"
+  greeting: "Bye Cloud Natives"
