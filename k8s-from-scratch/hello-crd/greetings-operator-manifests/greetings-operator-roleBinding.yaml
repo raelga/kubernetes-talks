@@ -1,0 +1,11 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: greeting-operator
+subjects:
+- kind: ServiceAccount
+  name: greeting-operator
+roleRef:
+  kind: Role
+  name: greeting-operator
+  apiGroup: rbac.authorization.k8s.io
