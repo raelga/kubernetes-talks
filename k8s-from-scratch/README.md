@@ -56,10 +56,59 @@
 
 You can run a local VM or use a cloud server. For this example, we'll be deploying an EC2 instance in AWS using terraform.
 
-Setup your terraform AWS credentials and run `tf apply`:
+Setup your terraform AWS credentials and run `tf init`
+
+- Command:
 
 ```bash
-❯ tf apply -auto-approve
+tf init
+```
+
+- Expected output:
+
+```bash
+Initializing modules...
+- ec2 in terraform/modules/aws/ec2/spot-instance
+- vpc in terraform/modules/aws/vpc/vpc
+
+Initializing the backend...
+
+Initializing provider plugins...
+- Checking for available provider plugins...
+- Downloading plugin for provider "aws" (hashicorp/aws) 2.29.0...
+
+The following providers do not have any version constraints in configuration,
+so the latest version was installed.
+
+To prevent automatic upgrades to new major versions that may contain breaking
+changes, it is recommended to add version = "..." constraints to the
+corresponding provider blocks in configuration, with the constraint strings
+suggested below.
+
+* provider.aws: version = "~> 2.29"
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+```
+
+Then run `tf apply`:
+
+- Command:
+
+```bash
+tf apply -auto-approve
+```
+
+- Expected output:
+
+```bash
 Acquiring state lock. This may take a few moments...
 data.terraform_remote_state.aws_network: Refreshing state...
 module.ec2.data.aws_ami.ubuntu: Refreshing state...
@@ -81,8 +130,15 @@ public_ip = 54.76.202.141
 
 SSH into the instance, establishing a tunnel to 8080 that will be used afterwards.
 
+- Command:
+
 ```bash
-❯ ssh -L 8080:localhost:8080 54.76.202.141
+ssh -L 8080:localhost:8080 54.76.202.141
+```
+
+- Expected output:
+
+```bash
 Welcome to Ubuntu 18.04.3 LTS (GNU/Linux 4.15.0-1048-aws x86_64)
 
  * Documentation:  https://help.ubuntu.com
