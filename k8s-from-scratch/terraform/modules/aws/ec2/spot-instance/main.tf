@@ -16,7 +16,7 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_security_group" "instance-sg" {
-  vpc_id = "${var.vpc}"
+  vpc_id = var.vpc
 
   dynamic "ingress" {
     for_each = var.tcp_allowed_ingress
@@ -50,12 +50,12 @@ resource "aws_security_group" "instance-sg" {
 }
 
 resource "aws_spot_instance_request" "instance" {
-  ami                    = "${data.aws_ami.ubuntu.id}"
-  instance_type          = "${var.instance_type}"
-  subnet_id              = "${var.subnet}"
-  vpc_security_group_ids = ["${aws_security_group.instance-sg.id}"]
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  subnet_id              = var.subnet
+  vpc_security_group_ids = [aws_security_group.instance-sg.id]
 
-  spot_price                      = "${var.spot_price}"
+  spot_price                      = var.spot_price
   wait_for_fulfillment            = true
   instance_interruption_behaviour = "stop"
 
