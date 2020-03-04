@@ -5,6 +5,6 @@
     "name": "hello-cm"
   },
   "data": {
-    "GREETING": "Hello Cloud Native Barcelona"
+    "GREETING": "Hello Cloud Native Barcelona from kubectl"
   }
 }
