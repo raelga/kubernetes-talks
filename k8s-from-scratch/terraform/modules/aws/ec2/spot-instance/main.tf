@@ -83,7 +83,7 @@ EOF
   # Tagging still doesn't work for spot instances
   # https://github.com/terraform-providers/terraform-provider-aws/issues/32
   tags = {
-    Name    = "${var.name}"
+    Name    = var.name
     account = "talks"
   }
 }
