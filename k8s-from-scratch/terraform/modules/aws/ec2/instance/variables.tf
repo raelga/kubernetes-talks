@@ -19,7 +19,7 @@ variable "subnet" {
 
 variable "tcp_allowed_ingress" {
   description = "EC2 SG TCP ingress open ports"
-  type        = "list"
+  type        = list
   default     = [22]
 }
 

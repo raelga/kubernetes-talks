@@ -44,7 +44,7 @@ resource "aws_security_group" "instance-sg" {
   }
 
   tags = {
-    Name    = "${var.name}-sg"
+    Name    = format("%s-sg", var.name)
     account = "talks"
   }
 }
@@ -77,7 +77,7 @@ apt-get -y update
 EOF
 
   tags = {
-    Name    = "${var.name}"
+    Name    = var.name
     account = "talks"
   }
 }
