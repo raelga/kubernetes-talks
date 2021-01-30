@@ -36,7 +36,7 @@ spec:
         - "/bin/sh"
         - "-c"
         args:
-        - while true; do echo "$GREETING from $HOSTNAME at `date`" | tee -a /tmp/html/index.html;
+        - while true; do echo -n "<h3>$GREETING, I'm $HOSTNAME and it's `date`.</h3>" | tee -a /tmp/html/index.html;
           sleep 10; done;
         envFrom:
         - configMapRef:
