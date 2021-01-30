@@ -278,11 +278,20 @@ cat ~/.kube/config
 kubectl logs -l app=hello -c echo -f
 ```
 
+## Network
+
+```
+kubectl apply -f hello-manifests/hello-svc.yml
+```
+
+```
+kubectl get services
+```
 
 ## Kubernetes Node - Kubeproxy (Terminal 7)
 
 ```
-# 6.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
+# 7.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
 ssh -t $(tf output -raw public_ip) sudo su -
 ```
 
@@ -291,7 +300,14 @@ iptables -L -t nat
 ```
 
 ```
-kube-proxy --master localhost:8080
+~/kubernetes/server/bin/kube-proxy --master localhost:8080
+```
+
+## Kubernetes Node - Kube-proxy and iptables (Terminal 8)
+
+```
+# 8.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
+ssh -t $(tf output -raw public_ip) sudo su -
 ```
 
 ```
