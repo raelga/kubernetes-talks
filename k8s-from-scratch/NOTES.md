@@ -69,7 +69,7 @@ curl -sqL go.rael.dev/k8s1-16-0rc2 | tar -zvxf -
 ```
 
 Show the etcd-manager, the core Kubernetes API objects have been created in ETCD.
-### Interact with the API Server REST interface  (Terminal 3)
+### 3. Interact with the API Server REST interface  (Terminal 3)
 
 * Keep Terminal 2  nearby to view that requests are being served.
 * Remark that api group, version, namespace, kind are part of the path.
@@ -176,7 +176,7 @@ watch -n1 kubectl get all -o wide
 ```
 
 (back to the slides)
-## Controller Manager (Terminal 4)
+## 4. Controller Manager (Terminal 4)
 
 ```
 # 4.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
@@ -216,11 +216,11 @@ http://localhost:8080/api/v1/namespaces/default/pods
     * The pods exists in etcd but are not being **scheduled**
 
 ```
-# 3.7 Leave the Terminal 3 open watching all the resources again
+# 4.5 Leave the Terminal 3 open watching all the resources again
 watch -n1 kubectl get all -o wide
 ```
 
-## Kubernetes Scheduler (Terminal 5)
+## 5.1 Kubernetes Scheduler (Terminal 5)
 
 ```
 # 5.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
@@ -230,30 +230,30 @@ ssh -t $(tf output -raw public_ip) sudo su -
 * Ensure the Terminal 3 with the 3.7 watch command is visible
 
 ```
-# 4.3 Launch the kube controller manager, poiting to the kubernetes API server and the certificates. Remark etcd.
+# 5.2 Launch the kube controller manager, poiting to the kubernetes API server and the certificates. Remark etcd.
 ~/kubernetes/server/bin/kube-scheduler --master localhost:8080 --v 3
 ```
 
 ```
-# 4.4
+# 5.3
 kubectl describe pods
 ```
 
 ```
-# 4.5
+# 5.4
 kubectl get events
 ```
 
 ```
-# 4.5
+# 5.5
 kubectl get nodes
 ```
 
 ```
-# 3.7 Leave the Terminal 3 open watching all the resources again
+# 5.6 Leave the Terminal 3 open watching all the resources again
 watch -n1 kubectl get all,nodes -o wide
 ```
-## Kubernetes Node - Kubelet (Terminal 6)
+## 6. Kubernetes Node - Kubelet (Terminal 6)
 
 ```
 # 6.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
@@ -261,49 +261,57 @@ ssh -t $(tf output -raw public_ip) sudo su -
 ```
 
 ```
+# 6.2
 ~/kubernetes/server/bin/kubectl config set-cluster lab-cluster --server localhost:8080; \
 ~/kubernetes/server/bin/kubectl config set-context lab --cluster lab-cluster; \
 ~/kubernetes/server/bin/kubectl config use-context lab
 ```
 
 ```
+# 6.3
 cat ~/.kube/config
 ```
 
 ```
+# 6.4
  ~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config
 ```
 
 ```
+# 6.5
 kubectl logs -l app=hello -c echo -f
 ```
 
-## Network
+## 7. Network
 
 ```
+# 7.1
 kubectl apply -f hello-manifests/hello-svc.yml
 ```
 
 ```
+# 7.2
 kubectl get services
 ```
 
 ## Kubernetes Node - Kubeproxy (Terminal 7)
 
 ```
-# 7.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
+# 7.3 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
 ssh -t $(tf output -raw public_ip) sudo su -
 ```
 
 ```
+# 7.4
 iptables -L -t nat
 ```
 
 ```
+# 7.5
 ~/kubernetes/server/bin/kube-proxy --master localhost:8080
 ```
 
-## Kubernetes Node - Kube-proxy and iptables (Terminal 8)
+## 8 Kubernetes Node - Kube-proxy and iptables (Terminal 8)
 
 ```
 # 8.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
@@ -311,6 +319,6 @@ ssh -t $(tf output -raw public_ip) sudo su -
 ```
 
 ```
+# 8.2
 iptables -L -t nat
 ```
-
