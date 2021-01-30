@@ -253,7 +253,7 @@ kubectl get nodes
 # 3.7 Leave the Terminal 3 open watching all the resources again
 watch -n1 kubectl get all,nodes -o wide
 ```
-## Kubernetes Node (Terminal 6)
+## Kubernetes Node - Kubelet (Terminal 6)
 
 ```
 # 6.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
@@ -279,7 +279,7 @@ kubectl logs -l app=hello -c echo -f
 ```
 
 
-## Kubernetes Node (Terminal 7)
+## Kubernetes Node - Kubeproxy (Terminal 7)
 
 ```
 # 6.1 Connect to the EC2 instance, no tunnel is needed this time as the API server is the only thing the client needs access
