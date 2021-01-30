@@ -22,7 +22,7 @@
     - [Create a new `ConfigMap`](#create-a-new-configmap)
     - [Check again the `ConfigMap` resources in the *default* `Namespace`](#check-again-the-configmap-resources-in-the-default-namespace)
   - [Setup `kubectl`](#setup-kubectl)
-    - [Define a the `localhost:8080` cluster](#define-a-the-localhost8080-cluster)
+    - [Define a the  `localhost:8080` cluster](#define-a-the--localhost8080-cluster)
     - [Define a `localhost` context](#define-a-localhost-context)
     - [Set the current context to `localhost`](#set-the-current-context-to-localhost)
     - [Check the resulting config file](#check-the-resulting-config-file)
@@ -125,7 +125,7 @@ Releasing state lock. This may take a few moments...
 
 Outputs:
 
-public_ip = 54.76.202.141
+public_ip = 34.254.155.10
 ```
 
 SSH into the instance, establishing a tunnel to 8080 that will be used afterwards.
@@ -133,7 +133,7 @@ SSH into the instance, establishing a tunnel to 8080 that will be used afterward
 - Command:
 
 ```bash
-ssh -L 8080:localhost:8080 54.76.202.141
+ssh -L 8080:localhost:8080 34.254.155.10
 ```
 
 - Expected output:
@@ -168,8 +168,8 @@ See "man sudo_root" for details.
 
 If your are using a remote server and want to access to the services from your local computer, is recommended connect to the instance building a tunnel to the service ports. For demo purposes and using the **minimal** setup possible, we're not going to use authentication neither enable secure communication between services.
 
-For the `kube-apiserver`, use `ssh -L 8080:localhost:8080 54.76.202.141`.
-For the `etcd` server, use `ssh -L 2379:localhost:2379 54.76.202.141`.
+For the `kube-apiserver`, use `ssh -L 8080:localhost:8080 34.254.155.10`.
+For the `etcd` server, use `ssh -L 2379:localhost:2379 34.254.155.10`.
 
 ### Short url usage
 
@@ -182,7 +182,7 @@ Feel free to *resolve* the links by using `curl -I`
 - Command
 
   ```bash
-  curl -I  go.rael.dev/etcd3-3-13
+  curl -I go.rael.dev/etcd3-3-13
   ```
 
 - Expected output
@@ -1629,11 +1629,11 @@ kubelet is watching the `Kubernetes API` and discover that some `Pods` are binde
 
 ```
 I0915 00:59:50.497152   21702 reconciler.go:154] Reconciler: start to sync state
-I0915 01:00:19.248126   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "html" (UniqueName: "kubernetes.io/empty-dir/4080bfc4-03b5-49c4-89ae-7c32c674a85e-html") pod "hello-dep-758fcd6b44-t2n9n" (UID: "4080bfc4-03b5-49c4-89ae-7c32c674a85e") 
-I0915 01:00:19.248181   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "default-token-fkl4j" (UniqueName: "kubernetes.io/secret/4080bfc4-03b5-49c4-89ae-7c32c674a85e-default-token-fkl4j") pod "hello-dep-758fcd6b44-t2n9n" (UID: "4080bfc4-03b5-49c4-89ae-7c32c674a85e") 
-I0915 01:00:19.248209   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "html" (UniqueName: "kubernetes.io/empty-dir/056c9b45-7514-4d79-a1fa-f37eb4b3fc93-html") pod "hello-dep-758fcd6b44-xtnjc" (UID: "056c9b45-7514-4d79-a1fa-f37eb4b3fc93") 
-I0915 01:00:19.248287   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "default-token-fkl4j" (UniqueName: "kubernetes.io/secret/056c9b45-7514-4d79-a1fa-f37eb4b3fc93-default-token-fkl4j") pod "hello-dep-758fcd6b44-xtnjc" (UID: "056c9b45-7514-4d79-a1fa-f37eb4b3fc93") 
-I0915 01:00:19.248378   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "html" (UniqueName: "kubernetes.io/empty-dir/ab578bcd-1fec-448c-bcbc-7c826324bec8-html") pod "hello-dep-758fcd6b44-w8ctt" (UID: "ab578bcd-1fec-448c-bcbc-7c826324bec8") 
+I0915 01:00:19.248126   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "html" (UniqueName: "kubernetes.io/empty-dir/4080bfc4-03b5-49c4-89ae-7c32c674a85e-html") pod "hello-dep-758fcd6b44-t2n9n" (UID: "4080bfc4-03b5-49c4-89ae-7c32c674a85e")
+I0915 01:00:19.248181   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "default-token-fkl4j" (UniqueName: "kubernetes.io/secret/4080bfc4-03b5-49c4-89ae-7c32c674a85e-default-token-fkl4j") pod "hello-dep-758fcd6b44-t2n9n" (UID: "4080bfc4-03b5-49c4-89ae-7c32c674a85e")
+I0915 01:00:19.248209   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "html" (UniqueName: "kubernetes.io/empty-dir/056c9b45-7514-4d79-a1fa-f37eb4b3fc93-html") pod "hello-dep-758fcd6b44-xtnjc" (UID: "056c9b45-7514-4d79-a1fa-f37eb4b3fc93")
+I0915 01:00:19.248287   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "default-token-fkl4j" (UniqueName: "kubernetes.io/secret/056c9b45-7514-4d79-a1fa-f37eb4b3fc93-default-token-fkl4j") pod "hello-dep-758fcd6b44-xtnjc" (UID: "056c9b45-7514-4d79-a1fa-f37eb4b3fc93")
+I0915 01:00:19.248378   21702 reconciler.go:207] operationExecutor.VerifyControllerAttachedVolume started for volume "html" (UniqueName: "kubernetes.io/empty-dir/ab578bcd-1fec-448c-bcbc-7c826324bec8-html") pod "hello-dep-758fcd6b44-w8ctt" (UID: "ab578bcd-1fec-448c-bcbc-7c826324bec8")
 ```
 
 - Expected output from the nodes watch `kubectl get nodes -o wide -w`
@@ -1697,15 +1697,15 @@ c65bdd6329d5        k8s.gcr.io/pause:3.1   "/pause"                 About a minu
 ## Expose the `Deploment` with a `Service`
 
 ```
-extending-kubernetes/labs/k8s-from-scratch on  master [?] took 34m 21s 
-❯ kubectl apply -f hello-svc.yml 
+extending-kubernetes/labs/k8s-from-scratch on  master [?] took 34m 21s
+❯ kubectl apply -f hello-svc.yml
 service/hello created
-extending-kubernetes/labs/k8s-from-scratch on  master [?] 
-❯ kubectl get svc                                                                                           
+extending-kubernetes/labs/k8s-from-scratch on  master [?]
+❯ kubectl get svc
 NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 hello        ClusterIP   10.0.0.170   <none>        80/TCP    5s
 kubernetes   ClusterIP   10.0.0.1     <none>        443/TCP   116m
-❯ kubectl describe svc/hello                  
+❯ kubectl describe svc/hello
 Name:              hello
 Namespace:         default
 Labels:            <none>
@@ -1769,76 +1769,76 @@ Hello Cloud Native Barcelona from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35
 ```
 ^Croot@ip-10-0-1-135:~/kubernetes/server/bin# iptables -L -t nat
 Chain PREROUTING (policy ACCEPT)
-target     prot opt source               destination         
+target     prot opt source               destination
 KUBE-SERVICES  all  --  anywhere             anywhere             /* kubernetes service portals */
 DOCKER     all  --  anywhere             anywhere             ADDRTYPE match dst-type LOCAL
 
 Chain INPUT (policy ACCEPT)
-target     prot opt source               destination         
+target     prot opt source               destination
 
 Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination         
+target     prot opt source               destination
 KUBE-SERVICES  all  --  anywhere             anywhere             /* kubernetes service portals */
 DOCKER     all  --  anywhere            !localhost/8          ADDRTYPE match dst-type LOCAL
 
 Chain POSTROUTING (policy ACCEPT)
-target     prot opt source               destination         
+target     prot opt source               destination
 KUBE-POSTROUTING  all  --  anywhere             anywhere             /* kubernetes postrouting rules */
-MASQUERADE  all  --  172.17.0.0/16        anywhere            
+MASQUERADE  all  --  172.17.0.0/16        anywhere
 
 Chain DOCKER (2 references)
-target     prot opt source               destination         
-RETURN     all  --  anywhere             anywhere            
+target     prot opt source               destination
+RETURN     all  --  anywhere             anywhere
 
 Chain KUBE-MARK-DROP (0 references)
-target     prot opt source               destination         
+target     prot opt source               destination
 MARK       all  --  anywhere             anywhere             MARK or 0x8000
 
 Chain KUBE-MARK-MASQ (5 references)
-target     prot opt source               destination         
+target     prot opt source               destination
 MARK       all  --  anywhere             anywhere             MARK or 0x4000
 
 Chain KUBE-NODEPORTS (1 references)
-target     prot opt source               destination         
+target     prot opt source               destination
 KUBE-MARK-MASQ  tcp  --  anywhere             anywhere             /* default/hello: */ tcp dpt:31890
 KUBE-SVC-TWVLBX4WCEZSIVWL  tcp  --  anywhere             anywhere             /* default/hello: */ tcp dpt:31890
 
 Chain KUBE-POSTROUTING (1 references)
-target     prot opt source               destination         
+target     prot opt source               destination
 MASQUERADE  all  --  anywhere             anywhere             /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
 
 Chain KUBE-SEP-SP7JBK2WW3KZSQBQ (1 references)
-target     prot opt source               destination         
-KUBE-MARK-MASQ  all  --  ip-10-0-1-135        anywhere            
+target     prot opt source               destination
+KUBE-MARK-MASQ  all  --  ip-10-0-1-135        anywhere
 DNAT       tcp  --  anywhere             anywhere             tcp to:10.0.1.135:6443
 
 Chain KUBE-SEP-SY2PZQWZR2UT46RB (1 references)
-target     prot opt source               destination         
-KUBE-MARK-MASQ  all  --  172.17.0.6           anywhere            
+target     prot opt source               destination
+KUBE-MARK-MASQ  all  --  172.17.0.6           anywhere
 DNAT       tcp  --  anywhere             anywhere             tcp to:172.17.0.6:80
 
 Chain KUBE-SEP-TU6S3TYJDJNFJ67V (1 references)
-target     prot opt source               destination         
-KUBE-MARK-MASQ  all  --  172.17.0.7           anywhere            
+target     prot opt source               destination
+KUBE-MARK-MASQ  all  --  172.17.0.7           anywhere
 DNAT       tcp  --  anywhere             anywhere             tcp to:172.17.0.7:80
 
 Chain KUBE-SEP-YCI454ZKXCU37IFD (1 references)
-target     prot opt source               destination         
-KUBE-MARK-MASQ  all  --  172.17.0.5           anywhere            
+target     prot opt source               destination
+KUBE-MARK-MASQ  all  --  172.17.0.5           anywhere
 DNAT       tcp  --  anywhere             anywhere             tcp to:172.17.0.5:80
 
 Chain KUBE-SERVICES (2 references)
-target     prot opt source               destination         
+target     prot opt source               destination
 KUBE-SVC-TWVLBX4WCEZSIVWL  tcp  --  anywhere             10.0.0.103           /* default/hello: cluster IP */ tcp dpt:http
 KUBE-SVC-NPX46M4PTMTKRN6Y  tcp  --  anywhere             10.0.0.1             /* default/kubernetes:https cluster IP */ tcp dpt:https
 KUBE-NODEPORTS  all  --  anywhere             anywhere             /* kubernetes service nodeports; NOTE: this must be the last rule in this chain */ ADDRTYPE match dst-type LOCAL
 
 Chain KUBE-SVC-NPX46M4PTMTKRN6Y (1 references)
-target     prot opt source               destination         
-KUBE-SEP-SP7JBK2WW3KZSQBQ  all  --  anywhere             anywhere            
+target     prot opt source               destination
+KUBE-SEP-SP7JBK2WW3KZSQBQ  all  --  anywhere             anywhere
 
 Chain KUBE-SVC-TWVLBX4WCEZSIVWL (2 references)
-target     prot opt source               destination         
+target     prot opt source               destination
 KUBE-SEP-YCI454ZKXCU37IFD  all  --  anywhere             anywhere             statistic mode random probability 0.33332999982
 KUBE-SEP-SY2PZQWZR2UT46RB  all  --  anywhere             anywhere             statistic mode random probability 0.50000000000
 KUBE-SEP-TU6S3TYJDJNFJ67V  all  --  anywhere             anywhere   `
