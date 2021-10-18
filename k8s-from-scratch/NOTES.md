@@ -20,15 +20,16 @@ ssh -L 2379:localhost:2379 $(tf output -raw public_ip)
 
 ```
 # 1.2 Download and unpack the etcd binaries
-curl -sqL go.rael.dev/etcd3-3-13 | tar -zxvf -
+curl -sqL go.rael.dev/etcd-v35 | tar -zxvf -
 ```
 
 ```
 # 1.3 Launch the etcd server with a debug flag
-~/etcd-v3.3.13-linux-amd64/etcd -debug
+~/etcd-v3.5.0-linux-amd64/etcd -log-level debug
 ```
 
 ### Check etcd (Terminal 2)
+(go to https://github.com/raelga/kubernetes-talks/blob/master/k8s-from-scratch/README.md#check-etcd-content for more detailed example)
 
 ```
 # 1.4 Write some data onto ETCD
@@ -39,6 +40,7 @@ etcdctl put /hello "Hello World"
 # 1.5 Read some data from ETCD
 etcdctl get /hello
 ```
+
 (back to the slides)
 ##  2. Kubernetes API Server
 

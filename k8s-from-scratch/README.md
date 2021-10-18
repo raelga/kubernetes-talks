@@ -128,45 +128,38 @@ Outputs:
 public_ip = 34.254.155.10
 ```
 
-SSH into the instance, establishing a tunnel to 8080 that will be used afterwards.
+SSH into the instance. This will be our `shell` terminal.
 
 - Command:
 
 ```bash
-ssh -L 8080:localhost:8080 34.254.155.10
+ssh $(tf output -raw public_ip)
 ```
 
 - Expected output:
 
 ```bash
-Welcome to Ubuntu 18.04.3 LTS (GNU/Linux 4.15.0-1048-aws x86_64)
+
+Welcome to Ubuntu 18.04.6 LTS (GNU/Linux 5.4.0-1057-aws x86_64)
 
  * Documentation:  https://help.ubuntu.com
  * Management:     https://landscape.canonical.com
  * Support:        https://ubuntu.com/advantage
 
-  System information as of Sat Sep 14 10:56:48 UTC 2019
+  System information as of Mon Oct 18 14:06:13 UTC 2021
 
-  System load:  0.01              Processes:              141
-  Usage of /:   28.5% of 7.69GB   Users logged in:        0
-  Memory usage: 1%                IP address for ens5:    10.0.1.130
+  System load:  0.0               Processes:              101
+  Usage of /:   32.7% of 7.69GB   Users logged in:        0
+  Memory usage: 4%                IP address for ens5:    10.0.1.69
   Swap usage:   0%                IP address for docker0: 172.17.0.1
-
-
-6 packages can be updated.
-1 update is a security update.
-
-
-Last login: Sat Sep 14 10:54:40 2019 from 79.159.98.84
-To run a command as administrator (user "root"), use "sudo <command>".
-See "man sudo_root" for details.
+....
 ```
 
 ## Before starting
 
 ### Tunneling to the remote host ports
 
-If your are using a remote server and want to access to the services from your local computer, is recommended connect to the instance building a tunnel to the service ports. For demo purposes and using the **minimal** setup possible, we're not going to use authentication neither enable secure communication between services.
+If your are using a remote server and want to access to the services from your local computer, is recommended connect to the instance building a tunnel to the service ports. For demo purposes and using the **simpliest** setup possible, we're not going to use authentication neither enable secure communication between services.
 
 For the `kube-apiserver`, use `ssh -L 8080:localhost:8080 34.254.155.10`.
 For the `etcd` server, use `ssh -L 2379:localhost:2379 34.254.155.10`.
@@ -175,165 +168,262 @@ For the `etcd` server, use `ssh -L 2379:localhost:2379 34.254.155.10`.
 
 To be easy to remember, we will use a shortlinks under the `go.rael.dev` domain.
 
-For example, `go.rael.dev/etcd3-3-13` points to the GitHub etcd-3.3013 tarball at `https://github.com/etcd-io/etcd/releases/download/v3.3.13/etcd-v3.3.13-linux-amd64.tar.gz`.
+For example, `go.rael.dev/etcd-v35` points to the GitHub etcd-3.3013 tarball at `https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64.tar.gz`.
 
 Feel free to *resolve* the links by using `curl -I`
 
 - Command
 
-  ```bash
-  curl -I go.rael.dev/etcd3-3-13
-  ```
+```bash
+curl -I go.rael.dev/etcd-v35
+```
 
 - Expected output
 
-  ```
-  HTTP/1.1 302 Found
-  Server: nginx
-  Date: Sat, 14 Sep 2019 11:19:23 GMT
-  Content-Type: text/html; charset=utf-8
-  Content-Length: 176
-  Connection: keep-alive
-  Cache-Control: private, max-age=90
-  Location: https://github.com/etcd-io/etcd/releases/download/v3.3.13/etcd-v3.3.13-linux-amd64.tar.gz
-  Strict-Transport-Security: max-age=1209600
-  ```
+```
+HTTP/1.1 302 Found
+Server: nginx
+Date: Mon, 18 Oct 2021 14:03:36 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 174
+Cache-Control: private, max-age=90
+Location: https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64.tar.gz
+Strict-Transport-Security: max-age=1209600
+Via: 1.1 google
+```
 
 Or
 
 - Command
 
-  ```bash
-  curl -o /dev/null -I -s go.rael.dev/etcd3-3-13 -w '%{redirect_url}'
-  ```
+```bash
+curl -o /dev/null -I -s go.rael.dev/etcd-v35 -w '%{redirect_url}'
+```
 
 - Expected output
 
-  ```bash
-  https://github.com/etcd-io/etcd/releases/download/v3.3.13/etcd-v3.3.13-linux-amd64.tar.gz
-  ```
+```bash
+https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64.tar.gz
+```
 
 ## First component: `etcd`
 
 ### `etcd` setup
 
-Download the a stable version of etcd3, at the time of writing this document, 3.3.13.
+SSH into the instance, establishing a tunnel to the etcd port `2379`.
+This will be our `etcd` terminal.
+
+- Command:
+
+```bash
+ssh -L 2379:localhost:2379 $(tf output -raw public_ip)
+```
+
+Download the a stable version of etcd v3, for this demo, v3.5.0.
 
 - Command
 
-  ```bash
-  curl -sqL go.rael.dev/etcd3-3-13 | tar -zxvf -
-  ```
+```bash
+curl -sqL go.rael.dev/etcd-v35 | tar -zxvf -
+```
 
 - Expected output
 
-  ```
-  etcd-v3.3.13-linux-amd64/
-  etcd-v3.3.13-linux-amd64/README.md
-  etcd-v3.3.13-linux-amd64/Documentation/
-  ...
-  etcd-v3.3.13-linux-amd64/Documentation/demo.md
-  etcd-v3.3.13-linux-amd64/README-etcdctl.md
-  etcd-v3.3.13-linux-amd64/etcdctl
-  etcd-v3.3.13-linux-amd64/READMEv2-etcdctl.md
-  etcd-v3.3.13-linux-amd64/etcd
-  root@ip-10-0-1-130:~# ls
-  etcd-v3.3.13-linux-amd64
+```
+etcd-v3.5.0-linux-amd64/
+etcd-v3.5.0-linux-amd64/Documentation/
+etcd-v3.5.0-linux-amd64/Documentation/dev-guide/
+etcd-v3.5.0-linux-amd64/Documentation/dev-guide/apispec/
+etcd-v3.5.0-linux-amd64/Documentation/dev-guide/apispec/swagger/
+...
+etcd-v3.5.0-linux-amd64/etcdutl
+etcd-v3.5.0-linux-amd64/etcdctl
+etcd-v3.5.0-linux-amd64/etcd
   ```
 
 ### Launch `etcd`
 
 - Command
 
-  ```bash
-  ~/etcd-v3.3.13-linux-amd64/etcd -debug
-  ```
+```bash
+~/etcd-v3.5.0-linux-amd64/etcd -log-level debug
+```
 
 - Expected output
 
-  ```
-  2019-09-14 13:01:05.340575 I | etcdmain: etcd Version: 3.3.13
-  2019-09-14 13:01:05.340636 I | etcdmain: Git SHA: 98d3084
-  2019-09-14 13:01:05.340651 I | etcdmain: Go Version: go1.10.8
-  2019-09-14 13:01:05.340655 I | etcdmain: Go OS/Arch: linux/amd64
-  2019-09-14 13:01:05.340662 I | etcdmain: setting maximum number of CPUs to 8, total number of available CPUs is 8
-  2019-09-14 13:01:05.340673 W | etcdmain: no data-dir provided, using default data-dir ./default.etcd
-  2019-09-14 13:01:05.340724 N | etcdmain: the server is already initialized as member before, starting as etcd member...
-  2019-09-14 13:01:05.340994 I | embed: listening for peers on http://localhost:2380
-  2019-09-14 13:01:05.341101 I | embed: listening for client requests on localhost:2379
-  ```
+```json
+{"level":"info","ts":"2021-10-18T14:15:19.544Z","caller":"etcdmain/etcd.go:72","msg":"Running: ","args":["/home/rael/etcd-v3.5.0-linux-amd64/etcd","-log-level","debug"]}
+{"level":"warn","ts":"2021-10-18T14:15:19.544Z","caller":"etcdmain/etcd.go:104","msg":"'data-dir' was empty; using default","data-dir":"default.etcd"}
+{"level":"info","ts":"2021-10-18T14:15:19.544Z","caller":"embed/etcd.go:131","msg":"configuring peer listeners","listen-peer-urls":["http://localhost:2380"]}
+{"level":"info","ts":"2021-10-18T14:15:19.544Z","caller":"embed/etcd.go:139","msg":"configuring client listeners","listen-client-urls":["http://localhost:2379"]}
+{"level":"info","ts":"2021-10-18T14:15:19.544Z","caller":"embed/etcd.go:307","msg":"starting an etcd server","etcd-version":"3.5.0","git-sha":"946a5a6f2","go-version":"go1.16.3","go-os":"linux","go-arch":"amd64","max-cpu-set":2,"max-cpu-available":2,"member-initialized":false,"name":"default","data-dir":"default.etcd","wal-dir":"","wal-dir-dedicated":"","member-dir":"default.etcd/member","force-new-cluster":false,"heartbeat-interval":"100ms","election-timeout":"1s","initial-election-tick-advance":true,"snapshot-count":100000,"snapshot-catchup-entries":5000,"initial-advertise-peer-urls":["http://localhost:2380"],"listen-peer-urls":["http://localhost:2380"],"advertise-client-urls":["http://localhost:2379"],"listen-client-urls":["http://localhost:2379"],"listen-metrics-urls":[],"cors":["*"],"host-whitelist":["*"],"initial-cluster":"default=http://localhost:2380","initial-cluster-state":"new","initial-cluster-token":"etcd-cluster","quota-size-bytes":2147483648,"pre-vote":true,"initial-corrupt-check":false,"corrupt-check-time-interval":"0s","auto-compaction-mode":"periodic","auto-compaction-retention":"0s","auto-compaction-interval":"0s","discovery-url":"","discovery-proxy":"","downgrade-check-interval":"5s"}
+```
 
 ### Test `etcd`
 
-Check the `etcd` status using curl:
+In a new terminal, check the `etcd` status using curl:
 
 - Command
 
-  ```bash
-  curl http://localhost:2379/health
-  ```
+```bash
+curl http://localhost:2379/health
+```
 
 - Expected output
 
-  ```json
-  {
-    "health": "true"
-  }
-  ```
+```json
+{"health":"true","reason":""}
+```
 
 - Expected log in the `etcd` server
 
-  ```bash
-  2019-09-14 13:19:38.046870 D | etcdserver/api/v2http: [GET] /health remote:127.0.0.1:53720
-  ```
+```json
+{"level":"debug","ts":"2021-10-18T14:20:52.428Z","caller":"etcdhttp/metrics.go:202","msg":"serving /health true"}
+{"level":"debug","ts":"2021-10-18T14:20:52.428Z","caller":"etcdhttp/metrics.go:83","msg":"/health OK","status-code":200}
+```
 
-Or the `etcdctl` command line CLI:
+Or the `etcdctl` command line CLI, available under `~/etcd-v3.5.0-linux-amd64/etcdctl`:
 
 - Command
 
-  ```bash
-  ~/etcd-v3.3.13-linux-amd64/etcdctl cluster-health
-  ```
+```bash
+etcdctl endpoint health
+```
 
 - Expected output
 
-  ```bash
-  member 8e9e05c52164694d is healthy: got healthy result from http://localhost:2379
-  cluster is healthy
-  ```
+```bash
+127.0.0.1:2379 is healthy: successfully committed proposal: took = 141.505671ms
+```
 
 - Expected log in the `etcd` server
 
-  ```
-  2019-09-14 13:14:29.024386 D | etcdserver/api/v2http: [GET] /v2/members remote:127.0.0.1:53678
-  2019-09-14 13:14:29.025306 D | etcdserver/api/v2http: [GET] /health remote:127.0.0.1:53680
-  ```
+```json
+{"level":"debug","ts":"2021-10-18T14:24:15.978Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T14:24:15.978Z","time spent":"103.601µs","remote":"127.0.0.1:33180","response type":"/etcdserverpb.KV/Range","request count":0,"request size":8,"response count":0,"response size":28,"request content":"key:\"health\" "}
+```
 
 ### Check `etcd` content
 
 - Command
 
-  ```
-  ETCDCTL_API=3 ~/etcd-v3.3.13-linux-amd64/etcdctl get / --prefix --keys-only
-  ```
-
-For versions prior to `3.4`, you need to set the `ETCDCTL_API=3` environment variable to use the v3 API.
-Check https://github.com/etcd-io/etcd/blob/master/etcdctl/README.md for more information.
+```bash
+curl -L http://localhost:2379/v3/kv/put -X POST \
+  -d "{\"key\": \"$(echo -n /test | base64)\", \"value\": \"$(echo -n Hello world from cURL | base64)\"}"
+```
 
 - Expected output
 
-The expected output should be empty, as no keys have been added to the database yet.
-
-  ```bash
-  ```
+```json
+{"header":{"cluster_id":"14841639068965178418","member_id":"10276657743932975437","revision":"2","raft_term":"2"}}
+```
 
 - Expected log in the `etcd` server
 
-As the log reports, the `response count = 0` is empty, as the database has just been started for the first time.
+```json
+{"level":"debug","ts":"2021-10-18T16:07:19.628Z","caller":"etcdserver/server.go:2107","msg":"Applying entries","num-entries":1}
+{"level":"debug","ts":"2021-10-18T16:07:19.628Z","caller":"etcdserver/server.go:2110","msg":"Applying entry","index":5,"term":2,"type":"EntryNormal"}
+{"level":"debug","ts":"2021-10-18T16:07:19.628Z","caller":"etcdserver/server.go:2160","msg":"apply entry normal","consistent-index":4,"entry-index":5,"should-applyV3":true}
+{"level":"debug","ts":"2021-10-18T16:07:19.628Z","caller":"etcdserver/server.go:2187","msg":"applyEntryNormal","raftReq":"header:<ID:7587857922959450373 > put:<key:\"/test\" value:\"Hello world from cURL\" > "}
+{"level":"debug","ts":"2021-10-18T16:07:19.630Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T16:07:19.628Z","time spent":"1.577348ms","remote":"127.0.0.1:33276","response type":"/etcdserverpb.KV/Put","request count":1,"request size":30,"response count":0,"response size":28,"request content":"key:\"/test\" value_size:21 "}
+```
 
-  ```
-  2019-09-14 13:32:19.502953 D | etcdserver/api/v3rpc: start time = 2019-09-14 13:32:19.502813483 +0000 UTC m=+133.681828490, time spent = 104.701µs, remote = 127.0.0.1:55064, response type = /etcdserverpb.KV/Range, request count = 0, request size = 8, response count = 0, response size = 28, request content = key:"/" range_end:"0" keys_only:true
-  ```
+To make the interaction more user friendly, we can use the `etcdctl` command line CLI, available under `~/etcd-v3.5.0-linux-amd64/etcdctl`:
+
+- Command
+
+```bash
+etcdctl get / --prefix --keys-only
+```
+
+For versions prior to `3.4`, you need to set the `ETCDCTL_API=3` environment variable to use the v3 API. Check https://github.com/etcd-io/etcd/blob/master/etcdctl/README.md for more information.
+
+- Expected output
+
+The expected output should be `/key` created in the previous step.
+
+```bash
+/test
+```
+
+- Expected log in the `etcd` server
+
+```json
+{"level":"debug","ts":"2021-10-18T16:10:42.381Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T16:10:42.381Z","time spent":"136.291µs","remote":"127.0.0.1:33284","response type":"/etcdserverpb.KV/Range","request count":0,"request size":8,"response count":1,"response size":45,"request content":"key:\"/\" range_end:\"0\" keys_only:true "}
+```
+
+Retrieve `/test` content using `etcdctl`
+
+- Command
+
+```
+etcdctl get /test
+```
+
+- Expected output
+
+```
+/test
+Hello world from cURL
+```
+
+- Server log
+
+```json
+{"level":"debug","ts":"2021-10-18T16:12:43.545Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T16:12:43.545Z","time spent":"144.691µs","remote":"127.0.0.1:33286","response type":"/etcdserverpb.KV/Range","request count":0,"request size":7,"response count":1,"response size":68,"request content":"key:\"/test\" "}
+```
+
+Update `/test` content using `etcdctl`
+
+- Command
+
+```
+etcdctl put /test "Hello world from etcdctl"
+```
+
+- Expected output
+
+```
+OK
+```
+
+- Server log
+
+```json
+{"level":"debug","ts":"2021-10-18T16:15:23.208Z","caller":"etcdserver/server.go:2187","msg":"applyEntryNormal","raftReq":"header:<ID:7587857922959450380 > put:<key:\"/test\" value:\"Hello world from etcdctl\" > "}
+{"level":"debug","ts":"2021-10-18T16:15:23.208Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T16:15:23.208Z","time spent":"475.565µs","remote":"127.0.0.1:33292","response type":"/etcdserverpb.KV/Put","request count":1,"request size":33,"response count":0,"response size":28,"request content":"key:\"/test\" value_size:24 "}
+```
+
+Check the value from etcdctl
+
+```bash
+etcdctl get /test
+```
+
+```
+/test
+Hello world from etcdctl
+```
+
+Or from curl
+
+```bash
+curl -L http://localhost:2379/v3/kv/range \
+ -X POST -d "{\"key\": \"$(echo -n /test | base64)\"}"
+```
+
+```json
+{"header":{"cluster_id":"14841639068965178418","member_id":"10276657743932975437","revision":"5","raft_term":"2"},"kvs":[{"key":"L3Rlc3Q=","create_revision":"2","mod_revision":"5","version":"4","value":"SGVsbG8gd29ybGQgZnJvbSBldGNkY3Rs"}],"count":"1"}%
+```
+
+With the `base64` decoding
+
+```bash
+echo -n $(curl -sqL http://localhost:2379/v3/kv/range -X POST -d "{\"key\": \"$(echo -n /test | base64)\"}" | jq -r '.kvs[0].value') | base64 -d
+```
+
+```
+Hello world from etcdctl
+```
 
 ## Download the Kubernetes Control Plane binaries
 
@@ -455,7 +545,7 @@ During the start of the `kube-apiserver`, you probably noticed that the `etcd` l
 
 
   ```bash
-  ETCDCTL_API=3 ~/etcd-v3.3.13-linux-amd64/etcdctl get / --prefix --keys-only
+  ETCDCTL_API=3 ~/etcd-v3.5.0-linux-amd64/etcdctl get / --prefix --keys-only
   ```
 
 - Expected output:
