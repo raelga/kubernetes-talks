@@ -56,7 +56,7 @@
 
 ## Start up an instance
 
-**Open a new terminal named `instance`**
+> ## **Open a new terminal named `instance`**
 
 You can run a local VM or use a cloud server. For this example, we'll be deploying an EC2 instance in AWS using terraform.
 
@@ -212,7 +212,7 @@ https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64
 
 ## First component: `etcd`
 
-**Open a new terminal named `etcd`**
+> ## **Open a new terminal named `etcd`**
 
 ### `etcd` setup
 
@@ -472,7 +472,7 @@ As you can see, there are several binaries in this release tarball. For this lab
 
 ## Second component: Kubernetes API Server
 
-**Open a new terminal named `api`**
+> ## **Open a new terminal named `api`**
 
 SSH into the instance, establishing a tunnel to the api port `8080`.
 This will be our `api` terminal.
@@ -580,7 +580,7 @@ And in the `etcd` server logs, we can see that the key count is now 42: `respons
 
 ## Create a ConfigMap
 
-**Open a new terminal named `local`**
+> ## **Open a new terminal named `local`**
 
 ### Check existing `configmaps`
 
@@ -659,7 +659,7 @@ curl -sq -v -X POST \
 
 ### Check again the `ConfigMap` resources in the *default* `Namespace`
 
-- Command in the `local`
+- Command in the `local` terminal
 
 ```bash
 curl -sq -X GET http://localhost:8080/api/v1/namespaces/default/configmaps
@@ -1281,7 +1281,7 @@ deployment.apps/hello-dep   0/3     0            0           12m   nginx,echo   
 
 ## Third component: kube-controller-manager
 
-**Open a new terminal named `watcher`**
+> ## **Open a new terminal named `watcher`**
 
 SSH into the instance.
 
@@ -1316,7 +1316,7 @@ deployment.apps/hello-dep   0/3     0            0           12m   nginx,echo   
 
 ### Start the `kube-controller-manager`
 
-**Open a new terminal named `controller`**
+> ## **Open a new terminal named `controller`**
 
 SSH into the instance.
 
@@ -1583,7 +1583,7 @@ hello-dep-758fcd6b44-xtnjc   0/2     Pending   0          26m   <none>   <none> 
 
 ### Start the `kube-scheduler`
 
-**Open a new terminal named `scheduler`**
+> ## **Open a new terminal named `scheduler`**
 
 SSH into the instance.
 
@@ -1712,7 +1712,7 @@ No resources found.
 
 ## Fifth component: `kubelet`
 
-**Open a new terminal named `kubelet`**
+> ## **Open a new terminal named `kubelet`**
 
 SSH into the instance.
 
@@ -1931,7 +1931,7 @@ curl: (28) Connection timed out after 5003 milliseconds
 
 ## Sixth component: `kube-proxy`
 
-**Open a new terminal named `kube-proxy`**
+> ## **Open a new terminal named `kube-proxy`**
 
 SSH into the instance.
 
