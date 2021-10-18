@@ -108,7 +108,7 @@ http://localhost:8080/api/v1/namespaces/default/configmaps
 # 3.2 Create a new configmap using a HTTP request to the API Server
 curl -sq -v -X POST \
   -H "Content-Type: application/json" \
-  -d '{ "apiVersion": "v1", "kind": "ConfigMap", "metadata": { "name": "hello-cm" }, "data": { "GREETINGS": "Hello Kubernetes Community Days El Salvador from curl" } }' \
+  -d '{ "apiVersion": "v1", "kind": "ConfigMap", "metadata": { "name": "hello-cm" }, "data": { "GREETINGS": "Hello Kubernetes folks from curl" } }' \
   localhost:8080/api/v1/namespaces/default/configmaps
 ```
 
@@ -237,6 +237,11 @@ http://localhost:8080/api/v1/namespaces/default/pods
     * ReplicaSet Controller knows that it has to create a pods for the replicaset, so it creates pods, stored in etcd.
     * The pods exists in etcd but are not being **scheduled**
 
+####################################################
+#############    (back to the slides)   ############
+#############         Scheduler        ############
+####################################################
+
 ```
 # 4.5 Leave the Terminal 3 open watching all the resources again
 watch -n1 kubectl get all -o wide
@@ -257,24 +262,30 @@ sudo ~/kubernetes/server/bin/kube-scheduler --master localhost:8080 --v 3
 ```
 
 ```
-# 5.3
+# 5.3 Check the status of the pods
 kubectl describe pods
 ```
 
 ```
-# 5.4
+# 5.4 Check the events
 kubectl get events
 ```
 
 ```
-# 5.5
+# 5.5 Check the nodes
 kubectl get nodes
 ```
+
+####################################################
+#############    (back to the slides)   ############
+#############          Kubelet          ############
+####################################################
 
 ```
 # 5.6 Leave the Terminal 3 open watching all the resources again
 watch -n1 kubectl get all,nodes -o wide
 ```
+
 ## 6. Kubernetes Node - Kubelet (Terminal 6)
 
 ```
@@ -282,39 +293,71 @@ watch -n1 kubectl get all,nodes -o wide
 ssh -t $(tf output -raw public_ip)
 ```
 
+``
+# 6.2 Show docker ps
+docker ps
 ```
-# 6.2
+
+```
+# 6.3 Setup the kubeconfig file
 sudo ~/kubernetes/server/bin/kubectl config set-cluster lab-cluster --server localhost:8080; \
 sudo ~/kubernetes/server/bin/kubectl config set-context lab --cluster lab-cluster; \
 sudo ~/kubernetes/server/bin/kubectl config use-context lab
 ```
 
 ```
-# 6.3
+# 6.4 Show kubeconfig
 cat ~/.kube/config
 ```
 
 ```
-# 6.4
- sudo ~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config
+# 6.5 Start kubelet using the kubeconfig to enable API server mode
+sudo ~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config
+```
+
+(Go to the `instance` terminal)
+
+```
+# 6.6 Show docker ps (again)
+docker ps
 ```
 
 ```
-# 6.5
+# 6.7 Check the pods logs
 kubectl logs -l app=hello -c echo -f
 ```
 
 ## 7. Network
 
 ```
-# 7.1
+# 7.1 Expose the deployment with a service
 kubectl apply -f hello-manifests/hello-svc.yml
 ```
 
 ```
-# 7.2
+# 7.2 Get the services
 kubectl get services
 ```
+
+```
+# 7.3 Get the URL
+export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')" && echo ${HELLO_URL}
+```
+
+```
+# 7.4 Test the service
+curl --connect-timeout 5 ${HELLO_URL}
+```
+
+```
+# 7.5
+k get endpoints
+```
+
+####################################################
+#############    (back to the slides)   ############
+#############        Kube-proxy         ############
+####################################################
 
 ## Kubernetes Node - Kubeproxy (Terminal 7)
 
@@ -344,3 +387,48 @@ ssh -t $(tf output -raw public_ip)
 # 8.2
 iptables -L -t nat
 ```
+
+(Back to the `local` console)
+
+```
+# 7.3 Get the URL
+export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')" && echo ${HELLO_URL}
+```
+
+(Open the URL in normal and incognito modes to show the load balancing)
+
+####################################################
+#############    (back to the slides)   ############
+#############          Finale           ############
+####################################################
+
+## 9 Wrapping up
+
+Organize windows will component terminals on the left, `local` of the top-right and `watch` on the bottom-right`.
+
+```
+# 9.1 Diff the fixed deployment
+kubectl diff -f hello-manifests/hello-dep-fixed.yml
+```
+
+```
+# 9.2 Apply the fixed deployment
+kubectl apply -f hello-manifests/hello-dep-fixed.yml
+```
+
+```
+# 9.3 Check the results
+export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')" && echo ${HELLO_URL}
+```
+
+```
+# 9.4 Stop etcd and then api server
+```
+
+(Pods are running, everything but the API are fine. Play with the `watcher`)
+
+```
+# 9.5 Start etcd and the api server
+```
+
+(Everything is still there, as the state (stored in etcd) is back online.)

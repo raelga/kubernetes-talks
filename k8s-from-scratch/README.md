@@ -25,7 +25,6 @@
     - [Define a the  `localhost:8080` cluster](#define-a-the--localhost8080-cluster)
     - [Define a `localhost` context](#define-a-localhost-context)
     - [Set the current context to `localhost`](#set-the-current-context-to-localhost)
-    - [Check the resulting config file](#check-the-resulting-config-file)
     - [Check the cluster `ConfigMaps` with `kubectl`](#check-the-cluster-configmaps-with-kubectl)
     - [Inspect the `hello-cm` `ConfigMap` with `kubectl` as `json`](#inspect-the-hello-cm-configmap-with-kubectl-as-json)
   - [Create a `Deployment` object](#create-a-deployment-object)
@@ -47,18 +46,23 @@
     - [Check `Pods` status](#check-pods-status)
     - [Check the nodes](#check-the-nodes)
   - [Fifth component: `kubelet`](#fifth-component-kubelet)
+    - [Create a .kube/config file for kubelet](#create-a-kubeconfig-file-for-kubelet)
+    - [Check the resulting .kube/config file](#check-the-resulting-kubeconfig-file)
     - [Check `docker ps` to view the actual containers running](#check-docker-ps-to-view-the-actual-containers-running)
   - [Expose the `Deploment` with a `Service`](#expose-the-deploment-with-a-service)
   - [Try to connect to the service IP](#try-to-connect-to-the-service-ip)
-  - [Delete the server](#delete-the-server)
+  - [Sixth component: `kube-proxy`](#sixth-component-kube-proxy)
+  - [Delete everything](#delete-everything)
 
 ## Start up an instance
+
+**Open a new terminal named `instance`**
 
 You can run a local VM or use a cloud server. For this example, we'll be deploying an EC2 instance in AWS using terraform.
 
 Setup your terraform AWS credentials and run `tf init`
 
-- Command:
+- Command in the `instance` terminal
 
 ```bash
 tf init
@@ -128,9 +132,9 @@ Outputs:
 public_ip = 34.254.155.10
 ```
 
-SSH into the instance. This will be our `shell` terminal.
+SSH into the instance.
 
-- Command:
+- Command in the `instance` terminal
 
 ```bash
 ssh $(tf output -raw public_ip)
@@ -172,7 +176,7 @@ For example, `go.rael.dev/etcd-v35` points to the GitHub etcd-3.3013 tarball at 
 
 Feel free to *resolve* the links by using `curl -I`
 
-- Command
+- Command in the `instance` terminal
 
 ```bash
 curl -I go.rael.dev/etcd-v35
@@ -194,7 +198,7 @@ Via: 1.1 google
 
 Or
 
-- Command
+- Command in the `instance` terminal
 
 ```bash
 curl -o /dev/null -I -s go.rael.dev/etcd-v35 -w '%{redirect_url}'
@@ -208,12 +212,14 @@ https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64
 
 ## First component: `etcd`
 
+**Open a new terminal named `etcd`**
+
 ### `etcd` setup
 
 SSH into the instance, establishing a tunnel to the etcd port `2379`.
 This will be our `etcd` terminal.
 
-- Command:
+- Command in the `etcd` terminal
 
 ```bash
 ssh -L 2379:localhost:2379 $(tf output -raw public_ip)
@@ -221,7 +227,7 @@ ssh -L 2379:localhost:2379 $(tf output -raw public_ip)
 
 Download the a stable version of etcd v3, for this demo, v3.5.0.
 
-- Command
+- Command in the `etcd` terminal
 
 ```bash
 curl -sqL go.rael.dev/etcd-v35 | tar -zxvf -
@@ -243,7 +249,7 @@ etcd-v3.5.0-linux-amd64/etcd
 
 ### Launch `etcd`
 
-- Command
+- Command in the `etcd` terminal
 
 ```bash
 ~/etcd-v3.5.0-linux-amd64/etcd -log-level debug
@@ -261,9 +267,7 @@ etcd-v3.5.0-linux-amd64/etcd
 
 ### Test `etcd`
 
-In a new terminal, check the `etcd` status using curl:
-
-- Command
+- Command in the `instance` terminal
 
 ```bash
 curl http://localhost:2379/health
@@ -282,29 +286,9 @@ curl http://localhost:2379/health
 {"level":"debug","ts":"2021-10-18T14:20:52.428Z","caller":"etcdhttp/metrics.go:83","msg":"/health OK","status-code":200}
 ```
 
-Or the `etcdctl` command line CLI, available under `~/etcd-v3.5.0-linux-amd64/etcdctl`:
-
-- Command
-
-```bash
-etcdctl endpoint health
-```
-
-- Expected output
-
-```bash
-127.0.0.1:2379 is healthy: successfully committed proposal: took = 141.505671ms
-```
-
-- Expected log in the `etcd` server
-
-```json
-{"level":"debug","ts":"2021-10-18T14:24:15.978Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T14:24:15.978Z","time spent":"103.601µs","remote":"127.0.0.1:33180","response type":"/etcdserverpb.KV/Range","request count":0,"request size":8,"response count":0,"response size":28,"request content":"key:\"health\" "}
-```
-
 ### Check `etcd` content
 
-- Command
+- Command in the `instance` terminal
 
 ```bash
 curl -L http://localhost:2379/v3/kv/put -X POST \
@@ -327,15 +311,20 @@ curl -L http://localhost:2379/v3/kv/put -X POST \
 {"level":"debug","ts":"2021-10-18T16:07:19.630Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T16:07:19.628Z","time spent":"1.577348ms","remote":"127.0.0.1:33276","response type":"/etcdserverpb.KV/Put","request count":1,"request size":30,"response count":0,"response size":28,"request content":"key:\"/test\" value_size:21 "}
 ```
 
-To make the interaction more user friendly, we can use the `etcdctl` command line CLI, available under `~/etcd-v3.5.0-linux-amd64/etcdctl`:
+To make the interaction more user friendly, we can use the `etcdctl` command line CLI.
+Use it locally thanks to the SSH tunnel, or with `~/etcd-v3.5.0-linux-amd64/etcdctl` at the `instance` terminal.
 
-- Command
+To make the commands friendly to both scenarios, install `etcdctl` in the EC2 instance `/usr/local/bin` path using:
+
+```
+sudo install ~/etcd-v3.5.0-linux-amd64/etcdctl /usr/local/bin/
+```
+
+- Command in the `instance` terminal
 
 ```bash
 etcdctl get / --prefix --keys-only
 ```
-
-For versions prior to `3.4`, you need to set the `ETCDCTL_API=3` environment variable to use the v3 API. Check https://github.com/etcd-io/etcd/blob/master/etcdctl/README.md for more information.
 
 - Expected output
 
@@ -353,7 +342,7 @@ The expected output should be `/key` created in the previous step.
 
 Retrieve `/test` content using `etcdctl`
 
-- Command
+- Command in the `instance` terminal
 
 ```
 etcdctl get /test
@@ -374,7 +363,7 @@ Hello world from cURL
 
 Update `/test` content using `etcdctl`
 
-- Command
+- Command in the `instance` terminal
 
 ```
 etcdctl put /test "Hello world from etcdctl"
@@ -427,40 +416,42 @@ Hello world from etcdctl
 
 ## Download the Kubernetes Control Plane binaries
 
-- Command
+Then download the kubernetes binaries.
 
-  ```
-  curl -sqL go.rael.dev/k8s1-16-0rc2 | tar -zvxf -
-  ```
+- Command in the `instance` terminal
+
+```bash
+curl -sqL go.rael.dev/k8s1-16-0rc2 | tar -zvxf -
+```
 
 - Expected output
 
-  ```
-  kubernetes/
-  kubernetes/server/
-  kubernetes/server/bin/
-  kubernetes/server/bin/kube-scheduler.tar
-  kubernetes/server/bin/mounter
-  kubernetes/server/bin/kube-scheduler.docker_tag
-  kubernetes/server/bin/kubeadm
-  kubernetes/server/bin/kube-controller-manager.docker_tag
-  kubernetes/server/bin/hyperkube
-  kubernetes/server/bin/kube-apiserver.docker_tag
-  kubernetes/server/bin/kube-apiserver
-  kubernetes/server/bin/kubectl
-  kubernetes/server/bin/kube-proxy.docker_tag
-  kubernetes/server/bin/kube-apiserver.tar
-  kubernetes/server/bin/kube-proxy.tar
-  kubernetes/server/bin/kubelet
-  kubernetes/server/bin/apiextensions-apiserver
-  kubernetes/server/bin/kube-controller-manager.tar
-  kubernetes/server/bin/kube-proxy
-  kubernetes/server/bin/kube-scheduler
-  kubernetes/server/bin/kube-controller-manager
-  kubernetes/kubernetes-src.tar.gz
-  kubernetes/LICENSES
-  kubernetes/addons/
-  ```
+```bash
+kubernetes/
+kubernetes/server/
+kubernetes/server/bin/
+kubernetes/server/bin/kube-scheduler.tar
+kubernetes/server/bin/mounter
+kubernetes/server/bin/kube-scheduler.docker_tag
+kubernetes/server/bin/kubeadm
+kubernetes/server/bin/kube-controller-manager.docker_tag
+kubernetes/server/bin/hyperkube
+kubernetes/server/bin/kube-apiserver.docker_tag
+kubernetes/server/bin/kube-apiserver
+kubernetes/server/bin/kubectl
+kubernetes/server/bin/kube-proxy.docker_tag
+kubernetes/server/bin/kube-apiserver.tar
+kubernetes/server/bin/kube-proxy.tar
+kubernetes/server/bin/kubelet
+kubernetes/server/bin/apiextensions-apiserver
+kubernetes/server/bin/kube-controller-manager.tar
+kubernetes/server/bin/kube-proxy
+kubernetes/server/bin/kube-scheduler
+kubernetes/server/bin/kube-controller-manager
+kubernetes/kubernetes-src.tar.gz
+kubernetes/LICENSES
+kubernetes/addons/
+```
 
 As you can see, there are several binaries in this release tarball. For this lab, we will use the binaries necessary for the Kubernetes Control Plane:
 
@@ -481,6 +472,17 @@ As you can see, there are several binaries in this release tarball. For this lab
 
 ## Second component: Kubernetes API Server
 
+**Open a new terminal named `api`**
+
+SSH into the instance, establishing a tunnel to the api port `8080`.
+This will be our `api` terminal.
+
+- Command in the `api` terminal
+
+```bash
+ssh -L 8080:localhost:8080 $(tf output -raw public_ip)
+```
+
 ### Start the `kube-apiserver`
 
 In the previous step, we downloaded all the binaries from the Kubernetes release.
@@ -491,68 +493,69 @@ In this step, we will start the Kubernetes API server that can be found in `~/ku
 
 There are a couple of flags added to the `kube-apiserver`: `--etcd-servers` pointing to the local `etcd` that we just launched and `--v 3` to increase the verbosity level of the log.
 
-  ```bash
-  ~/kubernetes/server/bin/kube-apiserver --etcd-servers=http://localhost:2379 --v 3
-  ```
+```bash
+sudo ~/kubernetes/server/bin/kube-apiserver --etcd-servers=http://localhost:2379 --v 3
+```
 
 - Expected output:
 
-  ```
-  I0914 13:23:31.519409   13367 flags.go:33] FLAG: --add-dir-header="false"
-  I0914 13:23:31.519475   13367 flags.go:33] FLAG: --address="127.0.0.1"
-  I0914 13:23:31.519483   13367 flags.go:33] FLAG: --admission-control="[]"
-  I0914 13:23:31.519503   13367 flags.go:33] FLAG: --admission-control-config-file=""
-  I0914 13:23:31.519511   13367 flags.go:33] FLAG: --advertise-address="<nil>"
-  I0914 13:23:31.519516   13367 flags.go:33] FLAG: --allow-privileged="false"
-  I0914 13:23:31.519525   13367 flags.go:33] FLAG: --alsologtostderr="false"
-  I0914 13:23:31.519529   13367 flags.go:33] FLAG: --anonymous-auth="true"
-  ...
-  I0914 13:23:31.521949   13367 server.go:666] Initializing cache sizes based on 0MB limit
-  I0914 13:23:31.522205   13367 server.go:149] Version: v1.16.0-rc.2
-  I0914 13:23:31.881250   13367 plugins.go:158] Loaded 10 mutating admission controller(s) successfully in the following order: NamespaceLifecycle,LimitRanger,ServiceAccount,TaintNodesByCondition,Priority,DefaultTolerationSeconds,DefaultStorageClass,StorageObjectInUseProtection,MutatingAdmissionWebhook,RuntimeClass.
-  I0914 13:23:31.881283   13367 plugins.go:161] Loaded 7 validating admission controller(s) successfully in the following order: LimitRanger,ServiceAccount,Priority,PersistentVolumeClaimResize,ValidatingAdmissionWebhook,RuntimeClass,ResourceQuota.
-  ...
-  I0914 13:24:51.649749   13391 httplog.go:90] GET /healthz: (711.457µs) 0 [kube-apiserver/v1.16.0 (linux/amd64) kubernetes/4cb51f0 [::1]:50188]
-  I0914 13:24:51.749652   13391 healthz.go:191] [+]ping ok
-  [+]log ok
-  [+]etcd ok
-  [+]poststarthook/generic-apiserver-start-informers ok
-  [+]poststarthook/start-apiextensions-informers ok
-  [+]poststarthook/start-apiextensions-controllers ok
-  [+]poststarthook/crd-informer-synced ok
-  [+]poststarthook/bootstrap-controller ok
-  [-]poststarthook/scheduling/bootstrap-system-priority-classes failed: reason withheld
-  [-]poststarthook/ca-registration failed: reason withheld
-  [+]poststarthook/start-kube-apiserver-admission-initializer ok
-  [+]poststarthook/start-kube-aggregator-informers ok
-  [+]poststarthook/apiservice-registration-controller ok
-  [+]poststarthook/apiservice-status-available-controller ok
-  [+]poststarthook/kube-apiserver-autoregistration ok
-  [+]autoregister-completion ok
-  [+]poststarthook/apiservice-openapi-controller ok
-  healthz check failed
-  I0914 13:24:51.749759   13391 httplog.go:90] GET /healthz: (683.587µs) 0 [kube-apiserver/v1.16.0 (linux/amd64) kubernetes/4cb51f0 [::1]:50188]
-  I0914 13:24:51.831507   13391 controller.go:107] OpenAPI AggregationController: Processing item
-  I0914 13:24:51.831535   13391 controller.go:130] OpenAPI AggregationController: action for item : Nothing (removed from the queue).
-  I0914 13:24:51.831600   13391 controller.go:130] OpenAPI AggregationController: action for item k8s_internal_local_delegation_chain_0000000000: Nothing (removed from the queue).
-  ...
-  I0914 13:25:41.856486   13391 httplog.go:90] GET /api/v1/namespaces/default/endpoints/kubernetes: (816.858µs) 200 [kube-apiserver/v1.16.0 (linux/amd64) kubernetes/4cb51f0 [::1]:50188]
-  ```
+```
+I0914 13:23:31.519409   13367 flags.go:33] FLAG: --add-dir-header="false"
+I0914 13:23:31.519475   13367 flags.go:33] FLAG: --address="127.0.0.1"
+I0914 13:23:31.519483   13367 flags.go:33] FLAG: --admission-control="[]"
+I0914 13:23:31.519503   13367 flags.go:33] FLAG: --admission-control-config-file=""
+I0914 13:23:31.519511   13367 flags.go:33] FLAG: --advertise-address="<nil>"
+I0914 13:23:31.519516   13367 flags.go:33] FLAG: --allow-privileged="false"
+I0914 13:23:31.519525   13367 flags.go:33] FLAG: --alsologtostderr="false"
+I0914 13:23:31.519529   13367 flags.go:33] FLAG: --anonymous-auth="true"
+...
+I0914 13:23:31.521949   13367 server.go:666] Initializing cache sizes based on 0MB limit
+I0914 13:23:31.522205   13367 server.go:149] Version: v1.16.0-rc.2
+I0914 13:23:31.881250   13367 plugins.go:158] Loaded 10 mutating admission controller(s) successfully in the following order: NamespaceLifecycle,LimitRanger,ServiceAccount,TaintNodesByCondition,Priority,DefaultTolerationSeconds,DefaultStorageClass,StorageObjectInUseProtection,MutatingAdmissionWebhook,RuntimeClass.
+I0914 13:23:31.881283   13367 plugins.go:161] Loaded 7 validating admission controller(s) successfully in the following order: LimitRanger,ServiceAccount,Priority,PersistentVolumeClaimResize,ValidatingAdmissionWebhook,RuntimeClass,ResourceQuota.
+...
+I0914 13:24:51.649749   13391 httplog.go:90] GET /healthz: (711.457µs) 0 [kube-apiserver/v1.16.0 (linux/amd64) kubernetes/4cb51f0 [::1]:50188]
+I0914 13:24:51.749652   13391 healthz.go:191] [+]ping ok
+[+]log ok
+[+]etcd ok
+[+]poststarthook/generic-apiserver-start-informers ok
+[+]poststarthook/start-apiextensions-informers ok
+[+]poststarthook/start-apiextensions-controllers ok
+[+]poststarthook/crd-informer-synced ok
+[+]poststarthook/bootstrap-controller ok
+[-]poststarthook/scheduling/bootstrap-system-priority-classes failed: reason withheld
+[-]poststarthook/ca-registration failed: reason withheld
+[+]poststarthook/start-kube-apiserver-admission-initializer ok
+[+]poststarthook/start-kube-aggregator-informers ok
+[+]poststarthook/apiservice-registration-controller ok
+[+]poststarthook/apiservice-status-available-controller ok
+[+]poststarthook/kube-apiserver-autoregistration ok
+[+]autoregister-completion ok
+[+]poststarthook/apiservice-openapi-controller ok
+healthz check failed
+I0914 13:24:51.749759   13391 httplog.go:90] GET /healthz: (683.587µs) 0 [kube-apiserver/v1.16.0 (linux/amd64) kubernetes/4cb51f0 [::1]:50188]
+I0914 13:24:51.831507   13391 controller.go:107] OpenAPI AggregationController: Processing item
+I0914 13:24:51.831535   13391 controller.go:130] OpenAPI AggregationController: action for item : Nothing (removed from the queue).
+I0914 13:24:51.831600   13391 controller.go:130] OpenAPI AggregationController: action for item k8s_internal_local_delegation_chain_0000000000: Nothing (removed from the queue).
+...
+I0914 13:25:41.856486   13391 httplog.go:90] GET /api/v1/namespaces/default/endpoints/kubernetes: (816.858µs) 200 [kube-apiserver/v1.16.0 (linux/amd64) kubernetes/4cb51f0 [::1]:50188]
+```
 
 ### Check the `etcd` content
 
 During the start of the `kube-apiserver`, you probably noticed that the `etcd` logs started to show a lot of activity.
 
+- Command in the `instance` terminal
 
-  ```bash
-  ETCDCTL_API=3 ~/etcd-v3.5.0-linux-amd64/etcdctl get / --prefix --keys-only
-  ```
+```bash
+etcdctl get / --prefix --keys-only
+```
 
 - Expected output:
 
 As you can see, now the `etcd` database has been populated with the Kubernetes API resources.
 
-```
+```bash
 /registry/apiregistration.k8s.io/apiservices/v1.
 
 /registry/apiregistration.k8s.io/apiservices/v1.admissionregistration.k8s.io
@@ -569,20 +572,22 @@ As you can see, now the `etcd` database has been populated with the Kubernetes A
 
 - Expected `etcd` logs output:
 
-And in the `etcd` server logs, we can see that the key count is now 41: `response count = 41`.
+And in the `etcd` server logs, we can see that the key count is now 42: `response count = 42`.
 
-```
-2019-09-14 13:38:20.594110 D | etcdserver/api/v3rpc: start time = 2019-09-14 13:38:20.593839785 +0000 UTC m=+494.772854792, time spent = 235.123µs, remote = 127.0.0.1:55240, response type = /etcdserverpb.KV/Range, request count = 0, request size = 8, response count = 41, response size = 2873, request content = key:"/" range_end:"0" keys_only:true
+```json
+{"level":"debug","ts":"2021-10-18T18:01:50.093Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T18:01:50.093Z","time spent":"203.912µs","remote":"127.0.0.1:33502","response type":"/etcdserverpb.KV/Range","request count":0,"request size":8,"response count":42,"response size":2889,"request content":"key:\"/\" range_end:\"0\" keys_only:true "}
 ```
 
 ## Create a ConfigMap
 
+**Open a new terminal named `local`**
+
 ### Check existing `configmaps`
 
-- Command
+- Command in the `local`
 
 ```bash
-curl -sq -X GET localhost:8080/api/v1/namespaces/default/configmaps
+curl -sq -X GET http://localhost:8080/api/v1/namespaces/default/configmaps
 ```
 
 - Expected output
@@ -603,12 +608,12 @@ The expected result is an empty list of `ConfigMapList`.
 
 ### Create a new `ConfigMap`
 
-- Command
+- Command in the `local`
 
 For demo purposes, we will write the `json` inline, but you can check the unfurled version in [hello-cm.json](hello-cm.json):
 
 ```bash
-curl -sq -v -X POST -H "Content-Type: application/json" -d '{ "apiVersion": "v1", "kind": "ConfigMap", "metadata": { "name": "hello-cm" }, "data": { "GREETINGS": "Hello Cloud Native Barcelona" } }' localhost:8080/api/v1/namespaces/default/configmaps
+curl -sq -v -X POST -H "Content-Type: application/json" -d '{ "apiVersion": "v1", "kind": "ConfigMap", "metadata": { "name": "hello-cm" }, "data": { "GREETINGS": "Hello Cloud Native Barcelona" } }' http://localhost:8080/api/v1/namespaces/default/configmaps
 ```
 
 - Expected output:
@@ -651,10 +656,10 @@ curl -sq -v -X POST -H "Content-Type: application/json" -d '{ "apiVersion": "v1"
 
 ### Check again the `ConfigMap` resources in the *default* `Namespace`
 
-- Command:
+- Command in the `local`
 
 ```bash
-curl -sq -X GET localhost:8080/api/v1/namespaces/default/configmaps
+curl -sq -X GET http://localhost:8080/api/v1/namespaces/default/configmaps
 ```
 
 - Expected output:
@@ -697,32 +702,32 @@ I0914 23:12:23.322801   27544 httplog.go:90] POST /api/v1/namespaces/default/con
 2019-09-14 22:59:42.365456 D | etcdserver/api/v3rpc: start time = 2019-09-14 22:59:42.365136267 +0000 UTC m=+533.472256982, time spent = 280.684µs, remote = 127.0.0.1:40330, response type = /etcdserverpb.KV/Txn, request count = 1, request size = 193, response count = 0, response size = 40, request content = compare:<target:MOD key:"/registry/configmaps/default/hello-cm" mod_revision:0 > success:<request_put:<key:"/registry/configmaps/default/hello-cm" value_size:148 >> failure:<>
 ```
 
-- Value in `etcd`
+- Command in the `local` or `instance` terminal
 
 ```bash
 etcdctl get /registry/configmaps/default/hello-cm -w fields
 ```
 
-  ```
-  "ClusterID" : 14841639068965178418
-  "MemberID" : 10276657743932975437
-  "Revision" : 380
-  "RaftTerm" : 2
-  "Key" : "/registry/configmaps/default/hello-cm"
-  "CreateRevision" : 299
-  "ModRevision" : 299
-  "Version" : 1
-  "Value" : "k8s\x00\n\x0f\n\x02v1\x12\tConfigMap\x12y\nM\n\bhello-cm\x12\x00\x1a\adefault\"\x00*$e973e1b1-7012-480e-97d7-8b3f502a7b662\x008\x00B\b\b\xde\xe1\xf5\xeb\x05\x10\x00z\x00\x12(\n\bGREETING\x12\x1cHello Cloud Native Barcelona\x1a\x00\"\x00"
-  "Lease" : 0
-  "More" : false
-  "Count" : 1
-  ```
+```
+"ClusterID" : 14841639068965178418
+"MemberID" : 10276657743932975437
+"Revision" : 380
+"RaftTerm" : 2
+"Key" : "/registry/configmaps/default/hello-cm"
+"CreateRevision" : 299
+"ModRevision" : 299
+"Version" : 1
+"Value" : "k8s\x00\n\x0f\n\x02v1\x12\tConfigMap\x12y\nM\n\bhello-cm\x12\x00\x1a\adefault\"\x00*$e973e1b1-7012-480e-97d7-8b3f502a7b662\x008\x00B\b\b\xde\xe1\xf5\xeb\x05\x10\x00z\x00\x12(\n\bGREETING\x12\x1cHello Cloud Native Barcelona\x1a\x00\"\x00"
+"Lease" : 0
+"More" : false
+"Count" : 1
+```
 
 ## Setup `kubectl`
 
 ### Define a the  `localhost:8080` cluster
 
-- Command
+- Command in the `local`
 
 ```bash
 kubectl config set-cluster localhost --server localhost:8080
@@ -736,7 +741,7 @@ Cluster "localhost" set.
 
 ### Define a `localhost` context
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl config set-context localhost --cluster localhost
@@ -750,7 +755,7 @@ Context "localhost" created.
 
 ### Set the current context to `localhost`
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl config use-context localhost
@@ -762,36 +767,9 @@ kubectl config use-context localhost
 Switched to context "localhost".
 ```
 
-### Check the resulting config file
-
-- Command
-
-```bash
-cat ~/.kube/config
-```
-
-- Expected output
-
-```yaml
-apiVersion: v1
-clusters:
-- cluster:
-    server: localhost:8080
-  name: localhost
-contexts:
-- context:
-    cluster: localhost
-    user: ""
-  name: localhost
-current-context: localhost
-kind: Config
-preferences: {}
-users: []
-```
-
 ### Check the cluster `ConfigMaps` with `kubectl`
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl get ConfigMaps
@@ -802,12 +780,11 @@ kubectl get ConfigMaps
 ```
 NAME       DATA   AGE
 hello-cm   1      2m4s
-extending-kubernetes/labs/k8s-from-scratch on  master [?]
 ```
 
 ### Inspect the `hello-cm` `ConfigMap` with `kubectl` as `json`
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl get ConfigMaps/hello-cm -o json
@@ -833,7 +810,7 @@ kubectl get ConfigMaps/hello-cm -o json
 }
 ```
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl describe ConfigMaps/hello-cm
@@ -966,7 +943,7 @@ The resulting `Pod` will listen HTTP requests on `:80`, writing the a message wi
 
 ### Create the `hello-dep.json` deployment with `curl` in `api/v1/namespaces/default/deployments`
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 curl -sq -X POST -H "Content-Type: application/json" -d @hello-dep.json localhost:8080/api/v1/namespaces/defuault/deployments
@@ -995,7 +972,7 @@ The expected result is a `404 NotFound` as the `deployments` `Kind` is in the `a
 
 ### Create the `hello-dep.json` deployment with `curl` in `apis/apps/v1/namespaces/default/deployments`
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 curl -sq -v -X POST -H "Content-Type: application/json" -d @hello-dep.json localhost:8080/apis/apps/v1/namespaces/default/deployments
@@ -1164,7 +1141,8 @@ I0914 23:30:01.843124   27680 httplog.go:90] POST /apis/apps/v1/namespaces/defau
 
 ### Check the deployment in `etcd`
 
-- Command
+- Command in the `local` or `instance` terminal
+
 ```bash
 etcdctl get /registry/deployments --prefix --keys-only
 ```
@@ -1175,7 +1153,7 @@ etcdctl get /registry/deployments --prefix --keys-only
 /registry/deployments/default/hello-dep
 ```
 
-- Command
+- Command in the `local` or `instance` terminal
 
 ```bash
 etcdctl get /registry/deployments/default/hello-dep -w json
@@ -1206,7 +1184,7 @@ etcdctl get /registry/deployments/default/hello-dep -w json
 
 ### Check the deployment with `kubectl`
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl get deployments
@@ -1221,10 +1199,10 @@ hello-dep   0/3     0            0           6m45s
 
 ### Check if there is any differences between the deployed with `curl` and the `kubectl` `yaml` version
 
-- Command
+- Command in the `local` terminal
 
 ```bash
-kubectl diff -f hello-dep.yml
+kubectl diff -f hello-manifests/hello-dep.yml
 ```
 
 - Expected output
@@ -1257,7 +1235,7 @@ Deployment is a Kubernetes Object that manages `ReplicaSets`.
 For each `Deployment` `template` change, it will create new `ReplicaSet` with the `PodTemplate`.
 Each `ReplicaSet`, will create a set of `Pods` replicas matching the `PodTemplate` and ensuring the number of `Replicas` desired is always running.
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl get ReplicaSets
@@ -1273,7 +1251,7 @@ No resources found.
 
 ### Check `all` the cluster resources
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl get all -o wide
@@ -1300,9 +1278,19 @@ deployment.apps/hello-dep   0/3     0            0           12m   nginx,echo   
 
 ## Third component: kube-controller-manager
 
+**Open a new terminal named `watcher`**
+
+SSH into the instance.
+
+- Command in the `watcher` terminal
+
+```bash
+ssh $(tf output -raw public_ip)
+```
+
 ### Watch the cluster changes
 
-- Command
+- Command in the `watcher` terminal
 
 Leave it running in the background.
 
@@ -1325,10 +1313,51 @@ deployment.apps/hello-dep   0/3     0            0           12m   nginx,echo   
 
 ### Start the `kube-controller-manager`
 
-- Command
+**Open a new terminal named `controller`**
+
+SSH into the instance.
+
+- Command in the `controller` terminal
 
 ```bash
-~/kubernetes/server/bin/kube-controller-manager --master localhost:8080 --service-account-private-key-file /etc/kubernetes/pki/sa.key --v 5
+ssh $(tf output -raw public_ip)
+```
+
+Before starting the `kube-controller-manager`, some certificates are required.
+Generate the all certificates using `kubeadm`, out of the scope of this talk.
+
+- Command in the `controller` terminal
+
+```bash
+sudo ~/kubernetes/server/bin/kubeadm init phase certs all
+```
+
+- Expected output
+
+```
+[certs] Using certificateDir folder "/etc/kubernetes/pki"
+[certs] Generating "ca" certificate and key
+[certs] Generating "apiserver" certificate and key
+[certs] apiserver serving cert is signed for DNS names [ip-10-0-1-69 kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 10.0.1.69]
+[certs] Generating "apiserver-kubelet-client" certificate and key
+[certs] Generating "front-proxy-ca" certificate and key
+[certs] Generating "front-proxy-client" certificate and key
+[certs] Generating "etcd/ca" certificate and key
+[certs] Generating "etcd/server" certificate and key
+[certs] etcd/server serving cert is signed for DNS names [ip-10-0-1-69 localhost] and IPs [10.0.1.69 127.0.0.1 ::1]
+[certs] Generating "etcd/peer" certificate and key
+[certs] etcd/peer serving cert is signed for DNS names [ip-10-0-1-69 localhost] and IPs [10.0.1.69 127.0.0.1 ::1]
+[certs] Generating "etcd/healthcheck-client" certificate and key
+[certs] Generating "apiserver-etcd-client" certificate and key
+[certs] Generating "sa" key and public key
+```
+
+And now start the `kube-controller-manager` using the private key generated by `kubeadm`.
+
+- Command in the `controller` terminal
+
+```bash
+sudo ~/kubernetes/server/bin/kube-controller-manager --master localhost:8080 --service-account-private-key-file /etc/kubernetes/pki/sa.key --v 5
 ```
 
 - Expected output from the previous step watch
@@ -1423,7 +1452,7 @@ I0915 00:07:52.675494   31980 replica_set.go:275] Pod hello-dep-758fcd6b44-w8ctt
 
 ### Review the status of the `hello-dep` `ReplicaSets` after starting the `kube-controller-manager`
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl get ReplicaSets -o wide
@@ -1438,7 +1467,7 @@ hello-dep-758fcd6b44   3         3         0       29m   nginx,echo   nginx,alpi
 
 ### Review the status of the `hello-dep` `Pods`after staring the `kube-controller-manager`
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl get pods -o wide -w
@@ -1455,7 +1484,7 @@ hello-dep-758fcd6b44-w8ctt   0/2     Pending   0          26m   <none>   <none> 
 hello-dep-758fcd6b44-xtnjc   0/2     Pending   0          26m   <none>   <none>   <none>           <none>
 ```
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl describe pods
@@ -1534,7 +1563,7 @@ Events:          <none>
 
 Leave this watch in the background.
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl -o wide -w pods
@@ -1549,10 +1578,20 @@ hello-dep-758fcd6b44-w8ctt   0/2     Pending   0          26m   <none>   <none> 
 hello-dep-758fcd6b44-xtnjc   0/2     Pending   0          26m   <none>   <none>   <none>           <none>
 ```
 
-
 ### Start the `kube-scheduler`
 
-- Command
+**Open a new terminal named `scheduler`**
+
+SSH into the instance.
+
+- Command in the `scheduler` terminal
+
+```bash
+ssh $(tf output -raw public_ip)
+```
+
+- Command in the `scheduler` terminal
+
 ```bash
 root@ip-10-0-1-135:~/kubernetes/server/bin# ./kube-scheduler --master localhost:8080 --v 3
 ```
@@ -1617,7 +1656,7 @@ hello-dep-758fcd6b44-t2n9n   0/2     Pending   0          36m   <none>   <none> 
 
 ### Check `Pods` status
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl describe pods
@@ -1654,7 +1693,7 @@ Events:
 
 ### Check the nodes
 
-- Command
+- Command in the `local` terminal
 
 ```bash
 kubectl get nodes
@@ -1670,10 +1709,71 @@ No resources found.
 
 ## Fifth component: `kubelet`
 
+**Open a new terminal named `kubelet`**
+
+SSH into the instance.
+
+- Command in the `kubelet` terminal
+
+```bash
+ssh $(tf output -raw public_ip)
+```
+
+### Create a .kube/config file for kubelet
+
+To make the interaction more user friendly, we can use the `kubectl` command line CLI.
+Use it locally thanks to the SSH tunnel, or with `~/kubernetes/server/bin/kubectl` at the `instance` terminal.
+
+To make the commands friendly to both scenarios, install `kubectl` in the EC2 instance `/usr/local/bin` path using:
+
+- Command in the `kubelet` terminal
+
+```
+sudo install ~/kubernetes/server/bin/kubectl /usr/local/bin/;
+```
+
+And then repeat the same commands to setup the `.kube/config` file.
+
+- Command in the `kubelet` terminal
+
+```
+kubectl config set-cluster local --server localhost:8080;
+kubectl config set-context local --cluster local;
+kubectl config use-context local;
+kubectl cluster-info;
+```
+
+### Check the resulting .kube/config file
+
 - Command
 
 ```bash
-~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config
+cat ~/.kube/config
+```
+
+- Expected output
+
+```yaml
+apiVersion: v1
+clusters:
+- cluster:
+    server: localhost:8080
+  name: localhost
+contexts:
+- context:
+    cluster: localhost
+    user: ""
+  name: localhost
+current-context: localhost
+kind: Config
+preferences: {}
+users: []
+```
+
+- Command
+
+```bash
+sudo ~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config
 ```
 
 - Expected output `kubelet` start up
@@ -1763,13 +1863,13 @@ hello-dep-758fcd6b44-w8ctt   2/2     Running             0          52m   172.17
 
 ### Check `docker ps` to view the actual containers running
 
-- Command
+- Command in the `instance` terminal
 
 ```bash
 docker ps
 ```
 
--Expected output
+- Expected output
 
 ```
 CONTAINER ID        IMAGE                  COMMAND                  CREATED              STATUS              PORTS               NAMES
@@ -1813,10 +1913,11 @@ Events:            <none>
 
 ## Try to connect to the service IP
 
-- Command
+- Command in the `instance` terminal
 
 ```bash
-curl 10.0.0.103 --connect-timeout 5
+HELLO_PORT=$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
+curl --connect-timeout 5 localhost:${HELLO_PORT}
 ```
 
 - Expected output
@@ -1825,6 +1926,25 @@ curl 10.0.0.103 --connect-timeout 5
 curl: (28) Connection timed out after 5003 milliseconds
 ```
 
+## Sixth component: `kube-proxy`
+
+**Open a new terminal named `kube-proxy`**
+
+SSH into the instance.
+
+- Command in the `kube-proxy` terminal
+
+```bash
+ssh $(tf output -raw public_ip)
+```
+
+- Command in the `kube-proxy` terminal
+
+```bash
+sudo ~/kubernetes/server/bin/kube-proxy --master localhost:8080
+```
+
+- Expected output
 
 ```
 I0915 01:25:42.369751   25440 service.go:357] Adding new service port "default/hello:" at 10.0.0.103:80/TCP
@@ -1856,8 +1976,14 @@ Hello Cloud Native Barcelona from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35
 Hello Cloud Native Barcelona from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35:17 UTC 2019`
 ```
 
+- Command in the `instance` terminal
+
+```bash
+iptables -L -t nat
 ```
-^Croot@ip-10-0-1-135:~/kubernetes/server/bin# iptables -L -t nat
+- Expected output
+
+```bash
 Chain PREROUTING (policy ACCEPT)
 target     prot opt source               destination
 KUBE-SERVICES  all  --  anywhere             anywhere             /* kubernetes service portals */
@@ -1934,12 +2060,32 @@ KUBE-SEP-SY2PZQWZR2UT46RB  all  --  anywhere             anywhere             st
 KUBE-SEP-TU6S3TYJDJNFJ67V  all  --  anywhere             anywhere   `
 ```
 
-## Delete the server
+## Deployment rollout
 
-- Command
+- Command in the `local` terminal
 
 ```
-tf destroy --auto-approve
+kubectl diff -f hello-manifests/hello-dep-fixed.yml
+```
+
+- Command in the `local` terminal
+
+```
+kubectl apply -f hello-manifests/hello-dep-fixed.yml
+```
+
+- Command in the `local` terminal
+
+```
+export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')" && echo ${HELLO_URL}
+```
+
+## Delete everything
+
+- Command in the `local` terminal
+
+```bash
+tf destroy
 ```
 
 - Expected output
