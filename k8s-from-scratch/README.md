@@ -584,7 +584,7 @@ And in the `etcd` server logs, we can see that the key count is now 42: `respons
 
 ### Check existing `configmaps`
 
-- Command in the `local`
+- Command in the `local` terminal
 
 ```bash
 curl -sq -X GET http://localhost:8080/api/v1/namespaces/default/configmaps
@@ -608,12 +608,15 @@ The expected result is an empty list of `ConfigMapList`.
 
 ### Create a new `ConfigMap`
 
-- Command in the `local`
+- Command in the `local` terminal
 
 For demo purposes, we will write the `json` inline, but you can check the unfurled version in [hello-cm.json](hello-cm.json):
 
 ```bash
-curl -sq -v -X POST -H "Content-Type: application/json" -d '{ "apiVersion": "v1", "kind": "ConfigMap", "metadata": { "name": "hello-cm" }, "data": { "GREETINGS": "Hello folks" } }' http://localhost:8080/api/v1/namespaces/default/configmaps
+curl -sq -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{ "apiVersion": "v1", "kind": "ConfigMap", "metadata": { "name": "hello-cm" }, "data": { "GREETINGS": "Hello folks" } }' \
+   http://localhost:8080/api/v1/namespaces/default/configmaps
 ```
 
 - Expected output:
