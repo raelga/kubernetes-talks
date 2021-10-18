@@ -835,6 +835,27 @@ Hello folks
 Events:  <none>
 ```
 
+> ## **Open a new terminal named `watcher`**
+
+### Watch the cluster changes
+
+- Command in the `watcher` terminal
+
+Leave it running in the background.
+
+```bash
+watch -n5 kubectl get all
+```
+
+- Expected output
+
+```
+Every 5.0s: kubectl get all                                            alloy: Tue Oct 19 01:33:18 2021
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/kubernetes   ClusterIP   10.0.0.1     <none>        443/TCP   49m   <none>
+```
+
 ## Create a `Deployment` object
 
 This time, we will use a `json` file instead of adding the object spec inline:
@@ -949,7 +970,11 @@ The resulting `Pod` will listen HTTP requests on `:80`, writing the a message wi
 - Command in the `local` terminal
 
 ```bash
-curl -sq -X POST -H "Content-Type: application/json" -d @hello-dep.json localhost:8080/api/v1/namespaces/defuault/deployments
+curl -sqL \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d @hello-manifests/hello-dep.json \
+  http://localhost:8080/api/v1/namespaces/defuault/deployments
 ```
 
 - Expected output
@@ -978,7 +1003,11 @@ The expected result is a `404 NotFound` as the `deployments` `Kind` is in the `a
 - Command in the `local` terminal
 
 ```bash
-curl -sq -v -X POST -H "Content-Type: application/json" -d @hello-dep.json localhost:8080/apis/apps/v1/namespaces/default/deployments
+curl -sqL \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d @hello-manifests/hello-dep.json \
+  http://localhost:8080/apis/apps/v1/namespaces/default/deployments
 ```
 
 - Expected output
@@ -1280,39 +1309,6 @@ deployment.apps/hello-dep   0/3     0            0           12m   nginx,echo   
 ---
 
 ## Third component: kube-controller-manager
-
-> ## **Open a new terminal named `watcher`**
-
-SSH into the instance.
-
-- Command in the `watcher` terminal
-
-```bash
-ssh $(tf output -raw public_ip)
-```
-
-### Watch the cluster changes
-
-- Command in the `watcher` terminal
-
-Leave it running in the background.
-
-```bash
-watch -n1 ~/kubernetes/server/bin/kubectl get all
-```
-
-- Expected output
-
-```
-Every 1.0s: ./kubectl get all                                                 ip-10-0-1-135: Sun Sep 15 00:19:41 2019
-
-NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE   SELECTOR
-service/kubernetes   ClusterIP   10.0.0.1     <none>        443/TCP   49m   <none>
-
-
-NAME                        READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES         SELECTOR
-deployment.apps/hello-dep   0/3     0            0           12m   nginx,echo   nginx,alpine   app=hello
-```
 
 ### Start the `kube-controller-manager`
 
