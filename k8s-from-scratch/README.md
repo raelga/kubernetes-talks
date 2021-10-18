@@ -613,7 +613,7 @@ The expected result is an empty list of `ConfigMapList`.
 For demo purposes, we will write the `json` inline, but you can check the unfurled version in [hello-cm.json](hello-cm.json):
 
 ```bash
-curl -sq -v -X POST -H "Content-Type: application/json" -d '{ "apiVersion": "v1", "kind": "ConfigMap", "metadata": { "name": "hello-cm" }, "data": { "GREETINGS": "Hello Cloud Native Barcelona" } }' http://localhost:8080/api/v1/namespaces/default/configmaps
+curl -sq -v -X POST -H "Content-Type: application/json" -d '{ "apiVersion": "v1", "kind": "ConfigMap", "metadata": { "name": "hello-cm" }, "data": { "GREETINGS": "Hello folks" } }' http://localhost:8080/api/v1/namespaces/default/configmaps
 ```
 
 - Expected output:
@@ -648,7 +648,7 @@ curl -sq -v -X POST -H "Content-Type: application/json" -d '{ "apiVersion": "v1"
     "creationTimestamp": "2019-09-14T22:59:42Z"
   },
   "data": {
-    "GREETING": "Hello Cloud Native Barcelona"
+    "GREETING": "Hello folks"
   }
 * Connection #0 to host localhost left intact
 }
@@ -683,7 +683,7 @@ curl -sq -X GET http://localhost:8080/api/v1/namespaces/default/configmaps
           "creationTimestamp": "2019-09-14T22:59:42Z"
         },
         "data": {
-          "GREETING": "Hello Cloud Native Barcelona"
+          "GREETING": "Hello folks"
         }
       }
     ]
@@ -717,7 +717,7 @@ etcdctl get /registry/configmaps/default/hello-cm -w fields
 "CreateRevision" : 299
 "ModRevision" : 299
 "Version" : 1
-"Value" : "k8s\x00\n\x0f\n\x02v1\x12\tConfigMap\x12y\nM\n\bhello-cm\x12\x00\x1a\adefault\"\x00*$e973e1b1-7012-480e-97d7-8b3f502a7b662\x008\x00B\b\b\xde\xe1\xf5\xeb\x05\x10\x00z\x00\x12(\n\bGREETING\x12\x1cHello Cloud Native Barcelona\x1a\x00\"\x00"
+"Value" : "k8s\x00\n\x0f\n\x02v1\x12\tConfigMap\x12y\nM\n\bhello-cm\x12\x00\x1a\adefault\"\x00*$e973e1b1-7012-480e-97d7-8b3f502a7b662\x008\x00B\b\b\xde\xe1\xf5\xeb\x05\x10\x00z\x00\x12(\n\bGREETING\x12\x1cHello folks\x1a\x00\"\x00"
 "Lease" : 0
 "More" : false
 "Count" : 1
@@ -796,7 +796,7 @@ kubectl get ConfigMaps/hello-cm -o json
 {
     "apiVersion": "v1",
     "data": {
-        "GREETING": "Hello Cloud Native Barcelona"
+        "GREETING": "Hello folks"
     },
     "kind": "ConfigMap",
     "metadata": {
@@ -828,7 +828,7 @@ Data
 ====
 GREETING:
 ----
-Hello Cloud Native Barcelona
+Hello folks
 Events:  <none>
 ```
 
@@ -1960,20 +1960,20 @@ I0915 01:25:42.391112   25440 bounded_frequency_runner.go:221] sync-runner: ran,
 
 ```
 root@ip-10-0-1-135:~/kubernetes/server/bin# curl 10.0.0.103
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:34:51 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:35:02 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:35:12 UTC 2019
+Hello folks from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:34:51 UTC 2019
+Hello folks from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:35:02 UTC 2019
+Hello folks from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:35:12 UTC 2019
 root@ip-10-0-1-135:~/kubernetes/server/bin# curl 10.0.0.103
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:34:41 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:34:51 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:02 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:12 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:23 UTC 2019
+Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:34:41 UTC 2019
+Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:34:51 UTC 2019
+Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:02 UTC 2019
+Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:12 UTC 2019
+Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:23 UTC 2019
 root@ip-10-0-1-135:~/kubernetes/server/bin# curl 10.0.0.103
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:34:46 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:34:57 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35:07 UTC 2019
-Hello Cloud Native Barcelona from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35:17 UTC 2019`
+Hello folks from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:34:46 UTC 2019
+Hello folks from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:34:57 UTC 2019
+Hello folks from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35:07 UTC 2019
+Hello folks from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35:17 UTC 2019`
 ```
 
 - Command in the `instance` terminal
