@@ -1592,7 +1592,7 @@ ssh $(tf output -raw public_ip)
 - Command in the `scheduler` terminal
 
 ```bash
-root@ip-10-0-1-135:~/kubernetes/server/bin# ./kube-scheduler --master localhost:8080 --v 3
+sudo ~/kubernetes/server/bin/kube-scheduler --master localhost:8080 --v 3
 ```
 
 - Expected output: `kube-scheduler` startup
@@ -1885,16 +1885,38 @@ c65bdd6329d5        k8s.gcr.io/pause:3.1   "/pause"                 About a minu
 
 ## Expose the `Deploment` with a `Service`
 
+- Command in the `local` terminal
+
 ```
-extending-kubernetes/labs/k8s-from-scratch on  master [?] took 34m 21s
-❯ kubectl apply -f hello-svc.yml
+kubectl apply -f hello-manifests/hello-svc.yml
+```
+
+- Expected output
+
+```
 service/hello created
-extending-kubernetes/labs/k8s-from-scratch on  master [?]
-❯ kubectl get svc
+```
+
+- Command in the `local` terminal
+
+```
+kubectl get svc
+```
+```
 NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 hello        ClusterIP   10.0.0.170   <none>        80/TCP    5s
 kubernetes   ClusterIP   10.0.0.1     <none>        443/TCP   116m
-❯ kubectl describe svc/hello
+```
+
+- Command in the `local` terminal
+
+```
+kubectl describe svc/hello
+```
+
+- Expected output
+
+```
 Name:              hello
 Namespace:         default
 Labels:            <none>
@@ -1915,8 +1937,7 @@ Events:            <none>
 - Command in the `instance` terminal
 
 ```bash
-HELLO_PORT=$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
-curl --connect-timeout 5 localhost:${HELLO_PORT}
+curl --connect-timeout 5 $(kubectl get svc hello -o=jsonpath='{.spec.clusterIP}')
 ```
 
 - Expected output
@@ -1931,13 +1952,69 @@ curl: (28) Connection timed out after 5003 milliseconds
 
 SSH into the instance.
 
-- Command in the `kube-proxy` terminal
+- Command in the `kube-proxy` terminal to connect to the instance
 
 ```bash
 ssh $(tf output -raw public_ip)
 ```
 
-- Command in the `kube-proxy` terminal
+- Command in- Expected output
+
+```
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination
+KUBE-POSTROUTING  all  --  anywhere             anywhere             /* kubernetes postrouting rules */
+
+Chain DOCKER (0 references)
+target     prot opt source               destination
+
+Chain KUBE-MARK-DROP (0 references)
+target     prot opt source               destination
+MARK       all  --  anywhere             anywhere             MARK or 0x8000
+
+Chain KUBE-MARK-MASQ (0 references)
+target     prot opt source               destination
+MARK       all  --  anywhere             anywhere             MARK or 0x4000
+
+Chain KUBE-NODEPORTS (0 references)
+target     prot opt source               destination
+
+Chain KUBE-POSTROUTING (1 references)
+target     prot opt source               destination
+MASQUERADE  all  --  anywhere             anywhere             /* kubernetes service traffic requiring SNAT */ mark match 0x4000/0x4000
+
+Chain KUBE-SEP-6SPA4RGUBMCPNL7E (0 references)
+target     prot opt source               destination
+
+Chain KUBE-SEP-IVGNBKIHSXG5MLX5 (0 references)
+target     prot opt source               destination
+
+Chain KUBE-SEP-LMO7SA7N7VN2FP4C (0 references)
+target     prot opt source               destination
+
+Chain KUBE-SEP-QEQL2SVSXQTTJNE2 (0 references)
+target     prot opt source               destination
+
+Chain KUBE-SERVICES (0 references)
+target     prot opt source               destination
+
+Chain KUBE-SVC-NPX46M4PTMTKRN6Y (0 references)
+target     prot opt source               destination
+
+Chain KUBE-SVC-TWVLBX4WCEZSIVWL (0 references)
+target     prot opt source               destination
+```
+
+- Command in the `kube-proxy` terminal to start kube-proxy
 
 ```bash
 sudo ~/kubernetes/server/bin/kube-proxy --master localhost:8080
@@ -1957,22 +2034,10 @@ I0915 01:25:42.391079   25440 proxier.go:692] syncProxyRules took 21.342451ms
 I0915 01:25:42.391112   25440 bounded_frequency_runner.go:221] sync-runner: ran, next possible in 0s, periodic in 30s
 ```
 
+- Command in the `kube-proxy` terminal to check the service again
+
 ```
-root@ip-10-0-1-135:~/kubernetes/server/bin# curl 10.0.0.103
-Hello folks from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:34:51 UTC 2019
-Hello folks from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:35:02 UTC 2019
-Hello folks from hello-dep-5d684f447d-xwjrs at Sun Sep 15 01:35:12 UTC 2019
-root@ip-10-0-1-135:~/kubernetes/server/bin# curl 10.0.0.103
-Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:34:41 UTC 2019
-Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:34:51 UTC 2019
-Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:02 UTC 2019
-Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:12 UTC 2019
-Hello folks from hello-dep-5d684f447d-cswb9 at Sun Sep 15 01:35:23 UTC 2019
-root@ip-10-0-1-135:~/kubernetes/server/bin# curl 10.0.0.103
-Hello folks from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:34:46 UTC 2019
-Hello folks from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:34:57 UTC 2019
-Hello folks from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35:07 UTC 2019
-Hello folks from hello-dep-5d684f447d-pnhd8 at Sun Sep 15 01:35:17 UTC 2019`
+curl --connect-timeout 5 $(kubectl get svc hello -o=jsonpath='{.spec.clusterIP}')
 ```
 
 - Command in the `instance` terminal
@@ -2057,6 +2122,12 @@ target     prot opt source               destination
 KUBE-SEP-YCI454ZKXCU37IFD  all  --  anywhere             anywhere             statistic mode random probability 0.33332999982
 KUBE-SEP-SY2PZQWZR2UT46RB  all  --  anywhere             anywhere             statistic mode random probability 0.50000000000
 KUBE-SEP-TU6S3TYJDJNFJ67V  all  --  anywhere             anywhere   `
+```
+
+- Command in the `local` terminal to get service external endpoint
+
+```bash
+export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')" && echo ${HELLO_URL}
 ```
 
 ## Deployment rollout
