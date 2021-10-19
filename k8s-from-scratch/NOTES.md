@@ -9,10 +9,14 @@ https://eu-west-1.console.aws.amazon.com/ec2/v2/home?region=eu-west-1#Instances:
 tf apply
 ```
 
+---
+```
 ####################################################
 #############    (back to the slides)   ############
 #############         storage           ############
 ####################################################
+```
+---
 
 
 ## 1. Storage
@@ -47,10 +51,14 @@ etcdctl put /hello "Hello World"
 etcdctl get /hello
 ```
 
+---
+```
 ####################################################
 #############    (back to the slides)   ############
 #############           API             ############
 ####################################################
+```
+---
 
 ##  2. Kubernetes API Server
 
@@ -91,10 +99,14 @@ curl localhost:8080
 
 http://localhost:8080
 
+---
+```
 ####################################################
 #############    (back to the slides)   ############
 #############   API Server URL schema   ############
 ####################################################
+```
+---
 
 * Open a browser with the same endpoint
 
@@ -193,10 +205,14 @@ http://localhost:8080/apis/apps/v1/namespaces/default/replicasets
 watch -n1 kubectl get all -o wide
 ```
 
+---
+```
 ####################################################
 #############    (back to the slides)   ############
-#############         Controller        ############
+#############        controllers        ############
 ####################################################
+```
+---
 
 ## 4. Controller Manager (Terminal 4)
 
@@ -237,10 +253,14 @@ http://localhost:8080/api/v1/namespaces/default/pods
     * ReplicaSet Controller knows that it has to create a pods for the replicaset, so it creates pods, stored in etcd.
     * The pods exists in etcd but are not being **scheduled**
 
+---
+```
 ####################################################
 #############    (back to the slides)   ############
-#############         Scheduler        ############
+#############          Scheduler        ############
 ####################################################
+```
+---
 
 ```
 # 4.5 Leave the Terminal 3 open watching all the resources again
@@ -276,10 +296,15 @@ kubectl get events
 kubectl get nodes
 ```
 
+---
+```
 ####################################################
 #############    (back to the slides)   ############
 #############          Kubelet          ############
 ####################################################
+```
+---
+
 
 ```
 # 5.6 Leave the Terminal 3 open watching all the resources again
@@ -293,7 +318,7 @@ watch -n1 kubectl get all,nodes -o wide
 ssh -t $(tf output -raw public_ip)
 ```
 
-``
+```
 # 6.2 Show docker ps
 docker ps
 ```
@@ -354,10 +379,15 @@ curl --connect-timeout 5 ${HELLO_URL}
 k get endpoints
 ```
 
+---
+```
 ####################################################
 #############    (back to the slides)   ############
 #############        Kube-proxy         ############
 ####################################################
+```
+---
+
 
 ## Kubernetes Node - Kubeproxy (Terminal 7)
 
@@ -397,10 +427,12 @@ export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=
 
 (Open the URL in normal and incognito modes to show the load balancing)
 
+```
 ####################################################
 #############    (back to the slides)   ############
 #############          Finale           ############
 ####################################################
+```
 
 ## 9 Wrapping up
 
@@ -432,3 +464,11 @@ export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=
 ```
 
 (Everything is still there, as the state (stored in etcd) is back online.)
+
+
+## 10 Destroy all
+
+```
+# 10.1 Destroy AWS resource
+tf destroy
+```

@@ -159,6 +159,15 @@ Welcome to Ubuntu 18.04.6 LTS (GNU/Linux 5.4.0-1057-aws x86_64)
 ....
 ```
 
+---
+```
+####################################################
+#############         storage           ############
+####################################################
+```
+---
+
+
 ## Before starting
 
 ### Tunneling to the remote host ports
@@ -414,6 +423,14 @@ echo -n $(curl -sqL http://localhost:2379/v3/kv/range -X POST -d "{\"key\": \"$(
 Hello world from etcdctl
 ```
 
+---
+```
+####################################################
+#############           API             ############
+####################################################
+```
+---
+
 ## Download the Kubernetes Control Plane binaries
 
 Then download the kubernetes binaries.
@@ -577,6 +594,14 @@ And in the `etcd` server logs, we can see that the key count is now 42: `respons
 ```json
 {"level":"debug","ts":"2021-10-18T18:01:50.093Z","caller":"v3rpc/interceptor.go:182","msg":"request stats","start time":"2021-10-18T18:01:50.093Z","time spent":"203.912µs","remote":"127.0.0.1:33502","response type":"/etcdserverpb.KV/Range","request count":0,"request size":8,"response count":42,"response size":2889,"request content":"key:\"/\" range_end:\"0\" keys_only:true "}
 ```
+
+---
+```
+####################################################
+#############   API Server URL schema   ############
+####################################################
+```
+---
 
 ## Create a ConfigMap
 
@@ -844,7 +869,7 @@ Events:  <none>
 Leave it running in the background.
 
 ```bash
-watch -n5 kubectl get all
+watch -n2 kubectl get all
 ```
 
 - Expected output
@@ -1307,6 +1332,12 @@ deployment.apps/hello-dep   0/3     0            0           12m   nginx,echo   
 **What is happening? Why the `ReplicaSets` are not being created?**
 
 ---
+```
+####################################################
+#############        controllers        ############
+####################################################
+```
+---
 
 ## Third component: kube-controller-manager
 
@@ -1556,6 +1587,14 @@ Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
 Events:          <none>
 ```
 
+---
+```
+####################################################
+#############          Scheduler        ############
+####################################################
+```
+---
+
 ## Forth component: `kube-scheduler`
 
 ### Watch the `Pods`
@@ -1705,6 +1744,14 @@ There are no nodes, so the output should be an empty set. We need a node.
 ```
 No resources found.
 ```
+
+---
+```
+####################################################
+#############          kubelet          ############
+####################################################
+```
+---
 
 ## Fifth component: `kubelet`
 
@@ -1946,6 +1993,14 @@ curl --connect-timeout 5 $(kubectl get svc hello -o=jsonpath='{.spec.clusterIP}'
 curl: (28) Connection timed out after 5003 milliseconds
 ```
 
+---
+```
+####################################################
+#############        Kube-proxy         ############
+####################################################
+```
+---
+
 ## Sixth component: `kube-proxy`
 
 > ## **Open a new terminal named `kube-proxy`**
@@ -2130,6 +2185,14 @@ KUBE-SEP-TU6S3TYJDJNFJ67V  all  --  anywhere             anywhere   `
 export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')" && echo ${HELLO_URL}
 ```
 
+---
+```
+####################################################
+#############         Wrapping up       ############
+####################################################
+```
+---
+
 ## Deployment rollout
 
 - Command in the `local` terminal
@@ -2149,6 +2212,14 @@ kubectl apply -f hello-manifests/hello-dep-fixed.yml
 ```
 export HELLO_URL="http://$(tf output -raw public_ip):$(kubectl get svc hello -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')" && echo ${HELLO_URL}
 ```
+
+---
+```
+####################################################
+#############         Clean up         ############
+####################################################
+```
+---
 
 ## Delete everything
 
