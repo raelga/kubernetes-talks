@@ -62,7 +62,7 @@ usermod -c ${var.system_user} -l ${var.system_user} -d /home/${var.system_user} 
 echo "${var.system_user} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-cloud-init-users
 curl -sq https://github.com/${var.github_user}.keys | tee -a /home/${var.system_user}/.ssh/authorized_keys
 # Package installation
-sudo apt-get -y install apt-transport-https ca-certificates curl gnupg2 software-properties-common
+sudo apt-get -y install apt-transport-https ca-certificates curl gnupg2 software-properties-common jq
 ## Docker
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo apt-key fingerprint 0EBFCD88
