@@ -95,7 +95,8 @@ spec:
     targetPort: redis-server
   selector:
     app: redis
-    role: master---
+    role: master
+---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
