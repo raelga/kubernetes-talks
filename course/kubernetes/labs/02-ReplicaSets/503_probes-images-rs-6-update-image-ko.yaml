@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: probes-images
+  labels:
+    app: probes-images
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: probes-images
+  template:
+    metadata:
+      labels:
+        app: probes-images
+    spec:
+      containers:
+      - name: app
+        image: raelga/cats:blanca
+        readinessProbe:
+          httpGet:
+            path: /bad-endpoint
+            port: 80
+          initialDelaySeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 2

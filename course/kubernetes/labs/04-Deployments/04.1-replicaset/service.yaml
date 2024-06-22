@@ -1,0 +1,14 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: cats
+  labels:
+    app: cats
+spec:
+  ports:
+    - port: 80
+      targetPort: http-server
+  selector:
+    app: cats
+  type: LoadBalancer

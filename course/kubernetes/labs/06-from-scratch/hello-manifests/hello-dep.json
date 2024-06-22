@@ -1,0 +1,88 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "hello-dep",
+    "labels": {
+      "app": "hello"
+    }
+  },
+  "spec": {
+    "replicas": 3,
+    "selector": {
+      "matchLabels": {
+        "app": "hello"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "hello"
+        }
+      },
+      "spec": {
+        "volumes": [
+          {
+            "name": "html"
+          }
+        ],
+        "containers": [
+          {
+            "name": "nginx",
+            "image": "nginx",
+            "volumeMounts": [
+              {
+                "name": "html",
+                "mountPath": "/usr/share/nginx/html"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "250m",
+                "memory": "256Mi"
+              }
+            }
+          },
+          {
+            "name": "echo",
+            "image": "alpine",
+            "command": [
+              "/bin/sh",
+              "-c"
+            ],
+            "args": [
+              "while true; do echo \"$GREETING from $HOSTNAME at `date`\" | tee -a /tmp/html/index.html; sleep 10; done;"
+            ],
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "hello-cm"
+                }
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "html",
+                "mountPath": "/tmp/html"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "32Mi"
+              },
+              "limits": {
+                "cpu": "75m",
+                "memory": "96Mi"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

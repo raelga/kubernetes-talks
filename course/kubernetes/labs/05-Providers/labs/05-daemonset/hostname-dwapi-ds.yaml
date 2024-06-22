@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hostname
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: hostname
+  template:
+    metadata:
+      labels:
+        app: hostname
+    spec:
+      containers:
+        # This container is run once on each Node in the cluster
+        - name: hostname
+          image: ubuntu:trusty
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - >-
+              while [ true ]; do
+              echo "DaemonSet running on $(hostname)" ;
+              sleep 10 ;
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32M
+            limits:
+              cpu: 10m
+              memory: 32M
+          volumeMounts:
+            - name: podinfo
+              mountPath: /etc/podinfo
+      volumes:
+        - name: podinfo
+          downwardAPI:
+            items:
+              - path: "labels"
+                fieldRef:
+                  fieldPath: metadata.labels
+              - path: "annotations"
+                fieldRef:
+                  fieldPath: metadata.annotations
+              - path: "labels"
+                fieldRef:
+                  fieldPath: metadata.labels
+              - path: "cpu_limit"
+                resourceFieldRef:
+                  containerName: hostname
+                  resource: limits.cpu
+                  divisor: 1m
+              - path: "cpu_request"
+                resourceFieldRef:
+                  containerName: hostname
+                  resource: requests.cpu
+                  divisor: 1m
+              - path: "mem_limit"
+                resourceFieldRef:
+                  containerName: hostname
+                  resource: limits.memory
+                  divisor: 1Mi
+              - path: "mem_request"
+                resourceFieldRef:
+                  containerName: hostname
+                  resource: requests.memory
+                  divisor: 1Mi

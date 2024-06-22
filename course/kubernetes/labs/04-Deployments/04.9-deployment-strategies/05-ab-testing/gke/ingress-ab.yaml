@@ -1,0 +1,34 @@
+---
+apiVersion: "networking.k8s.io/v1"
+kind: "Ingress"
+metadata:
+  name: "my-app"
+spec:
+  defaultBackend:
+    service:
+      name: "my-app-v1"
+      port:
+        number: 80
+  rules:
+    - host: "my-app.rael.io"
+      http:
+        paths:
+          - path: ""
+            backend:
+              service:
+                name: "my-app-v1"
+                port:
+                  number: 80
+            pathType: "ImplementationSpecific"
+    - host: "v2.my-app.rael.io"
+      http:
+        paths:
+          - path: ""
+            backend:
+              service:
+                name: "my-app-v2"
+                port:
+                  number: 80
+            pathType: "ImplementationSpecific"
+status:
+  loadBalancer: {}

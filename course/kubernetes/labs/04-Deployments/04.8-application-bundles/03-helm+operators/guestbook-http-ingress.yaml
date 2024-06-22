@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: rael-ca
+  name: guestbook
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: plain.eks-lab.rael.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: guestbook-np
+                port:
+                  number: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: guestbook-np
+  labels:
+    app: guestbook
+spec:
+  ports:
+    - port: 80
+      targetPort: http-server
+  selector:
+    app: guestbook
+  type: NodePort

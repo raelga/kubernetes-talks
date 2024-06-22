@@ -1,0 +1,27 @@
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: probes
+  labels:
+    app: probes
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: probes
+  template:
+    metadata:
+      labels:
+        app: probes
+    spec:
+      containers:
+      - name: app
+        image: raelga/cats:neu
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 2

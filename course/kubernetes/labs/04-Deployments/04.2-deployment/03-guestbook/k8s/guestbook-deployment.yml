@@ -1,0 +1,36 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: guestbook
+  labels:
+    app: guestbook
+spec:
+  replicas: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: guestbook
+  template:
+    metadata:
+      labels:
+        app: guestbook
+    spec:
+      containers:
+        - name: guestbook
+          image: raelga/guestbook:v1
+          imagePullPolicy: Always
+          ports:
+            - name: http-server
+              containerPort: 3000
+          resources:
+            limits:
+              memory: 128M
+              cpu: 50m
+            requests:
+              memory: 128M
+              cpu: 50m

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-probes-readiness-ko
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    args:
+    - /bin/sh
+    - -c
+    - echo 'Hi!'; sleep 20; echo 'Healthy!'; touch /tmp/healthy; sleep 10; rm -vrf /tmp/healthy; sleep 3600;
+    readinessProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/healthy
+      initialDelaySeconds: 15
+      periodSeconds: 1

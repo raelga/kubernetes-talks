@@ -1,0 +1,349 @@
+Managed Kubernetes Breakdown
+Overview of the managed k8s solutions from GCP, AWS and Azure
+19 Jun 2018
+Tags: kubernetes, Google Cloud Platform, Amazon Web Services, Azure, GKE, EKS, AKS
+
+Rael Garcia
+Systems Engineer at CAPSiDE
+self@rael.io
+
+@raelga
+
+https://github.com/raelga/kubernetes-talks
+
+
+
+* AKS at Microsoft Azure
+
+.image images/aks.png _ 960
+
+.caption [[https://azure.microsoft.com/en-us/services/kubernetes-service/][Azure Kubernetes Service (AKS)]]
+
+
+
+* EKS at Microsoft Azure
+
+.image images/eks.png 500 _
+
+.caption [[https://aws.amazon.com/eks/features/][Amazon EKS Features]]
+
+
+
+* GKE at Google Cloud Platform
+
+.image images/gke.png 500 _
+
+.caption [[https://cloud.google.com/kubernetes-engine/docs/concepts/multi-zone-and-regional-clusters][Multi-Zone and Regional Clusters]]
+
+
+
+* Region Availability
+
+- *AKS* at Microsoft Azure
+
+Australia East, Canada Central, Canada East, Central US, East US, North Europe, UK South, West US and West 2.
+
+.caption Quotas and region availability for Azure Kubernetes Service (AKS) at [[https://docs.microsoft.com/gl-es/azure/aks/container-service-quotas][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Only available in North Virgnia (us-east-1) and Oregon (us-west-2).
+
+.caption Where is Amazon EKS available? at [[https://aws.amazon.com/eks/faq/][aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Montreal, Iowa, Orgeon, Northen Virginia, South Carolina, São Paulo, Finland, Belgium, London, Frankfurt, Netherlands, Mumbai, Singapore, Taiwan, Tokyio and Syndey.
+
+.caption Kubernetes Engine Overview at [[https://cloud.google.com/kubernetes-engine/docs/concepts/kubernetes-engine-overview][cloud.google.com]]
+
+
+
+* Pricing
+
+- *AKS* at Microsoft Azure
+
+Control plane is *free*, only pay for the workers, storage and network services.
+
+.caption Azure Kubernetes Service (AKS) pricing at [[https://azure.microsoft.com/en-us/pricing/details/kubernetes-service/][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+The control plane costs $0.20 per hour (~$150 per month and EKS cluster).
+Same pay per use for the workers, storage and network services.
+
+.caption Amazon EKS Pricing at [[https://aws.amazon.com/eks/pricing/][aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Since the 28th November 2017, the control plane is *free*, only pay for the workers, storage and network services.
+
+.caption Kubernetes Engine Pricing at [[https://cloud.google.com/kubernetes-engine/pricing][cloud.google.com]]
+
+
+
+* Kubernetes version
+
+- *AKS* at Microsoft Azure
+
+From 1.7.7 to 1.9.6.
+
+.caption Create an Azure Kubernetes Service (AKS) cluster at [[https://docs.microsoft.com/en-us/azure/aks/create-cluster][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Only  1.10.3.
+
+.caption Which Kubernetes versions does Amazon EKS support? at [[https://aws.amazon.com/eks/faq/][aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+From 1.8.10 to 1.10.4.
+
+.caption Versioning and Upgrades at [[https://cloud.google.com/kubernetes-engine/versioning-and-upgrades][cloud.google.com]]
+
+
+
+* Masters - Zone fault tolerance
+
+- *AKS* at Microsoft Azure
+
+No support for availability zones. However, Azure seek to maintain availability of at least 99.5% for the Kubernetes API server.
+
+.caption Azure Kubernetes Service (AKS) at [[https://docs.microsoft.com/en-us/azure/aks/intro-kubernetes][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Amazon EKS runs the Kubernetes management infrastructure across multiple AWS Availability Zones, automatically detects and replaces unhealthy control plane nodes.
+
+.caption What Is Amazon EKS? at [[https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html][docs.aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Cluster can be deployed as Regional, with masters spread across multiple zones within a Region or Local.
+
+.caption Multi-Zone and Regional Clusters at [[https://cloud.google.com/kubernetes-engine/docs/concepts/multi-zone-and-regional-clusters][cloud.google.com]]
+
+
+
+* Workers - Region fault tolerance
+
+- *AKS* at Microsoft Azure
+
+Nodes are deployed in availability sets that protect against zone hardware failures.
+
+.caption Availability set overview at [[https://docs.microsoft.com/en-us/azure/virtual-machines/windows/tutorial-availability-sets#availability-set-overview][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Worker nodes can be deployed across zones in the same region.
+
+.caption Distributing Instances Across Availability Zones at [[https://docs.aws.amazon.com/autoscaling/ec2/userguide/auto-scaling-benefits.html#arch-AutoScalingMultiAZ][docs.aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Worker nodes can be deployed across zones in the same region.
+
+.caption Node Pools at [[https://cloud.google.com/kubernetes-engine/docs/concepts/node-pools][cloud.google.com]]
+
+
+
+* Workers - Node pools
+
+- *AKS* at Microsoft Azure
+
+Only support one node pool per cluster.
+
+.caption Add Node Pool Support #287 [[https://github.com/Azure/AKS/issues/287][github.com][docs.aws.amazon.com]]
+
+- *EKS* at Amazon Web Services
+
+Independents group of servers can be added to the cluster, which different carachteristics and sizes, including spot instances.
+
+.caption Launching Amazon EKS Worker Nodes at [[https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html][docs.aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Independent node pools of instance groups, each one with their own configuration in sizes, OS and preemptiveness.
+
+.caption Node Pools at [[https://cloud.google.com/kubernetes-engine/docs/concepts/node-pools][cloud.google.com]]
+
+
+
+* Cluster node autoscaling
+
+- *AKS* at Microsoft Azure
+
+Node autoscaling is not supported but is on the roadmap.
+
+.caption Scale an Azure Kubernetes Service (AKS) cluster at [[https://docs.microsoft.com/en-us/azure/aks/scale-cluster][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Autoscaling using EC2 Auto Scaling Groups.
+
+.caption Cluster Autoscaler at [[https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-autoscaler][cloud.google.com]]
+
+- *GKE* at Google Cloud Platform
+
+Native with Cluster Autoscaler and Compute Engine Instance Groups.
+
+.caption Cluster Autoscaler at [[https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-autoscaler][cloud.google.com]]
+
+- Kubernetes Cluster Autoscaler component
+
+Cluster Autoscaler is a tool that automatically adjusts the size of the Kubernetes cluster.
+
+.caption Kubernetes Autoscaler at [[https://github.com/kubernetes/autoscaler][github.com/kubernetes/autoscaler]]
+
+
+
+* Container Regitry
+
+- *AKS* at Microsoft Azure
+
+Azure Container Registry is a managed Docker registry service based on the open-source Docker Registry 2.0. 
+
+.caption Introduction to private Docker container registries in Azure at [[https://docs.microsoft.com/en-us/azure/container-registry/container-registry-intro][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Amazon Elastic Container Registry (ECR) is a fully-managed Docker container registry that makes it easy for developers to store, manage, and deploy Docker container images. 
+
+.caption Amazon Elastic Container Registry at [[https://aws.amazon.com/ecr/][aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Google Container Registry provides secure, private Docker image storage on Google Cloud Platform.
+
+.caption Google Container Registry at [[hhttps://cloud.google.com/container-registry/docs/][cloud.google.com]]
+
+
+
+* Pod Networking configuration
+
+- *AKS* at Microsoft Azure
+
+*Basic* networking creates a new VNet for your cluster using default values or 
+*Advanced* networking allows clusters to use a new or existing VNet with customizable addresses and application pods are connected directly to the VNet.
+
+.caption Network configuration in Azure Kubernetes Service (AKS) at [[https://docs.microsoft.com/en-us/azure/aks/networking-overview][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Native VPC networking via the Amazon VPC CNI plugin for Kubernete, allowing pods to have the same IP address inside the pod as they do on the VPC network.
+
+.caption Pod Networking at [[https://docs.aws.amazon.com/eks/latest/userguide/pod-networking.html][docs.aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+With Alias IPs, Kubernetes Engine clusters can allocate IP addresses from a CIDR block known to Google Cloud Platform (GCP), allowing pod IPs to be natively routable within the GCP network and access to hosted services without using a NAT gateway.
+
+.caption Creating VPC-native clusters using Alias IPs at [[https://cloud.google.com/kubernetes-engine/docs/how-to/alias-ips][cloud.google.com]]
+
+
+
+* Role Based Access Control
+
+Kubernetes RBAC system grants granular permissions for specific resources and operations within your clusters.
+
+- *AKS* at Microsoft Azure
+
+Kubernetes RBAC with support to use Azure Active Directory for user authentication.
+
+.caption Integrate Azure Active Directory with AKS - Preview at [[https://docs.microsoft.com/en-us/azure/aks/aad-integration][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Kubernetes RBAC with IAM authentication through a collaboration with Heptio.
+
+.caption Heptio Authenticator for AWS at [[https://github.com/heptio/authenticator][github.com]]
+.caption Managing Users or IAM Roles for your Cluster at [[https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html][docs.aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Cloud IAM to grant users access to Kubernetes Engine and Kubernetes resources.
+Kubernetes RBAC for access control within your clusters.
+
+.caption Kubernetes Engine - Access Control Overview at [[https://cloud.google.com/kubernetes-engine/docs/concepts/access-control][cloud.google.com]]
+
+
+
+* Logging and monitroing
+
+- *AKS* at Microsoft Azure
+
+With Azure Kubernetes Service, you will get CPU and memory usage metrics for each node. In addition, you can enable container monitoring capabilities and get insights into the performance and health of your entire Kubernetes cluster. 
+
+.caption Monitor Azure Kubernetes Service (AKS) container health (Preview) at [[https://docs.microsoft.com/en-us/azure/monitoring/monitoring-container-health][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+Logs and metrics from pods, nodes and masters published to CloudWatch and CloudTrail.
+
+.caption Amazon EKS Features at [[https://aws.amazon.com/eks/features/#Logging][docs.aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Logs and metrics from pods, nodes and masters published to GCP Monitoring and Stackdriver.
+
+.caption Kubernetes Engine Logging at [[https://cloud.google.com/kubernetes-engine/docs/how-to/logging][cloud.google.com]]
+.caption Kubernetes Engine Monitoring at [[https://cloud.google.com/kubernetes-engine/docs/how-to/monitoring][cloud.google.com]]
+
+
+
+* Regulatory compliance
+
+- *AKS* at Microsoft Azure
+
+Azure Kubernetes Service (AKS) is compliant with SOC and ISO/HIPPA/HITRUST.
+
+.caption Azure Kubernetes Service (AKS) at [[https://docs.microsoft.com/gl-es/azure/aks/intro-kubernetes#regulatory-compliance][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+No information provided yet.
+
+.caption AWS Services in Scope by Compliance Program at [[https://aws.amazon.com/compliance/services-in-scope/][docs.aws.amazon.com]]
+
+- *GKE* at Google Cloud Platform
+
+Kubernetes Engine is backed by Google security team of over 750 experts and is both HIPAA and PCI DSS 3.1 compliant.
+
+.caption Standards, Regulations & Certifications at [[https://cloud.google.com/security/compliance/pci-dss/][cloud.google.com]]
+
+
+
+* Extra Slide: Virtual Kubelet
+
+.image images/virtual-kubelet.svg 500 _
+
+.caption [[https://github.com/virtual-kubelet/virtual-kubelet][Virtual Kubelet]]
+
+
+
+* Serverless Kubernetes
+
+- *AKS* at Microsoft Azure
+
+Virtual Kubelet with Azure Container Instances
+
+.caption Virtual Kubelet with AKS at [[https://docs.microsoft.com/en-us/azure/aks/virtual-kubelet][docs.microsoft.com]]
+
+- *EKS* at Amazon Web Services
+
+AWS Fargate is already supported in ECS and for Amazon EKS will be available in 2018.
+
+.caption AWS Fargate at [[https://aws.amazon.com/fargate/][docs.aws.amazon.com]]
+
+Open Source implementation can be found at [[https://github.com/virtual-kubelet/virtual-kubelet/blob/master/providers/aws/README.md][github.com/virtual-kubelet]].
+
+.caption Sailing into Infinity: Seamlessly managed serverless containers using Kubernetes and AWS Fargate at [[https://www.contentful.com/blog/2018/04/10/sailing-into-infinity-seamlessly-managed-serverless-containers-using-kubernetes-and-aws-fargate/][contentful.com]]
+
+- *GKE* at Google Cloud Platform
+
+Not implemented, yet.
+
+* Demo
+
+.image images/demo.png 500 _

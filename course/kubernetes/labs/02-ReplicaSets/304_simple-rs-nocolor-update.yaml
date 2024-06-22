@@ -1,0 +1,20 @@
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: simple
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple
+    matchExpressions:
+      - { key: color, operator: DoesNotExist }
+  template:
+    metadata:
+      labels:
+        app: simple
+    spec:
+      containers:
+      - name: app
+        image: raelga/cats:gatet

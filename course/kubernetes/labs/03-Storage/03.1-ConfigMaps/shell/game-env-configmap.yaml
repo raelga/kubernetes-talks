@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: game-env
+data:
+  debug_level: "10"
+  environment: testing
