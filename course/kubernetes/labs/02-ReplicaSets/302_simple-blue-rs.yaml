@@ -1,0 +1,21 @@
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: simple-blue
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: simple
+      color: blue
+  template:
+    metadata:
+      labels:
+        app: simple
+        color: blue
+    spec:
+      containers:
+      - name: app
+        image: raelga/cats:liam
+        

@@ -1,0 +1,18 @@
+{
+    "Comment": "Update record to reflect new cluster endpoint",
+    "Changes": [
+        {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "api.eks.talks.aws.rael.io.",
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                    {
+                        "Value": ""
+                    }
+                ]
+            }
+        }
+    ]
+}

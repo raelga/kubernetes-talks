@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostname-node-selector
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hostname-node-selector
+  template:
+    metadata:
+      labels:
+        app: hostname-node-selector
+    spec:
+      containers:
+        - name: hostname
+          image: ubuntu:trusty
+          env:
+            - name: APP_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app']
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - >-
+              while [ true ]; do
+              echo "${APP_NAME} app deployment running on $(hostname)" ;
+              sleep 10 ;
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32M
+            limits:
+              cpu: 10m
+              memory: 32M

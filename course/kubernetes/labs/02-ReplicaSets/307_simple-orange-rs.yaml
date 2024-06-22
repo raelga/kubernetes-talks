@@ -1,0 +1,20 @@
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: simple-orange
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: simple
+      color: orange
+  template:
+    metadata:
+      labels:
+        app: simple
+        color: orange
+    spec:
+      containers:
+      - name: app
+        image: raelga/cats:lia

@@ -1,4 +1,4 @@
-# Notes
+ # Notes
 
 ## 0. Create the stack in AWS (Terminal 1)
 

@@ -1,0 +1,10 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "hello-cm"
+  },
+  "data": {
+    "GREETING": "Hello folks from kubectl"
+  }
+}
