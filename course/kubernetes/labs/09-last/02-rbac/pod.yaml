@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: service-account-pod
+  namespace: default
+spec:
+  containers:
+    - command:
+        [
+          "/bin/bash",
+          "-c",
+          'while true; do curl -s https://kubernetes:443/api/v1/namespaces/default/pods/service-account-pod --header "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --insecure; sleep 10; done',
+        ]
+      image: raelga/toolbox
+      name: pods-simple-container
+  serviceAccount: service-account-pod-read

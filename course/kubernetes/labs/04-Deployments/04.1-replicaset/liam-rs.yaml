@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: liam
+  labels:
+    app: cats
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cats
+      cat: liam
+  template:
+    metadata:
+      labels:
+        app: cats
+        cat: liam
+    spec:
+      containers:
+        - name: app
+          image: raelga/cats:liam
+          ports:
+            - name: http-server
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 2

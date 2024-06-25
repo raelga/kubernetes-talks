@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hostname
+  labels:
+    app: hostname
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: hostname
+  template:
+    metadata:
+      labels:
+        app: hostname
+    spec:
+      containers:
+        # This container is run once on each Node in the cluster
+        - name: hostname
+          image: ubuntu:trusty
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - >-
+              while [ true ]; do
+              echo "DaemonSet running on $(hostname)" ;
+              sleep 10 ;
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32M
+            limits:
+              cpu: 10m
+              memory: 32M

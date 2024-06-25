@@ -1,0 +1,36 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-blue-pod-1
+  labels:
+    app: simple
+    color: blue
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:liam
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-blue-pod-2
+  labels:
+    app: simple
+    color: blue
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:liam
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-blue-pod-3
+  labels:
+    app: simple
+    color: blue
+spec:
+  containers:
+    - name: app
+      image: raelga/cats:liam

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostname-tolerations
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: hostname-tolerations
+  template:
+    metadata:
+      labels:
+        app: hostname-tolerations
+    spec:
+      containers:
+        - name: hostname
+          image: ubuntu:trusty
+          env:
+            - name: APP_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app']
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - >-
+              while [ true ]; do
+              echo "${APP_NAME} app deployment running on $(hostname)" ;
+              sleep 10 ;
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32M
+            limits:
+              cpu: 10m
+              memory: 32M
+      tolerations:
+        - key: "area"
+          operator: "Equal"
+          value: "vip"
+          effect: "NoExecute"

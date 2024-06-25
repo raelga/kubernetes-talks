@@ -1,0 +1,57 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: rael-ca
+  name: guestbook
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hello.eks-lab.rael.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: hello
+                port:
+                  number: 8080
+    - host: hello-ssl.eks-lab.rael.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: hello
+                port:
+                  number: 8080
+    - host: plain.eks-lab.rael.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: guestbook-np
+                port:
+                  number: 80
+    - host: ssl.eks-lab.rael.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: guestbook-np
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - ssl.eks-lab.rael.io
+      secretName: ssl.eks-lab.rael.io-cert
+    - hosts:
+        - hello-ssl.eks-lab.rael.io
+      secretName: hello-ssl.eks-lab.rael.io-cert

@@ -1,0 +1,70 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  labels:
+    dashboards: "grafana"
+  name: grafana
+  namespace: monitoring
+spec:
+  config:
+    log:
+      mode: "console"
+    auth:
+      disable_login_form: "false"
+    security:
+      admin_user: admin
+      admin_password: admin
+  service:
+    spec:
+      type: LoadBalancer
+      ports:
+        - name: grafana-http
+          port: 80
+          protocol: TCP
+          targetPort: grafana-http
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: credentials
+  namespace: monitoring
+stringData:
+  PROMETHEUS_USERNAME: root
+  PROMETHEUS_PASSWORD: secret
+type: Opaque
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  valuesFrom:
+    - targetPath: "user"
+      valueFrom:
+        secretKeyRef:
+          name: "credentials"
+          key: "PROMETHEUS_USERNAME"
+    - targetPath: "secureJsonData.password"
+      valueFrom:
+        secretKeyRef:
+          name: "credentials"
+          key: "PROMETHEUS_PASSWORD"
+  instanceSelector:
+    matchLabels:
+      dashboards: "grafana"
+  datasource:
+    name: prometheus
+    type: prometheus
+    access: proxy
+    basicAuth: true
+    url: http://prometheus-server:80
+    isDefault: true
+    user: ${PROMETHEUS_USERNAME}
+    jsonData:
+      "tlsSkipVerify": true
+      "timeInterval": "5s"
+    secureJsonData:
+      "password": ${PROMETHEUS_PASSWORD} # Notice the brakes around PROMETHEUS_PASSWORD
+    editable: true

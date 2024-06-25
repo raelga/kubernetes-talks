@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hello-5
+spec:
+  completions: 5
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: hello
+          image: ubuntu:trusty
+          env:
+            - name: JOB_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['job-name']
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - >-
+              echo "Hello, I was created by the Job ${JOB_NAME} and ran in $(hostname) at $(date)."
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32M
+            limits:
+              cpu: 10m
+              memory: 32M
