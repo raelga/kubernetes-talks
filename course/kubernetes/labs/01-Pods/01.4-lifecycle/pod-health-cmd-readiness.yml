@@ -6,16 +6,16 @@ metadata:
   name: readiness-cmd
 spec:
   containers:
-  - name: readiness
-    image: k8s.gcr.io/busybox
-    args:
-    - /bin/sh
-    - -c
-    - sleep 30; touch /tmp/healthy; sleep 10; rm -rf /tmp/healthy;
-    readinessProbe:
-      exec:
-        command:
-        - cat
-        - /tmp/healthy
-      initialDelaySeconds: 5
-      periodSeconds: 5
+    - name: readiness
+      image: k8s.gcr.io/busybox
+      args:
+        - /bin/sh
+        - -c
+        - sleep 30; touch /tmp/healthy; sleep 10; rm -rf /tmp/healthy; sleep 3600;
+      readinessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/healthy
+        initialDelaySeconds: 5
+        periodSeconds: 5
