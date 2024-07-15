@@ -8,6 +8,9 @@ kubectl apply -f mysql-sts.yaml
 kubectl get -n default pvc,pv,storageclass
 ```
 
+kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+
 ### Ephemeral Containers
 
 ```

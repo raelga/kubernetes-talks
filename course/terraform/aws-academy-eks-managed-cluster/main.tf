@@ -16,7 +16,8 @@ data "aws_iam_role" "lab_role" {
 }
 
 data "aws_iam_role" "eks_ng_role" {
-  name = "AWSServiceRoleForAmazonEKSNodegroup"
+  #name = "AWSServiceRoleForAmazonEKSNodegroup"
+  name = "LabRole"
 }
 
 
@@ -31,7 +32,7 @@ module "eks" {
   version = "19.1.0"
 
   cluster_name    = "lab-eks"
-  cluster_version = "1.29"
+  cluster_version = "1.30"
 
   # IAM
 
@@ -93,7 +94,7 @@ module "eks" {
       ec2_ssh_key = data.aws_key_pair.lab.arn
 
       create_iam_role = false
-      iam_role_arn    = data.aws_iam_role.lab_role.arn
+      iam_role_arn    = data.aws_iam_role.eks_ng_role.arn
     }
   }
 
