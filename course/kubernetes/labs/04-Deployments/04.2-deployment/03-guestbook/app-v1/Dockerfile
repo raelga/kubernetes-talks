@@ -13,10 +13,10 @@
 # limitations under the License.
 
 FROM golang:1.13.0
-RUN go get github.com/codegangsta/negroni \
-  github.com/gorilla/mux \
-  github.com/xyproto/simpleredis/v2
+ENV GO111MODULE=on
 WORKDIR /app
+RUN go mod init guestbook
+RUN go get github.com/codegangsta/negroni github.com/xyproto/simpleredis/v2 github.com/gorilla/mux@v1.8.0
 ADD ./main.go .
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
