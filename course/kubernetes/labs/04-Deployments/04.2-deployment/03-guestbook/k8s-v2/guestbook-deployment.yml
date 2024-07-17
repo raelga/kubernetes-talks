@@ -34,3 +34,8 @@ spec:
             requests:
               memory: 128M
               cpu: 50m
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
