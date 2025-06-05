@@ -62,6 +62,18 @@ data "aws_key_pair" "managed" {
   include_public_key = true
 }
 
+# Private Key
+resource "tls_private_key" "terraform" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "local_file" "private_key_file" {
+  content         = tls_private_key.terraform.private_key_pem
+  filename        = pathexpand("~/.ssh-upc/k8s-terraform.pem")
+  file_permission = "0600"
+}
+
 resource "aws_eip" "this" {
   domain   = "vpc"
   instance = aws_instance.this.id
@@ -90,13 +102,16 @@ resource "aws_instance" "this" {
 usermod -c ${var.system_user} -l ${var.system_user} -d /home/${var.system_user} -m ${var.system_default_user} && groupmod -n ${var.system_user} ${var.system_default_user};
 echo "${var.system_user} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-cloud-init-users
 curl -sq https://github.com/${var.github_user}.keys | tee -a /home/${var.system_user}/.ssh/authorized_keys
+echo "${tls_private_key.terraform.public_key_openssh}" | tee -a /home/${var.system_user}/.ssh/authorized_keys
 # Package installation
-# Terraform Repository
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update
-sudo apt-get -y install make apt-transport-https ca-certificates curl gnupg2 software-properties-common jq docker.io cgroup-tools tree awscli terraform
+sudo apt update && sudo apt -y install make apt-transport-https ca-certificates curl gnupg2 software-properties-common jq docker.io cgroup-tools tree awscli
 usermod -aG docker ${var.system_user}
+# Terraform installation
+wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install terraform
+git clone --depth=1 https://github.com/raelga/kubernetes-talks.git /home/${var.system_user}/kubernetes-talks &&
+  chown -R ${var.system_user}:${var.system_user} /home/${var.system_user}/kubernetes-talks
 reboot
 EOF
 

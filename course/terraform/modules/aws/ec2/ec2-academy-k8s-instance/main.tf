@@ -67,6 +67,18 @@ data "aws_key_pair" "managed" {
   include_public_key = true
 }
 
+# Private Key
+resource "tls_private_key" "terraform" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "local_file" "private_key_file" {
+  content         = tls_private_key.terraform.private_key_pem
+  filename        = pathexpand("~/.ssh-upc/k8s-terraform.pem")
+  file_permission = "0600"
+}
+
 resource "aws_eip" "this" {
   domain   = "vpc"
   instance = aws_instance.this.id

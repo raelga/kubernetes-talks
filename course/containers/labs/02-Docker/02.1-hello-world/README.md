@@ -1,19 +1,33 @@
-# Building docker images
+# Docker: Building Custom Images
 
-## Hello World v1
+This lab guides you through building a simple Docker image from a custom `Dockerfile`, tagging it, and inspecting the resulting image.
 
-v1 folder includes a Dockerfile with the following directives:
+---
 
-```
+## Hello World (v1)
+
+The `v1/` directory contains a `Dockerfile` with the following contents:
+
+```dockerfile
 FROM alpine:latest
 CMD ["/bin/echo", "Hello World!"]
 ```
 
-To build an image, you can use the docker cli:
+This image is based on the minimal Alpine Linux image and will print `Hello World!` when run.
 
-```
+---
+
+## Step-by-Step Instructions
+
+### 1. Build the Docker Image
+
+Use the Docker CLI to build the image and tag it as `hello-world:v1`:
+
+```bash
 docker build v1 -t hello-world:v1
 ```
+
+### Example Output
 
 ```
 Sending build context to Docker daemon  3.072kB
@@ -31,11 +45,17 @@ Successfully built b443150e5d38
 Successfully tagged hello-world:v1
 ```
 
-The image has been created and now is available:
+---
 
-```
+### 2. Inspect the Image
+
+To verify the image details:
+
+```bash
 docker inspect hello-world:v1
 ```
+
+This displays metadata such as image ID, creation date, size, and layer information.
 
 ```
 [
@@ -126,11 +146,31 @@ docker inspect hello-world:v1
 ]
 ```
 
-We can now run the container image:
+---
 
-```
+### 3. Run the Container
+
+To execute the container and see the output:
+
+```bash
 docker run hello-world:v1
 ```
+
+Expected output:
+
+```
+Hello World!
+```
+
+---
+
+## Summary
+
+- You created a custom Docker image based on Alpine Linux.
+- The image was built, tagged, inspected, and executed using standard Docker commands.
+- This is the foundation for building more complex containers.
+
+---
 
 ## Hello world v2 and v3
 

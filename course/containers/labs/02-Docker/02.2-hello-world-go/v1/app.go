@@ -15,7 +15,7 @@ func HelloWorld(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/", HelloWorld)
 
-	log.Println("Listeing at :9999...")
+	log.Println("Listening at :9999...")
 	err := http.ListenAndServe(":9999", nil)
 
 	if err != nil {
