@@ -23,8 +23,14 @@ export REPOSITORY=raelga/hello-world-nginx
 
 Build the Docker image using the provided Dockerfile:
 
-```
+```bash
 docker build -t ${REPOSITORY}:${TAG} -f Dockerfile ctx
+```
+
+Alternatively, use the provided Makefile:
+
+```bash
+make build
 ```
 
 ## 🚀 Run the Container
@@ -35,15 +41,29 @@ docker build -t ${REPOSITORY}:${TAG} -f Dockerfile ctx
 docker run --rm -p 8080:8080 ${REPOSITORY}:${TAG}
 ```
 
+Or using the Makefile:
+
+```bash
+make run
+```
+
 ### 🔄 Background (detached mode)
 
 ```bash
 docker run --name hello --rm -d -p 8080:8080 ${REPOSITORY}:${TAG}
 ```
 
+Or using the Makefile:
+
+```bash
+make bg
+```
+
+### 🌐 Access the Application
+
 Open your browser and navigate to: http://localhost:8080
 
-If it's running in an AWS EC2 instance, use:
+If running on a remote server (like AWS EC2), get the public URL:
 
 ```bash
 echo http://$(curl -sq ifconfig.me):8080
@@ -53,16 +73,28 @@ echo http://$(curl -sq ifconfig.me):8080
 
 Tail the logs in real-time:
 
-```
+```bash
 docker logs -f hello
+```
+
+Or using the Makefile:
+
+```bash
+make logs
 ```
 
 ### 🐚 Access the Container Shell
 
 Spawn an interactive shell inside the running container:
 
-```
+```bash
 docker exec -ti hello /bin/sh
+```
+
+Or using the Makefile:
+
+```bash
+make exec
 ```
 
 ## ☁️ Push the Container to Docker Hub
@@ -73,18 +105,24 @@ https://app.docker.com/signup
 
 ### 🔐 Login to Docker Hub
 
-First loging into dockerhub with:
+First login to Docker Hub with:
 
-```
+```bash
 docker login
 ```
 
-# 📤 Push the Image
+### 📤 Push the Image
 
-And push it to the Docker Hub registry:
+Push the image to the Docker Hub registry:
 
-```
+```bash
 docker push ${REPOSITORY}:${TAG}
+```
+
+Or using the Makefile:
+
+```bash
+make push
 ```
 
 ```
@@ -108,4 +146,85 @@ Check your published image:
 
 ```bash
 echo https://hub.docker.com/r/${REPOSITORY}
+```
+
+## 🧹 Cleanup
+
+### Stop and Remove the Container
+
+If running in background mode:
+
+```bash
+docker stop hello
+```
+
+Or using the Makefile:
+
+```bash
+make clean
+```
+
+### Remove the Image
+
+To remove the locally built image:
+
+```bash
+docker rmi ${REPOSITORY}:${TAG}
+```
+
+## 🔍 Verification
+
+After each step, you can verify your progress:
+
+1. **Check if image was built:**
+   ```bash
+   docker images | grep ${REPOSITORY}
+   ```
+
+2. **Check if container is running:**
+   ```bash
+   docker ps | grep hello
+   ```
+
+3. **Test the application:**
+   ```bash
+   curl http://localhost:8080
+   ```
+
+## 🛠️ Troubleshooting
+
+### Port Already in Use
+
+If you get a "port already in use" error:
+
+```bash
+# Find what's using port 8080
+lsof -i :8080
+
+# Or use a different port
+docker run --rm -p 8081:8080 ${REPOSITORY}:${TAG}
+```
+
+### Permission Denied
+
+If you get permission errors with Docker:
+
+```bash
+# Add your user to the docker group (Linux)
+sudo usermod -aG docker $USER
+
+# Then restart your session or run:
+newgrp docker
+```
+
+### Image Not Found
+
+If the image is not found when pushing:
+
+```bash
+# Make sure you're logged in
+docker login
+
+# Check your image name matches your Docker Hub username
+docker images | grep ${REPOSITORY}
 ```

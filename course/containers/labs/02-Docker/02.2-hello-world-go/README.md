@@ -1,14 +1,23 @@
-# Hello World in GoLang with Docker
+# Hello World in Go with Docker
 
-This lab guides you through building and running two versions of a simple Go-based "Hello World" application using Docker.
+This lab demonstrates building and running two versions of a Go "Hello World" application using Docker multi-stage builds with security best practices.
+
+## 🎯 Learning Objectives
+
+- Build multi-stage Docker images for Go applications
+- Implement security best practices (non-root users, pinned base images)
+- Compare different application versions
+- Use health check endpoints for container monitoring
 
 ## 🧪 Prerequisites
 
-Ensure Docker is installed and running on your system.
+- Docker installed and running
+- Basic knowledge of Docker commands
+- Text editor or IDE
 
-## 🌍 Set Up Your Environment
+## 🌍 Environment Setup
 
-Set your Docker image repository (adjust to your own Docker Hub account if necessary):
+Set your Docker repository (customize for your Docker Hub account):
 
 ```bash
 export REPOSITORY=raelga/hello-world-go
@@ -16,62 +25,169 @@ export REPOSITORY=raelga/hello-world-go
 
 ---
 
-## 🛠️ Build and Run v1 Container
+## 📋 Application Versions
 
-### 🔨 Build v1 Image
+| Version | Description | Endpoint Response |
+|---------|-------------|-------------------|
+| v1 | Basic "Hello World" | `Hello World` |
+| v2 | Includes hostname | `Hello World from <hostname>` |
+
+Both versions include:
+- Health check endpoint at `/health`
+- Request logging
+- Non-root container execution
+
+---
+
+## 🛠️ Version 1: Basic Hello World
+
+### Build and Run
 
 ```bash
+# Build image
 docker build -t ${REPOSITORY}:v1 v1
-```
 
-### 🚀 Run v1 Container (Foreground)
-
-```bash
+# Run in foreground
 docker run --rm -p 9999:9999 ${REPOSITORY}:v1
-```
 
-### 🧾 Run v1 Container (Detached)
-
-```bash
+# Run in background
 docker run --rm -d -p 9999:9999 ${REPOSITORY}:v1
 ```
 
-Access the app at: [http://localhost:9999](http://localhost:9999)
-
-If it's running in an AWS EC2 instance, use:
+### Test Endpoints
 
 ```bash
-echo http://$(curl -sq ifconfig.me):9999
+# Main endpoint
+curl http://localhost:9999
+
+# Health check
+curl http://localhost:9999/health
 ```
 
 ---
 
-## 🛠️ Build and Run v2 Container
+## 🛠️ Version 2: With Hostname
 
-### 🔨 Build v2 Image
+### Build and Run
 
 ```bash
+# Build image
 docker build -t ${REPOSITORY}:v2 v2
-```
 
-### 🚀 Run v2 Container
-
-```bash
+# Run on different host port
 docker run --rm -p 8888:9999 ${REPOSITORY}:v2
 ```
 
-Access the v2 app at: [http://localhost:8888](http://localhost:8888)
-
-If it's running in an AWS EC2 instance, use:
+### Test Endpoints
 
 ```bash
-echo http://$(curl -sq ifconfig.me):8888
+# Main endpoint (shows hostname)
+curl http://localhost:8888
+
+# Health check (shows hostname)
+curl http://localhost:8888/health
 ```
 
 ---
 
-## 🧠 Additional Notes
+## 🔧 Using Makefiles
 
-- The containers run basic Go servers returning different responses.
-- The port mapping `-p <host>:<container>` maps your local machine port to the container's port.
-- You can inspect the network namespace behavior with tools like `docker network inspect` and `ip netns`.
+Each version includes a Makefile for convenience:
+
+```bash
+# In v1/ or v2/ directory
+make build  # Build the image
+make run    # Run in background
+make stop   # Stop running containers
+```
+
+---
+
+## 🔍 Container Inspection
+
+### View Running Containers
+```bash
+docker ps
+```
+
+### Check Container Logs
+```bash
+docker logs <container-id>
+```
+
+### Inspect Image Details
+```bash
+docker inspect ${REPOSITORY}:v1
+docker inspect ${REPOSITORY}:v2
+```
+
+---
+
+## 🌐 Remote Access
+
+For AWS EC2 or remote instances:
+
+```bash
+# Get public IP and construct URL
+echo "http://$(curl -s ifconfig.me):9999"  # for v1
+echo "http://$(curl -s ifconfig.me):8888"  # for v2
+```
+
+---
+
+## 🔒 Security Features
+
+- **Non-root execution**: Containers run as user `appuser` (UID 1001)
+- **Minimal base image**: Uses Alpine Linux for smaller attack surface
+- **Pinned versions**: Base images use specific tags, not `latest`
+- **Multi-stage builds**: Separates build and runtime environments
+
+---
+
+## 🐛 Troubleshooting
+
+### Port Already in Use
+```bash
+# Find process using port
+lsof -i :9999
+
+# Kill process if needed
+kill -9 <PID>
+```
+
+### Container Won't Start
+```bash
+# Check Docker daemon
+docker info
+
+# View detailed error logs
+docker logs <container-id>
+```
+
+### Image Build Fails
+```bash
+# Clean Docker cache
+docker system prune
+
+# Rebuild with no cache
+docker build --no-cache -t ${REPOSITORY}:v1 v1
+```
+
+### Health Check Not Responding
+```bash
+# Test health endpoint directly
+curl -v http://localhost:9999/health
+
+# Check if container is healthy
+docker inspect <container-id> | grep Health -A 10
+```
+
+---
+
+## 🧠 Key Learning Points
+
+- **Multi-stage builds** reduce final image size by excluding build tools
+- **Port mapping** (`-p host:container`) allows external access
+- **Health checks** enable monitoring and orchestration readiness
+- **Non-root containers** improve security posture
+- **Container logs** help debug application issues
