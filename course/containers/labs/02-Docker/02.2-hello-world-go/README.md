@@ -123,6 +123,45 @@ docker inspect ${REPOSITORY}:v2
 
 ---
 
+## 📤 Pushing Images to Registry
+
+### Docker Hub Push
+
+```bash
+# Login to Docker Hub
+docker login
+
+# Push both versions
+docker push ${REPOSITORY}:v1
+docker push ${REPOSITORY}:v2
+
+# Push with latest tag
+docker tag ${REPOSITORY}:v2 ${REPOSITORY}:latest
+docker push ${REPOSITORY}:latest
+```
+
+### Alternative Registry
+
+```bash
+# Tag for different registry
+docker tag ${REPOSITORY}:v1 your-registry.com/your-namespace/hello-world-go:v1
+docker tag ${REPOSITORY}:v2 your-registry.com/your-namespace/hello-world-go:v2
+
+# Push to alternative registry
+docker push your-registry.com/your-namespace/hello-world-go:v1
+docker push your-registry.com/your-namespace/hello-world-go:v2
+```
+
+### Verify Pushed Images
+
+```bash
+# Pull and test your pushed image
+docker pull ${REPOSITORY}:v1
+docker run --rm -p 9999:9999 ${REPOSITORY}:v1
+```
+
+---
+
 ## 🌐 Remote Access
 
 For AWS EC2 or remote instances:
