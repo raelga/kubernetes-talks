@@ -1,33 +1,79 @@
 services:
   db:
-    # We use a mariadb image which supports both amd64 & arm64 architecture
+    # MariaDB database service - supports both amd64 & arm64 architectures
     image: mariadb:10.6.4-focal
-    # If you really want to use MySQL, uncomment the following line
+    # Alternative: use MySQL instead (uncomment next line and comment mariadb line above)
     #image: mysql:8.0.27
+    
+    # Use native password authentication for better compatibility
     command: '--default-authentication-plugin=mysql_native_password'
+    
+    # Persist database data using named volume
     volumes:
       - db_data:/var/lib/mysql
+    
+    # Always restart container if it stops
     restart: always
+    
+    # Database configuration
     environment:
+      # NOTE: In production, use Docker secrets or external secret management
       - MYSQL_ROOT_PASSWORD=somewordpress
       - MYSQL_DATABASE=wordpress
       - MYSQL_USER=wordpress
       - MYSQL_PASSWORD=wordpress
+    
+    # Internal ports exposed to other containers (not to host)
     expose:
-      - 3306
-      - 33060
+      - 3306    # MySQL/MariaDB default port
+      - 33060   # MySQL X Protocol port
+    
+    # Resource limits (uncomment for production)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
+    #     reservations:
+    #       memory: 256M
+
   wordpress:
+    # WordPress application service
     image: wordpress:latest
+    
+    # Persist WordPress files and uploads
     volumes:
       - wp_data:/var/www/html
+    
+    # Map host port 80 to container port 80
     ports:
-      - 80:80
+      - "80:80"
+    
+    # Always restart container if it stops
     restart: always
+    
+    # WordPress configuration
     environment:
+      # Connect to database service by name 'db'
       - WORDPRESS_DB_HOST=db
       - WORDPRESS_DB_USER=wordpress
       - WORDPRESS_DB_PASSWORD=wordpress
       - WORDPRESS_DB_NAME=wordpress
+    
+    # Wait for database to be ready before starting
+    depends_on:
+      - db
+    
+    # Resource limits (uncomment for production)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
+    #     reservations:
+    #       memory: 256M
+
+# Named volumes for data persistence
 volumes:
   db_data:
+    # Database files persist here even when containers are removed
   wp_data:
+    # WordPress files and uploads persist here

@@ -1,30 +1,61 @@
 services:
   db2:
+    # MariaDB database service for second WordPress instance
     image: mariadb:10.6.4-focal
+    
+    # Use native password authentication for better compatibility
     command: "--default-authentication-plugin=mysql_native_password"
+    
+    # Persist database data using separate named volume
     volumes:
       - db2_data:/var/lib/mysql
+    
+    # Always restart container if it stops
     restart: always
+    
+    # Database configuration (separate from first instance)
     environment:
+      # NOTE: In production, use Docker secrets or external secret management
       - MYSQL_ROOT_PASSWORD=somewordpress
       - MYSQL_DATABASE=wordpress
       - MYSQL_USER=wordpress
       - MYSQL_PASSWORD=wordpress
+    
+    # Internal ports exposed to other containers (not to host)
     expose:
-      - 3306
-      - 33060
+      - 3306    # MySQL/MariaDB default port
+      - 33060   # MySQL X Protocol port
+
   wordpress2:
+    # Second WordPress application service
     image: wordpress:latest
+    
+    # Persist WordPress files using separate volume
     volumes:
       - wp2_data:/var/www/html
+    
+    # Map host port 81 to container port 80 (different from first instance)
     ports:
-      - 81:80
+      - "81:80"
+    
+    # Always restart container if it stops
     restart: always
+    
+    # WordPress configuration pointing to db2 service
     environment:
+      # Connect to second database service by name 'db2'
       - WORDPRESS_DB_HOST=db2
       - WORDPRESS_DB_USER=wordpress
       - WORDPRESS_DB_PASSWORD=wordpress
       - WORDPRESS_DB_NAME=wordpress
+    
+    # Wait for database to be ready before starting
+    depends_on:
+      - db2
+
+# Named volumes for data persistence (separate from first instance)
 volumes:
   db2_data:
+    # Second database files persist here
   wp2_data:
+    # Second WordPress files persist here
