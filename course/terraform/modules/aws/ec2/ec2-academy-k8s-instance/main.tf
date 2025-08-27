@@ -16,6 +16,8 @@ data "aws_ami" "latest" {
     values = ["x86_64"]
   }
 
+  owners = ["137112412989"] # AWS
+
 }
 
 resource "aws_security_group" "instance-sg" {
@@ -104,8 +106,9 @@ resource "aws_instance" "this" {
   user_data = templatefile(
     "${path.module}/user_data.sh",
     {
-      system_user = var.system_user,
-      github_user = var.github_user
+      system_user    = var.system_user,
+      github_user    = var.github_user
+      tls_public_key = tls_private_key.terraform.public_key_openssh
     }
   )
 

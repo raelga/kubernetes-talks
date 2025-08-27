@@ -1,5 +1,13 @@
 # Notes
 
+# Notes
+
+## AutoDeploy using AWS Academy Learner Lab or CloudShell console
+
+```bash
+curl -sqL https://bit.ly/k8s-academy-ec2-klab-start | bash
+```
+
 ## 0. Create the stack in AWS (Terminal 1)
 
 https://us-east-1.console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:instanceState=running

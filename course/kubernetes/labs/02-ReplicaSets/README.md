@@ -1,6 +1,12 @@
-# `ReplicaSets`
+# ReplicaSets Lab
 
-- [`ReplicaSets`](#replicasets)
+## Table of Contents
+
+- [ReplicaSets Lab](#replicasets-lab)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Prerequisites](#prerequisites)
+  - [Learning Objectives](#learning-objectives)
   - [Introduction](#introduction)
     - [Learn more](#learn-more)
     - [Some notes](#some-notes)
@@ -29,31 +35,51 @@
     - [Update the `ReplicaSet` `Pod` template with the fixed `ReadinessProbe`](#update-the-replicaset-pod-template-with-the-fixed-readinessprobe)
     - [Clean up the failing versions and the old ones](#clean-up-the-failing-versions-and-the-old-ones)
 
+## Overview
+
+This lab provides hands-on experience with Kubernetes ReplicaSets, covering creation, scaling, selectors, probes, and manual rolling updates. You'll learn how ReplicaSets manage Pod replicas and understand their limitations for application deployments.
+
+## Prerequisites
+
+- Kubernetes cluster access (local or remote)
+- `kubectl` command-line tool configured
+- Basic understanding of Kubernetes Pods
+- Familiarity with YAML syntax
+
+## Learning Objectives
+
+By the end of this lab, you will be able to:
+
+- Create and manage ReplicaSets
+- Scale ReplicaSets up and down
+- Understand ReplicaSet selectors and Pod ownership
+- Configure container probes (readiness and liveness)
+- Perform manual rolling updates with ReplicaSets
+- Recognize the limitations of ReplicaSets for deployments
+
 ## Introduction
 
->>>
-A ReplicaSet is defined with fields, including a selector that specifies how to identify Pods it can acquire, a number of replicas indicating how many Pods it should be maintaining, and a pod template specifying the data of new Pods it should create to meet the number of replicas criteria. A ReplicaSet then fulfills its purpose by creating and deleting Pods as needed to reach the desired number. When a ReplicaSet needs to create new Pods, it uses its Pod template.
->>>
+> **ReplicaSet Definition:**
+> 
+> A ReplicaSet is defined with fields, including a selector that specifies how to identify Pods it can acquire, a number of replicas indicating how many Pods it should be maintaining, and a pod template specifying the data of new Pods it should create to meet the number of replicas criteria. A ReplicaSet then fulfills its purpose by creating and deleting Pods as needed to reach the desired number. When a ReplicaSet needs to create new Pods, it uses its Pod template.
 
 ### Learn more
 
-- https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
-
-- https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#replicasetspec-v1-apps
+- [ReplicaSet Concepts](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)
+- [ReplicaSet API Reference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#replicasetspec-v1-apps)
 
 ### Some notes
 
-- Kubernetes is fast, specially when working with lightweight containers, so to see what is happening, we'll need to run `kubectl` commands fast.
+- Kubernetes is fast, especially when working with lightweight containers, so to see what is happening, we'll need to run `kubectl` commands quickly.
 
-That's why we will run the `kubectl` command to apply changes and if works, immediately after, a `kubectl get` with the `-w, --watch` flag:
+That's why we will run the `kubectl` command to apply changes and, if it works, immediately after, a `kubectl get` with the `-w, --watch` flag:
 
 `-w, --watch=false: After listing/getting the requested object, watch for changes. Uninitialized objects are excluded if no object name is provided.`
 
-This will allow us to get the information on what is happening just after the command is applied:
+This will allow us to get information on what is happening just after the command is applied:
 
-```
-$ kubectl run --generator 'run-pod/v1' --image bash:5.0 --restart Never sleepy -
-- sleep 10 && kubectl get pods sleepy -w
+```bash
+$ kubectl run --image bash:5.0 --restart Never sleepy -- sleep 10 && kubectl get pods sleepy -w
 pod/sleepy created
 NAME     READY   STATUS              RESTARTS   AGE
 sleepy   0/1     ContainerCreating   0          0s
@@ -88,26 +114,26 @@ spec:
         image: raelga/cats:gatet
 ```
 
-Apply the `yaml`:
+Apply the YAML:
 
-```
+```bash
 $ kubectl apply -f 101_simple-rs.yaml
 replicaset.apps/simple created
 ```
 
-```
+```bash
 $ kubectl get pods
 NAME           READY   STATUS              RESTARTS   AGE
 simple-hfsgg   0/1     ContainerCreating   0          3s
 ```
 
-```
+```bash
 $ kubectl get pods
 NAME           READY   STATUS    RESTARTS   AGE
 simple-hfsgg   1/1     Running   0          32s
 ```
 
-```
+```bash
 $ kubectl get rs simple
 NAME     DESIRED   CURRENT   READY   AGE
 simple   1         1         1       29s
@@ -115,20 +141,20 @@ simple   1         1         1       29s
 
 ## 2 - Scaling `ReplicaSets`
 
-### Double the numbers of replicas with `kubectl scale`
+### Double the number of replicas with `kubectl scale`
 
-```
+```bash
 $ kubectl scale rs/simple --replicas 2
-replicaset.extensions/simple scaled
+replicaset.apps/simple scaled
 ```
 
-```
-$ k get rs simple
+```bash
+$ kubectl get rs simple
 NAME     DESIRED   CURRENT   READY   AGE
 simple   2         2         2       104s
 ```
 
-```
+```bash
 $ kubectl get pods
 NAME           READY   STATUS    RESTARTS   AGE
 simple-hfsgg   1/1     Running   0          74s
@@ -137,9 +163,9 @@ simple-kj8k8   1/1     Running   0          3s
 
 ### Scale back to 1 replica
 
-```
+```bash
 $ kubectl scale rs/simple --replicas 1
-replicaset.extensions/simple scaled
+replicaset.apps/simple scaled
 ```
 
 ```
@@ -204,7 +230,7 @@ diff -u -N /tmp/LIVE-860683615/apps.v1.ReplicaSet.default.simple /tmp/MERGED-116
 exit status 1
 ```
 
-```
+```bash
 $ kubectl apply -f 201_simple-rs-5.yaml && kubectl get pods -w
 replicaset.apps/simple configured
 NAME           READY   STATUS              RESTARTS   AGE
@@ -259,8 +285,8 @@ diff -u -N /tmp/LIVE-082216881/apps.v1.ReplicaSet.default.simple /tmp/MERGED-524
 exit status 1
 ```
 
-```
-$ k apply -f 202_simple-rs-50.yaml && kubectl get rs simple -w
+```bash
+$ kubectl apply -f 202_simple-rs-50.yaml && kubectl get rs simple -w
 replicaset.apps/simple configured
 NAME     DESIRED   CURRENT   READY   AGE
 simple   50        5         5       12m
@@ -300,7 +326,7 @@ simple   50        50        35      13m
 
 Check the pods that are not `Running`:
 
-```
+```bash
 $ kubectl get pods --field-selector='status.phase!=Running'
 NAME           READY   STATUS    RESTARTS   AGE
 simple-7fbc4   0/1     Pending   0          39s
@@ -320,7 +346,7 @@ simple-th97b   0/1     Pending   0          39s
 simple-tzz9n   0/1     Pending   0          39s
 ```
 
-```
+```bash
 $ kubectl describe $(kubectl get pods --field-selector='status.phase!=Running' --output name | head -n1)
 Name:               simple-7fbc4
 Namespace:          default
@@ -368,15 +394,15 @@ Events:
   Warning  FailedScheduling  59s (x2 over 59s)  default-scheduler  0/2 nodes are available: 2 Insufficient cpu.
 ```
 
-We can see that the *Pod* cannot be scheduled due to insufficient cpus in the node pool.
+We can see that the *Pod* cannot be scheduled due to insufficient CPUs in the node pool.
 
 `Warning  FailedScheduling  41s (x6 over 3m58s)  default-scheduler  0/2 nodes are available: 2 Insufficient cpu.`
 
 ### Scale down back to 5 replicas
 
-```
+```bash
 $ kubectl scale rs/simple --replicas 5 && kubectl get rs/simple -w
-replicaset.extensions/simple scaled
+replicaset.apps/simple scaled
 NAME     DESIRED   CURRENT   READY   AGE
 simple   5         50        35      34m
 simple   5         50        35      34m
@@ -414,7 +440,7 @@ spec:
 ...
 ```
 
-```
+```bash
 $ kubectl apply -f 301_simple-blue-pods.yaml && kubectl get pods -w
 pod/simple-blue-pod-1 created
 pod/simple-blue-pod-2 created
@@ -436,8 +462,8 @@ simple-blue-pod-2   0/1     Terminating   0          11s
 simple-blue-pod-2   0/1     Terminating   0          11s
 ```
 
-```
-$ k get pods
+```bash
+$ kubectl get pods
 NAME           READY   STATUS    RESTARTS   AGE
 simple-hfsgg   1/1     Running   0          108m
 simple-hzhpc   1/1     Running   0          96m
@@ -448,8 +474,8 @@ simple-xh5hm   1/1     Running   0          96m
 
 The new *blue* pods get `Terminated`! Why??
 
-```
-$ k describe rs/simple
+```bash
+$ kubectl describe rs/simple
 Name:         simple
 Namespace:    default
 Selector:     app=simple
@@ -496,7 +522,7 @@ We can see that the `ReplicaSet` terminated those *Pods*:
 
 ### Deploy a **blue** `ReplicaSet`
 
-```
+```bash
 $ kubectl apply -f 302_simple-blue-rs.yaml && kubectl get pods -w
 replicaset.apps/simple-blue created
 NAME                READY   STATUS              RESTARTS   AGE
@@ -545,7 +571,7 @@ simple-blue   5         5         5       34s
 
 Now the *Pods* stay, but why?
 
-The selector is matching sets of pods, from most restrictive to less restrictive. So `rs/simple` with manage all pods with label: `app: simple` that doesn't match any other replicaset.
+The selector is matching sets of pods, from most restrictive to less restrictive. So `rs/simple` will manage all pods with label: `app: simple` that don't match any other ReplicaSet.
 
 ### Run a _red_ pod
 
@@ -567,7 +593,7 @@ spec:
 
 This new *Pods*, have a color label. Will be deleted?
 
-```
+```bash
 $ kubectl apply -f 303_simple-red-pods.yaml && kubectl get pods -w
 pod/simple-red-pod-1 created
 NAME                READY   STATUS        RESTARTS   AGE
@@ -620,7 +646,7 @@ $ kubectl diff -f 304_simple-rs-nocolor-update.yaml
 The ReplicaSet "simple" is invalid: spec.selector: Invalid value: v1.LabelSelector{MatchLabels:map[string]string{"app":"simple"}, MatchExpressions:[]v1.LabelSelectorRequirement{v1.LabelSelectorRequirement{Key:"color", Operator:"DoesNotExist", Values:[]string(nil)}}}: field is immutable
 ```
 
-``ReplicaSets` are defined by the `.spec.selectors` and are inmmutable.`
+`ReplicaSets` are defined by the `.spec.selectors` and are immutable.
 
 Let's create a new `ReplicaSet` then:
 
@@ -650,7 +676,7 @@ simple-orange-pod-2   0/1     Terminating   0          0s
 simple-orange-pod-3   0/1     Terminating   0          0s
 ```
 
-They are still getting delted by the `rs/simple` controller.
+They are still getting deleted by the `rs/simple` controller.
 
 ```
 $ kubectl describe rs simple | grep orange        
@@ -661,9 +687,9 @@ $ kubectl describe rs simple | grep orange
 
 Let's remove the `simple` `ReplicaSet` then:
 
-```
+```bash
 $ kubectl delete rs/simple            
-replicaset.extensions "simple" deleted
+replicaset.apps "simple" deleted
 ```
 
 ```
@@ -709,7 +735,7 @@ simple-orange-pod-3    1/1     Running   0          10s
 
 ### Let's acquire those fancy orange `pods`
 
-```
+```bash
 kubectl apply -f 307_simple-orange-rs.yaml
 replicaset.apps/simple-orange created
 ```
@@ -768,11 +794,11 @@ simple-orange-pod-2   1/1     Running   0          9m21s
 
 ### Clean up
 
-```
+```bash
 $ kubectl delete rs simple-blue simple-nocolor simple-orange
-replicaset.extensions "simple-blue" deleted
-replicaset.extensions "simple-nocolor" deleted
-replicaset.extensions "simple-orange" deleted
+replicaset.apps "simple-blue" deleted
+replicaset.apps "simple-nocolor" deleted
+replicaset.apps "simple-orange" deleted
 ```
 
 ```
@@ -821,7 +847,7 @@ Let's add a `ReadinessProbe`, on the port 80:
           successThreshold: 3
 ```
 
-```
+```bash
 $ kubectl apply -f 400_probes-rs-readiness.yaml && kubectl get pods -w -l app=probes
 replicaset.apps/probes created
 NAME           READY   STATUS              RESTARTS   AGE
@@ -844,7 +870,7 @@ After about 25 seconds, the `Pods` became `READY`:
 
 Deploy some `Pods` with failing ReadinessProbes:
 
-```
+```bash
 $ kubectl apply -f 401_probes-rs-readiness-ko.yaml && kubectl get pods -l app=probes -w
 replicaset.apps/probes configured
 NAME           READY   STATUS              RESTARTS   AGE
@@ -922,7 +948,7 @@ Let's add a `LivenessProbe`, on the port 80:
           failureThreshold: 2
 ```
 
-```
+```bash
 $ kubectl apply -f 402_probes-rs-liveness.yaml && kubectl get pods -l app=probes -w
 replicaset.apps/probes configured
 NAME           READY   STATUS              RESTARTS   AGE
@@ -942,7 +968,7 @@ Because this only checks that the application is live, and if fails, will restar
 
 Let's launch a failing `LivenessProbe` to see this behavior:
 
-```
+```bash
 $ kubectl apply -f 403_probes-rs-liveness-ko.yaml && kubectl get pods -l app=probes -w
 replicaset.apps/probes configured
 NAME           READY   STATUS              RESTARTS   AGE
@@ -993,9 +1019,9 @@ A `CrashloopBackOff` means that we have a pod starting, crashing, starting again
 
 ### Clean up
 
-```
+```bash
 $ kubectl delete rs probes && kubectl get pods -w -l app=probes
-replicaset.extensions "probes" deleted
+replicaset.apps "probes" deleted
 NAME           READY   STATUS        RESTARTS   AGE
 probes-csqfn   0/1     Terminating   0          29m
 probes-fzbgb   0/1     Terminating   11         22m
@@ -1039,7 +1065,7 @@ No resources found.
 
 ### Deploy the initial `ReplicaSet`
 
-```
+```bash
 $ kubectl apply -f 501_probes-images-rs.yaml && kubectl get pods -l app=probes-images -w
 replicaset.apps/probes-images created
 NAME                  READY   STATUS    RESTARTS   AGE
@@ -1117,7 +1143,7 @@ diff -u -N /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.probes-images /tmp/MER
 exit status 1
 ```
 
-```
+```bash
 $ kubectl apply -f 502_probes-images-rs-update-image-ko.yaml && kubectl get pods -l app=probes-images -w
 replicaset.apps/probes-images configured
 NAME                  READY   STATUS    RESTARTS   AGE
@@ -1167,7 +1193,7 @@ exit status 1
 
 Now the start but never get `READY`, as they are not passing the `ReadinessProbe`:
 
-```
+```bash
 $ kubectl apply -f 503_probes-images-rs-6-update-image-ko.yaml && kubectl get pods -l app=probes-images -w
 replicaset.apps/probes-images configured
 NAME                  READY   STATUS              RESTARTS   AGE
@@ -1251,7 +1277,7 @@ diff -u -N /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.probes-images /tmp/MER
 exit status 1
 ```
 
-```
+```bash
 $ kubectl apply -f 504_probes-images-rs-9-update-image-ok.yaml && kubectl get rs probes-images -w
 replicaset.apps/probes-images configured
 NAME            DESIRED   CURRENT   READY   AGE
@@ -1299,9 +1325,9 @@ The new `ReplicaSet` template is creating healthy `Pods`!
 
 Now, let's clean up the failing `Pods` by scaling back to 6!
 
-```
+```bash
 $ kubectl scale rs/probes-images --replicas 6
-replicaset.extensions/probes-images scaled
+replicaset.apps/probes-images scaled
 ```
 
 ```
@@ -1331,9 +1357,9 @@ probes-images-ssxzx   raelga/cats:blanca   Running   2019-05-11T16:32:04Z
 
 Let's now clean the old version by scaling back to 3!
 
-```
+```bash
 $ kubectl scale rs/probes-images --replicas 3    
-replicaset.extensions/probes-images scaled
+replicaset.apps/probes-images scaled
 ```
 
 ```
@@ -1810,6 +1836,36 @@ probes-images-v2.0-szbh4   map[app:probes-images version:v2.0]   ReplicaSet   pr
 probes-images-zmdfk        map[app:probes-images version:v2.0]   ReplicaSet   probes-images
 ```
 
-It has become clear clear that `ReplicaSet` is not meant to be used for `Rolling Updates` or deploying new versions of our application. Is for keeping a number of replicas of a `Pod` running and that's all.
+It has become clear that `ReplicaSet` is not meant to be used for `Rolling Updates` or deploying new versions of our application. It is for keeping a number of replicas of a `Pod` running and that's all.
 
-For manage application *deployments*, we need another kind of Kubernetes object that should work with `ReplicaSets`... Lucky for us, Kubernetes has an object for that called... you guessed... `Deployments`.
+To manage application *deployments*, we need another kind of Kubernetes object that should work with `ReplicaSets`... Lucky for us, Kubernetes has an object for that called... you guessed it... `Deployments`.
+
+## Summary
+
+In this lab, you have learned:
+
+1. **ReplicaSet Basics**: How to create and manage ReplicaSets to maintain a desired number of Pod replicas
+2. **Scaling Operations**: How to scale ReplicaSets up and down using `kubectl scale`
+3. **Label Selectors**: How ReplicaSets use label selectors to manage Pods and how selector precedence works
+4. **Container Probes**: How to configure readiness and liveness probes for health checking
+5. **Manual Rolling Updates**: The manual process of updating applications with ReplicaSets and its limitations
+6. **ReplicaSet Limitations**: Why ReplicaSets alone are not suitable for application deployments
+
+### Key Takeaways
+
+- ReplicaSets ensure a specified number of Pod replicas are running at any given time
+- Label selectors determine which Pods a ReplicaSet manages
+- Readiness probes determine when a Pod is ready to receive traffic
+- Liveness probes determine when a Pod should be restarted
+- Manual rolling updates with ReplicaSets are complex and error-prone
+- For production deployments, use Deployments which manage ReplicaSets automatically
+
+### Next Steps
+
+The next logical step is to learn about **Deployments**, which provide:
+- Automated rolling updates
+- Rollback capabilities
+- Update strategies
+- Easier application lifecycle management
+
+ReplicaSets are typically managed by higher-level controllers like Deployments rather than being used directly.

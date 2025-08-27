@@ -33,30 +33,42 @@ variable "github_user" {
   default     = "raelga"
 }
 
+resource "random_integer" "subnet_id" {
+  min = 0
+  max = 2
+}
+
 module "ec2" {
   source               = "../modules/aws/ec2/ec2-academy-k8s-instance/"
   name                 = format("lab-%s", random_id.id.hex)
   vpc                  = data.aws_vpc.default.id
-  subnet               = data.aws_subnets.default.ids[1]
+  subnet               = sort(data.aws_subnets.default.ids)[random_integer.subnet_id.result]
+  system_user          = "ec2-user"
   github_user          = var.github_user
-  instance_type        = "r7a.large"
+  instance_type        = "t3a.large"
   tcp_allowed_ingress  = [22, 80, 81, 8080, 9000]
   managed_ssh_key_name = "vockey"
 }
 
-output "public_ip" {
-  value = module.ec2.public_ip
+output "username" {
+  value = module.ec2.system_user
 }
 
-output "ssh" {
+output "host" {
   value = format(
-    "%s@%s", module.ec2.system_user, module.ec2.public_ip
+    "%s", module.ec2.public_ip
   )
 }
 
 output "ssh_cmd" {
   value = format(
-    "ssh -A %s@%s", module.ec2.system_user, module.ec2.public_ip
+    "ssh -o StrictHostKeyChecking=no -i ~/.ssh/labsuser.pem -i %s %s@%s",
+    module.ec2.terraform_private_key_path, module.ec2.system_user, module.ec2.public_ip
   )
 }
 
+output "ssh_host" {
+  value = format(
+    "%s@%s", module.ec2.system_user, module.ec2.public_ip
+  )
+}

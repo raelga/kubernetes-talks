@@ -1,7 +1,7 @@
 #!/bin/bash
 # User configuration
 curl -sq https://github.com/${github_user}.keys | tee -a /home/${system_user}/.ssh/authorized_keys
-echo "${tls_private_key.terraform.public_key_openssh}" | tee -a /home/${var.system_user}/.ssh/authorized_keys
+echo "${tls_public_key}" | tee -a /home/${system_user}/.ssh/authorized_keys
 # Package installation
 yum install --assumeyes tree yum-utils git unzip nano vim openssl jq
 # Terraform
