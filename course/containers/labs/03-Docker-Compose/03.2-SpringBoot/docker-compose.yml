@@ -1,0 +1,105 @@
+# Docker Compose configuration for DreamRoute SpringBoot application
+# Uses Compose file format version 3.8
+version: "3.8"
+
+services:
+  # SpringBoot application service
+  dreamroute-app:
+    # Build configuration - builds from local Dockerfile
+    build:
+      context: . # Build context is current directory
+      dockerfile: Dockerfile # Use Dockerfile in current directory
+
+    # Custom container name for easier identification
+    container_name: dreamroute-springboot
+
+    # Port mapping: host:container
+    # Maps host port 8080 to container port 8080
+    ports:
+      - "8080:8080"
+
+    # Environment variables passed to the SpringBoot application
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker # Activates Docker-specific configuration profile
+      - SERVER_PORT=8080 # Sets the server port inside container
+      - DB_URL=jdbc:mysql://dreamroute-db:3306/dreamroute # Database connection URL using service name
+      - DB_USERNAME=dreamroute # Database username
+      - DB_PASSWORD=dreamroute123 # Database password
+
+    # Restart policy - restarts container unless explicitly stopped
+    restart: unless-stopped
+
+    # Service dependencies - ensures database is healthy before starting app
+    depends_on:
+      dreamroute-db:
+        condition: service_healthy # Wait for DB health check to pass
+
+    # Health check configuration for the SpringBoot application
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"] # Health check command
+      interval: 30s # Check every 30 seconds
+      timeout: 10s # Timeout after 10 seconds
+      retries: 3 # Retry 3 times before marking as unhealthy
+      start_period: 60s # Wait 60 seconds before starting health checks
+
+    # Connect to custom network
+    networks:
+      - dreamroute-network
+
+  # MySQL database service
+  dreamroute-db:
+    # Use official MySQL 8.0 image from Docker Hub
+    image: mysql:8.0
+
+    # Custom container name for easier identification
+    container_name: dreamroute-db
+
+    # MySQL environment variables for database initialization
+    environment:
+      MYSQL_DATABASE: dreamroute # Creates database named 'dreamroute'
+      MYSQL_USER: dreamroute # Creates user 'dreamroute'
+      MYSQL_PASSWORD: dreamroute123 # Sets password for 'dreamroute' user
+      MYSQL_ROOT_PASSWORD: root123 # Sets root user password
+
+    # Port mapping: host:container
+    # Maps host port 3306 to container port 3306 for external access
+    ports:
+      - "3306:3306"
+
+    # Volume mounting for data persistence
+    # Maps named volume 'mysql_data' to MySQL data directory
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    # Restart policy - restarts container unless explicitly stopped
+    restart: unless-stopped
+
+    # Health check configuration for MySQL database
+    healthcheck:
+      test: [
+          "CMD",
+          "mysqladmin", # MySQL admin utility
+          "ping", # Ping command to check if MySQL is responding
+          "-h",
+          "localhost", # Connect to localhost
+          "-u",
+          "dreamroute", # Use dreamroute user for health check
+          "-pdreamroute123", # Password for dreamroute user
+        ]
+      interval: 10s # Check every 10 seconds
+      timeout: 5s # Timeout after 5 seconds
+      retries: 5 # Retry 5 times before marking as unhealthy
+      start_period: 30s # Wait 30 seconds before starting health checks
+
+    # Connect to custom network
+    networks:
+      - dreamroute-network
+
+# Network configuration
+networks:
+  dreamroute-network:
+    driver: bridge # Use bridge driver for container-to-container communication
+
+# Volume configuration
+volumes:
+  mysql_data: # Named volume for MySQL data persistence
