@@ -8,6 +8,10 @@ This lab walks you through building, running, and managing a Spring Boot applica
 
 Make sure Docker is installed and the Docker daemon is running.
 
+```
+ git clone https://github.com/Femcoders-Travellers/DreamRoute.git src
+```
+
 ### 🔐 Docker Hub Setup
 
 1. **Create a Docker Hub account** (if you don't have one):
