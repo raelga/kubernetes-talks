@@ -267,7 +267,9 @@ docker run --name dreamroute-mysql --rm -d \
   --env-file db.env \
   -v mysql-data:/var/lib/mysql \
   mysql:8.0
+```
 
+```
 # Alternative: Run with explicit environment variables
 docker run --name dreamroute-mysql --rm -d \
   -p 3306:3306 \
@@ -277,6 +279,13 @@ docker run --name dreamroute-mysql --rm -d \
   -e MYSQL_PASSWORD=dreamroute_pass \
   -v mysql-data:/var/lib/mysql \
   mysql:8.0
+```
+
+Test:
+
+```
+sudo apt install mysql-client
+mysql --user=dreamroute_user --password=dreamroute_pass dreamroute --host=127.0.0.1
 ```
 
 ### 🔗 Application Environment File
