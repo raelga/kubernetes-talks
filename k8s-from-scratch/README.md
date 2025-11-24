@@ -2013,6 +2013,12 @@ SSH into the instance.
 ssh $(tf output -raw public_ip)
 ```
 
+- Command in the `instance` terminal
+
+```bash
+iptables -L -t nat
+```
+
 - Command in- Expected output
 
 ```
