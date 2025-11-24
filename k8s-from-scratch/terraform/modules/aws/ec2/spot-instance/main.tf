@@ -4,7 +4,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
   }
 
   filter {
@@ -70,9 +70,10 @@ sudo apt-get -y install apt-transport-https ca-certificates curl gnupg2 software
 ## Docker
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo apt-key fingerprint 0EBFCD88
-sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
 sudo add-apt-repository -y ppa:longsleep/golang-backports
-sudo apt-get install -y docker-ce=5:18.09.9~3-0~ubuntu-bionic git golang-go
+sudo apt-get update -y
+sudo apt-get install -y docker-ce=5:24.0.* docker-ce-cli=5:24.0.* containerd.io git golang-go
 sudo usermod -aG docker ${var.system_user}
 ## Kubernetes
 curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
