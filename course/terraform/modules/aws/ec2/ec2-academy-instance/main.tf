@@ -47,13 +47,8 @@ resource "aws_security_group" "instance-sg" {
   }
 }
 
-data "aws_iam_role" "this" {
-  name = var.instance_role
-}
-
-resource "aws_iam_instance_profile" "this" {
-  name = format("%s-%s", var.instance_role, var.name)
-  role = data.aws_iam_role.this.name
+data "aws_iam_instance_profile" "this" {
+  name = var.instance_profile
 }
 
 data "aws_key_pair" "managed" {
@@ -82,7 +77,7 @@ resource "aws_eip" "this" {
 resource "aws_instance" "this" {
   ami                    = var.ami != "" ? var.ami : data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
-  iam_instance_profile   = aws_iam_instance_profile.this.name
+  iam_instance_profile   = data.aws_iam_instance_profile.this.name
   subnet_id              = var.subnet
   vpc_security_group_ids = [aws_security_group.instance-sg.id]
 

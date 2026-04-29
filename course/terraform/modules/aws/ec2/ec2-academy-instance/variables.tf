@@ -36,10 +36,10 @@ variable "instance_type" {
   default     = "t3a.large"
 }
 
-variable "instance_role" {
-  description = "EC2 "
+variable "instance_profile" {
+  description = "EC2 IAM instance profile name"
   type        = string
-  default     = "LabRole"
+  default     = "LabInstanceProfile"
 }
 
 variable "system_default_user" {

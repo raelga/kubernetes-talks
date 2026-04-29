@@ -45,7 +45,7 @@ module "ec2" {
   subnet               = sort(data.aws_subnets.default.ids)[random_integer.subnet_id.result]
   system_user          = "ubuntu"
   github_user          = var.github_user
-  instance_type        = "m7a.large"
+  instance_type        = "t3a.medium"
   tcp_allowed_ingress  = [22, 80, 81, 8080, 8888, 9999]
   managed_ssh_key_name = "vockey"
 }
@@ -61,10 +61,10 @@ output "host" {
 }
 
 output "ssh_cmd" {
-  value = format(
+  value = nonsensitive(format(
     "ssh -o StrictHostKeyChecking=no -i ~/.ssh/labsuser.pem -i %s %s@%s",
     module.ec2.terraform_private_key_path, module.ec2.system_user, module.ec2.public_ip
-  )
+  ))
 }
 
 output "ssh_host" {
