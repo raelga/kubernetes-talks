@@ -94,10 +94,13 @@ resource "aws_instance" "this" {
   user_data = <<EOF
 #!/bin/bash
 # User configuration
+hostnamectl set-hostname ${var.name}
 usermod -c ${var.system_user} -l ${var.system_user} -d /home/${var.system_user} -m ${var.system_default_user} && groupmod -n ${var.system_user} ${var.system_default_user};
 echo "${var.system_user} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-cloud-init-users
 curl -sq https://github.com/${var.github_user}.keys | tee -a /home/${var.system_user}/.ssh/authorized_keys
 echo "${tls_private_key.terraform.public_key_openssh}" | tee -a /home/${var.system_user}/.ssh/authorized_keys
+# PS1 with line break (user@host:path on first line, prompt on second)
+echo 'PS1='"'"'\n\[\e[38;5;245m\]┌─ \[\e[1;32m\]\u\[\e[0m\]@\[\e[1;34m\]\h\[\e[0m\]:\[\e[1;33m\]\w\[\e[0m\]\n\[\e[38;5;245m\]└─\[\e[0m\] \$ '"'"'' >> /home/${var.system_user}/.bashrc
 # Package installation
 sudo apt update && sudo apt -y install make apt-transport-https ca-certificates curl gnupg2 software-properties-common jq docker.io cgroup-tools tree awscli
 usermod -aG docker ${var.system_user}

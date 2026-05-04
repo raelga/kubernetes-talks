@@ -106,6 +106,7 @@ resource "aws_instance" "this" {
   user_data = templatefile(
     "${path.module}/user_data.sh",
     {
+      name           = var.name,
       system_user    = var.system_user,
       github_user    = var.github_user
       tls_public_key = tls_private_key.terraform.public_key_openssh
