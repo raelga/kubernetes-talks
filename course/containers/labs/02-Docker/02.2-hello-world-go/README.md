@@ -174,6 +174,88 @@ echo "http://$(curl -s ifconfig.me):8888"  # for v2
 
 ---
 
+## Memory Constraints
+
+Docker uses cgroups under the hood to limit container resources. You can use the `--memory` flag to set memory limits on containers.
+
+### Running with a memory limit
+
+Run the hello-world-go container with a 25MB memory limit:
+
+```bash
+docker run --rm --memory=25m -p 9999:9999 ${REPOSITORY}:v1
+```
+
+### Checking the cgroup memory limit on the host
+
+Docker creates a cgroup for each container on the host. You can inspect the memory limit set by Docker:
+
+```bash
+CONTAINER_ID=$(docker run --rm -d --memory=25m ${REPOSITORY}:v1)
+cat /sys/fs/cgroup/memory/docker/${CONTAINER_ID}/memory.limit_in_bytes
+```
+
+Expected output:
+
+```
+26214400
+```
+
+Stop the container:
+
+```bash
+docker stop ${CONTAINER_ID}
+```
+
+### Testing the memory limit
+
+Run an alpine container with the same memory limit and open a shell:
+
+```bash
+docker run --rm -it --memory=25m alpine sh
+```
+
+Inside the container, use `dd` to allocate more memory than the limit allows. `dd` copies blocks of data; `bs` sets the block size in bytes and `dd` allocates that much memory as a buffer. Here we set `bs=52428800` (50MB), which exceeds the 25MB container limit:
+
+```bash
+dd if=/dev/zero of=/dev/null bs=52428800 count=1
+```
+
+The process will be killed when it exceeds the memory limit:
+
+```
+Killed
+```
+
+You can also do it in a single line:
+
+```bash
+docker run --rm --memory=25m alpine dd if=/dev/zero of=/dev/null bs=52428800 count=1
+```
+
+### Verifying the OOM kill
+
+Run without `--rm` to inspect the container state after the OOM kill:
+
+```bash
+docker run --name oom-test --memory=25m alpine dd if=/dev/zero of=/dev/null bs=52428800 count=1
+docker inspect oom-test --format='{{.State.OOMKilled}}'
+```
+
+Expected output:
+
+```
+true
+```
+
+Clean up:
+
+```bash
+docker rm oom-test
+```
+
+---
+
 ## 🔒 Security Features
 
 - **Non-root execution**: Containers run as user `appuser` (UID 1001)
