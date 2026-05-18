@@ -1,4 +1,4 @@
-# Multipe containers in a Pod
+# Multiple containers in a Pod
 
 ## Network sharing
 
@@ -114,4 +114,49 @@ kubectl exec nginx-and-shell-volume --container shell --stdin --tty -- curl loca
 
 ```
 Hola UPC!
+```
+
+## Sidecar pattern
+
+The `pod-multi.yml` manifest defines a pod with a webserver container and a content generator sidecar that writes the current date to a shared volume every second.
+
+```sh
+kubectl apply -f pod-multi.yml
+```
+
+```
+pod/pod-multi created
+```
+
+Check that both containers are running:
+
+```sh
+kubectl get pod pod-multi
+```
+
+```
+NAME        READY   STATUS    RESTARTS   AGE
+pod-multi   2/2     Running   0          5s
+```
+
+The content container writes the date to `/html/index.html` every second. We can verify by curling the nginx container:
+
+```sh
+kubectl exec pod-multi --container content -- cat /html/index.html
+```
+
+Or by port-forwarding to the nginx container:
+
+```sh
+kubectl port-forward pod/pod-multi 8080:80 &
+curl http://localhost:8080
+kill %1
+```
+
+The response will show the accumulated date entries written by the sidecar container.
+
+### Cleanup
+
+```sh
+kubectl delete -f pod-multi.yml
 ```

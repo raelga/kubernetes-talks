@@ -2,10 +2,9 @@
 
 The following configuration file defines a pod with two init containers:
 
-````yaml
 ```sh
 kubectl apply -f busybox-init-containers.yml
-````
+```
 
 The expected output is:
 
@@ -61,13 +60,13 @@ kubectl logs -f busybox-init-containers -c init-dummy-svc-wait
 Server: 10.96.0.10
 Address: 10.96.0.10#53
 
-\*\* server can't find dummy-svc: NXDOMAIN
+** server can't find dummy-svc: NXDOMAIN
 
 waiting for dummy-svc
 Server: 10.96.0.10
 Address: 10.96.0.10#53
 
-\*\* server can't find dummy-svc: NXDOMAIN
+** server can't find dummy-svc: NXDOMAIN
 
 waiting for dummy-svc
 Server: 10.96.0.10

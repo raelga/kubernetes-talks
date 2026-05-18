@@ -203,6 +203,47 @@ Warning Unhealthy 0s (x3 over 6s) kubelet Liveness probe failed: HTTP probe fail
 Normal Killing 0s kubelet Container liveness failed liveness probe, will be restarted
 ```
 
+## TCP probes (liveness and readiness)
+
+The `pod-health-tcp-both.yml` manifest defines a pod with both a TCP readiness probe and a TCP liveness probe on the same port:
+
+```sh
+kubectl apply -f pod-health-tcp-both.yml
 ```
 
+```
+pod/goproxy created
+```
+
+Watch the pod status:
+
+```sh
+kubectl get pods -w
+```
+
+```
+NAME      READY   STATUS    RESTARTS   AGE
+goproxy   0/1     Running   0          3s
+goproxy   1/1     Running   0          6s
+```
+
+The readiness probe checks the TCP socket on port 8080 every 10 seconds (after an initial 5 second delay). The liveness probe checks the same port every 20 seconds (after an initial 15 second delay). If the TCP connection fails, the readiness probe marks the pod as not ready, while the liveness probe restarts the container.
+
+```sh
+kubectl describe pod goproxy | grep -A5 "Readiness\|Liveness"
+```
+
+```
+    Liveness:       tcp-socket :8080 delay=15s timeout=1s period=20s #success=1 #failure=3
+    Readiness:      tcp-socket :8080 delay=5s timeout=1s period=10s #success=1 #failure=3
+```
+
+### Cleanup
+
+```sh
+kubectl delete pod -l app=goproxy
+kubectl delete -f busybox-probes-readiness-ko.yml
+kubectl delete -f busybox-probes-readiness-ok.yml
+kubectl delete -f pod-health-cmd-readiness.yml
+kubectl delete -f pod-health-http-liveness.yml
 ```
