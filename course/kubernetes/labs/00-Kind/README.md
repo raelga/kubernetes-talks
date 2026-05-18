@@ -189,15 +189,73 @@ kind delete cluster
 kind delete cluster --name my-cluster
 ```
 
-### Load Docker images into cluster
+### Load local Docker images into the cluster
+
+Kind clusters run inside Docker containers and cannot pull images from your local Docker daemon by default. You need to explicitly load local images into the cluster using `kind load docker-image`.
+
+#### Build and load a sample app
+
+A sample Go application is provided in the `hello-world-go/` directory.
 
 ```bash
-# Build and load a local image
-docker build -t my-app:latest .
-kind load docker-image my-app:latest
+# Build the Docker image locally
+docker build -t hello-world-go:latest hello-world-go/
 
-# Load from archive
-kind load image-archive my-app.tar
+# Load the image into the Kind cluster
+kind load docker-image hello-world-go:latest
+```
+
+Verify the image is available inside the cluster node:
+
+```bash
+docker exec -it kind-control-plane crictl images | grep hello-world-go
+```
+
+#### Deploy the sample app
+
+```bash
+# Deploy the app and service
+kubectl apply -f hello-world-go/deployment.yaml
+
+# Wait for the pods to be ready
+kubectl rollout status deployment/hello-world-go
+
+# Check the pods are running
+kubectl get pods -l app=hello-world-go
+```
+
+#### Test the sample app
+
+```bash
+# Port-forward to the service
+kubectl port-forward service/hello-world-go 8080:8080 &
+
+# Test the app
+curl http://localhost:8080
+
+# Stop port-forwarding
+kill %1
+```
+
+#### Important notes about `imagePullPolicy`
+
+When using local images loaded with `kind load`, the Kubernetes manifest **must** set `imagePullPolicy: Never` (or `IfNotPresent`). Otherwise, Kubernetes will try to pull the image from a remote registry and fail with `ErrImagePull`.
+
+```yaml
+containers:
+- name: hello-world-go
+  image: hello-world-go:latest
+  imagePullPolicy: Never  # Required for locally loaded images
+```
+
+#### Load from archive
+
+```bash
+# Save an image to a tar archive
+docker save hello-world-go:latest -o hello-world-go.tar
+
+# Load from archive into Kind
+kind load image-archive hello-world-go.tar
 ```
 
 ### Access cluster services
