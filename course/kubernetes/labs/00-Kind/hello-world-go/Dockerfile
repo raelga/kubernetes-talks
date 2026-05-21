@@ -1,5 +1,6 @@
 FROM golang:1.22 AS builder
 WORKDIR /go/src/app
+COPY go.mod .
 COPY app.go .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o app .
 
