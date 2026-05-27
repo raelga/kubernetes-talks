@@ -191,10 +191,10 @@ Events:
   Type     Reason     Age                From               Message
   ----     ------     ----               ----               -------
   Normal   Scheduled  21s                default-scheduler  Successfully assigned default/liveness-http to kind-control-plane
-  Normal   Pulled     19s                kubelet            Successfully pulled image "registry.k8s.io/liveness" in 1.605s (1.605s including waiting)
+  Normal   Pulled     19s                kubelet            Successfully pulled image "registry.k8s.io/e2e-test-images/agnhost:2.40" in 1.605s (1.605s including waiting)
   Normal   Created    19s                kubelet            Created container liveness
   Normal   Started    19s                kubelet            Started container liveness
-  Normal   Pulling    0s (x2 over 21s)   kubelet            Pulling image "registry.k8s.io/liveness"
+  Normal   Pulling    0s (x2 over 21s)   kubelet            Pulling image "registry.k8s.io/e2e-test-images/agnhost:2.40"
   Warning  Unhealthy  0s (x3 over 6s)    kubelet            Liveness probe failed: HTTP probe failed with statuscode: 500
   Normal   Killing    0s                 kubelet            Container liveness failed liveness probe, will be restarted
 ```
