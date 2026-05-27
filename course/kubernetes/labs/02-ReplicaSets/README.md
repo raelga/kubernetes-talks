@@ -12,7 +12,7 @@
     - [Some notes](#some-notes)
   - [1 - Create a `ReplicaSet`](#1---create-a-replicaset)
   - [2 - Scaling `ReplicaSets`](#2---scaling-replicasets)
-    - [Double the numbers of replicas with `kubectl scale`](#double-the-numbers-of-replicas-with-kubectl-scale)
+    - [Double the number of replicas with `kubectl scale`](#double-the-number-of-replicas-with-kubectl-scale)
     - [Scale back to 1 replica](#scale-back-to-1-replica)
     - [Update the `ReplicaSet` with the yaml definition](#update-the-replicaset-with-the-yaml-definition)
     - [Scale to 50 replicas](#scale-to-50-replicas)

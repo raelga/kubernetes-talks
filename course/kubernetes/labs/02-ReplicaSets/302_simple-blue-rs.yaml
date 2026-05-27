@@ -18,4 +18,3 @@ spec:
       containers:
       - name: app
         image: raelga/cats:liam
-        
