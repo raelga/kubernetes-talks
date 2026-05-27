@@ -16,7 +16,7 @@ This lab covers how to configure CPU and memory **requests** and **limits** for 
 To create a pod with both requests and limits set equally, run:
 
 ```sh
-kubectl apply -f busybox-resources.yaml
+kubectl apply -f 01-busybox-resources-guaranteed.yaml
 ```
 
 ```
@@ -46,7 +46,7 @@ QoS Class:                   Guaranteed
 When only limits are set, Kubernetes automatically sets the requests to match the limits:
 
 ```sh
-kubectl apply -f busybox-resources-limits.yaml
+kubectl apply -f 02-busybox-resources-limits-only.yaml
 ```
 
 ```
@@ -74,7 +74,7 @@ Even though only limits were specified in the manifest, the pod also gets the `G
 When requests are lower than limits, the pod gets the `Burstable` QoS class:
 
 ```sh
-kubectl apply -f busybox-resources-requests.yaml
+kubectl apply -f 03-busybox-resources-burstable.yaml
 ```
 
 ```
@@ -102,7 +102,7 @@ The container is guaranteed 25m CPU and 256Mi memory, but can burst up to 1 CPU 
 When resource requests exceed the available capacity of all nodes, the pod stays in `Pending` state:
 
 ```sh
-kubectl apply -f busybox-resources-requests-unschedulable.yaml
+kubectl apply -f 06-busybox-resources-unschedulable.yaml
 ```
 
 ```
@@ -138,7 +138,7 @@ The pod requests 4 CPUs, which exceeds what the node can allocate. It will remai
 To see how the scheduler distributes pods across available resources, deploy 10 pods at once:
 
 ```sh
-kubectl apply -f busybox-resources-10.yaml
+kubectl apply -f 05-busybox-resources-10.yaml
 ```
 
 ```
@@ -161,7 +161,7 @@ Depending on the available resources in the cluster, some pods may end up in `Pe
 To see the effect with a single pod from the batch:
 
 ```sh
-kubectl apply -f busybox-resources-0.yaml
+kubectl apply -f 04-busybox-resources-single.yaml
 ```
 
 This pod requests 25m CPU and 512Mi memory, with limits of 1 CPU and 1024Mi memory, resulting in a `Burstable` QoS class.

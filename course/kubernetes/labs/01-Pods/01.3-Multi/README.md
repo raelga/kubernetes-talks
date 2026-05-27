@@ -5,7 +5,7 @@
 This command creates a pod with two containers, one running Nginx and the other.
 
 ```sh
-kubectl apply -f nginx-and-shell-network.yaml
+kubectl apply -f 01-nginx-and-shell-network.yaml
 ```
 
 The output should be similar to this:
@@ -68,7 +68,7 @@ running a shell. The shell container has a volume mounted at `/html` that is
 shared with the Nginx container.
 
 ```sh
-kubectl apply -f nginx-and-shell-volume.yaml
+kubectl apply -f 02-nginx-and-shell-volume.yaml
 ```
 
 ```
@@ -118,10 +118,10 @@ Hola UPC!
 
 ## Sidecar pattern
 
-The `pod-multi.yml` manifest defines a pod with a webserver container and a content generator sidecar that writes the current date to a shared volume every second.
+The `03-pod-sidecar.yaml` manifest defines a pod with a webserver container and a content generator sidecar that writes the current date to a shared volume every second.
 
 ```sh
-kubectl apply -f pod-multi.yml
+kubectl apply -f 03-pod-sidecar.yaml
 ```
 
 ```
@@ -158,5 +158,7 @@ The response will show the accumulated date entries written by the sidecar conta
 ### Cleanup
 
 ```sh
-kubectl delete -f pod-multi.yml
+kubectl delete -f 01-nginx-and-shell-network.yaml
+kubectl delete -f 02-nginx-and-shell-volume.yaml
+kubectl delete -f 03-pod-sidecar.yaml
 ```

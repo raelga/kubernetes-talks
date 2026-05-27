@@ -2,10 +2,10 @@
 
 ## Shell
 
-To create a pod using the configuration in `shell.yaml`, run the following command:
+To create a pod using the configuration in `01-shell.yaml`, run the following command:
 
 ```sh
-kubectl apply -f shell.yaml
+kubectl apply -f 01-shell.yaml
 ```
 
 After running the command, you should see an output similar to this, indicating that the pod was created successfully:
@@ -37,7 +37,7 @@ kubectl get pods -o wide
 
 This command will display additional details about each pod, such as the IP address and the node where the pod is running.
 
-```sh
+```
 NAME        READY   STATUS    RESTARTS   AGE     IP           NODE                 NOMINATED NODE   READINESS GATES
 shell        1/1     Running   0          14s     10.244.0.5   kind-control-plane   <none>           <none>
 ```
@@ -159,7 +159,7 @@ PID   USER     TIME  COMMAND
 To delete the pod, you can use the `kubectl delete` command followed by `-f and the name of the configuration file:
 
 ```sh
-kubectl delete -f shell.yaml
+kubectl delete -f 01-shell.yaml
 ```
 
 The output will confirm that the pod was deleted:
@@ -173,7 +173,7 @@ pod "shell" deleted
 The output will confirm that the pod was created:
 
 ```sh
-kubectl apply -f hello-sh.yaml
+kubectl apply -f 02-hello-sh.yaml
 ```
 
 The output will confirm that the pod was created:
@@ -182,22 +182,22 @@ The output will confirm that the pod was created:
 pod/hello-sh created
 ```
 
-To view the logs of the `hello-sh`` pod, use the following command:
+To view the logs of the `hello-sh` pod, use the following command:
 
 ```sh
 kubectl logs -f hello-sh
 ```
 
-The output will display the message printed by the `hello-sh`` pod:
+The output will display the message printed by the `hello-sh` pod:
 
 ```
 Hello Kubernetes from hello-sh!
 ```
 
-To see the differences between the `hello-sh.yaml` and `hello-sh-updated.yaml` files, use the `diff` command:
+To see the differences between the `02-hello-sh.yaml` and `03-hello-sh-updated.yaml` files, use the `diff` command:
 
 ```sh
-diff hello-sh.yaml hello-sh-updated.yaml
+diff 02-hello-sh.yaml 03-hello-sh-updated.yaml
 ```
 
 The output will show the lines that differ between the two files:
@@ -212,10 +212,10 @@ The output will show the lines that differ between the two files:
 
 ```
 
-To update the `hello-sh` pod with the configuration in `hello-sh-updated.yaml`, run the following command:
+To update the `hello-sh` pod with the configuration in `03-hello-sh-updated.yaml`, run the following command:
 
 ```sh
-kubectl apply -f hello-sh-updated.yaml
+kubectl apply -f 03-hello-sh-updated.yaml
 ```
 
 However, you may encounter an error message like the one below. This is because some fields in the pod spec cannot be updated once the pod is created.
@@ -263,10 +263,10 @@ pod "hello-sh" deleted
 
 ## Hello Web
 
-To create a new pod using the configuration in `hello-web.yml`, run the following command:
+To create a new pod using the configuration in `04-hello-web.yaml`, run the following command:
 
 ```sh
-kubectl apply -f hello-web.yml
+kubectl apply -f 04-hello-web.yaml
 ```
 
 The output will confirm that the pod was created:
@@ -308,10 +308,10 @@ The output will display the startup logs of the `hello-web` pod:
 kubectl delete hello-web
 ```
 
-However, this will result in an error because `hello-web` is not a recognized resource type:
+However, this will result in an error because `kubectl delete` requires a resource type:
 
 ```
-error: the server doesn't have a resource type "hello-web", it's a pod.
+error: the server doesn't have a resource type "hello-web"
 ```
 
 The correct command to delete the `hello-web` pod is as follows:
@@ -328,16 +328,16 @@ pod "hello-web" deleted
 
 ## Busybox
 
-To create a new pod using the configuration in `busybox-0.yaml`, run the following command:
+To create a new pod using the configuration in `05-busybox-single.yaml`, run the following command:
 
 ```sh
-kubectl apply -f busybox-0.yaml
+kubectl apply -f 05-busybox-single.yaml
 ```
 
-To create multiple pods using the configuration in `busybox-30.yaml`, run the following command:
+To create multiple pods using the configuration in `06-busybox-30.yaml`, run the following command:
 
 ```sh
-kubectl apply -f busybox-30.yaml
+kubectl apply -f 06-busybox-30.yaml
 ```
 
 ```
@@ -388,10 +388,10 @@ pod "busybox-30" deleted
 
 ### Equality
 
-To create a new pod with the configuration in `pod-selector-equality.yml`, run the following command:
+To create a new pod with the configuration in `08-pod-selector-equality.yaml`, run the following command:
 
 ```sh
-kubectl apply -f pod-selector-equality.yml
+kubectl apply -f 08-pod-selector-equality.yaml
 ```
 
 The output will confirm that the pod was created:
@@ -417,10 +417,10 @@ Events:
 ```
 
 # Set
-To create a new pod with the configuration in `pod-selector-set.yml`, run the following command:
+To create a new pod with the configuration in `09-pod-selector-set.yaml`, run the following command:
 
 ```sh
-kubectl apply -f  pod-selector-set.yml
+kubectl apply -f  09-pod-selector-set.yaml
 ```
 
 The output will confirm that the pod was created:
@@ -443,6 +443,14 @@ cuda-test    0/1     Pending   0               3m13s
 dummy-test   1/1     Running   0               4m6s
 ```
 
-```
+### Cleanup
 
+```sh
+kubectl delete -f 08-pod-selector-equality.yaml
+kubectl delete -f 09-pod-selector-set.yaml
+kubectl delete -f 01-shell.yaml
+kubectl delete -f 02-hello-sh.yaml
+kubectl delete -f 04-hello-web.yaml
+kubectl delete -f 05-busybox-single.yaml
+kubectl delete pod -l app=busybox
 ```

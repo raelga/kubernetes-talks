@@ -5,7 +5,7 @@ In this section, we will go through the lifecycle of a Kubernetes pod.
 First, we apply a configuration file to create a new pod:
 
 ```sh
-kubectl apply -f busybox-probes-readiness-ko.yml
+kubectl apply -f 01-readiness-probe-failing.yaml
 ```
 
 After applying the configuration, we get a confirmation that the pod has been created:
@@ -70,7 +70,7 @@ The last event shows that the readiness probe failed because the file `/tmp/heal
 Now we can deploy the correct configuration file:
 
 ```sh
-kubectl apply -f busybox-probes-readiness-ok.yml
+kubectl apply -f 02-readiness-probe-passing.yaml
 ```
 
 The expected output is:
@@ -99,7 +99,7 @@ busybox-probes-readiness-ok   1/1     Running   0          15s
 Deploy the following configuration file:
 
 ```sh
-kubectl apply -f pod-health-cmd-readiness.yml
+kubectl apply -f 03-readiness-exec.yaml
 ```
 
 The expected output is:
@@ -137,17 +137,14 @@ kubectl describe pods readiness-cmd
 Name: readiness-cmd
 ...
 Events:
-Type Reason Age From Message
-
----
-
-Normal Scheduled 66s default-scheduler Successfully assigned default/readiness-cmd to kind-control-plane
-Normal Pulling 66s kubelet Pulling image "k8s.gcr.io/busybox"
-Normal Pulled 65s kubelet Successfully pulled image "k8s.gcr.io/busybox" in 812ms (812ms including waiting)
-Normal Created 65s kubelet Created container readiness
-Normal Started 65s kubelet Started container readiness
-Warning Unhealthy 1s (x11 over 56s) kubelet Readiness probe failed: cat: can't open '/tmp/healthy': No such file or directory
-
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  66s                default-scheduler  Successfully assigned default/readiness-cmd to kind-control-plane
+  Normal   Pulling    66s                kubelet            Pulling image "busybox"
+  Normal   Pulled     65s                kubelet            Successfully pulled image "busybox" in 812ms (812ms including waiting)
+  Normal   Created    65s                kubelet            Created container readiness
+  Normal   Started    65s                kubelet            Started container readiness
+  Warning  Unhealthy  1s (x11 over 56s)  kubelet            Readiness probe failed: cat: can't open '/tmp/healthy': No such file or directory
 ```
 
 Now we can review how a liveness probe works.
@@ -155,7 +152,7 @@ Now we can review how a liveness probe works.
 Deploy the following configuration file:
 
 ```sh
-kubectl apply -f pod-health-http-liveness.yml
+kubectl apply -f 04-liveness-http.yaml
 ```
 
 The expected output is:
@@ -190,25 +187,24 @@ kubectl describe pods liveness-http
 ```
 Name: liveness-http
 ...
-Type Reason Age From Message
-
----
-
-Normal Scheduled 21s default-scheduler Successfully assigned default/liveness-http to kind-control-plane
-Normal Pulled 19s kubelet Successfully pulled image "k8s.gcr.io/liveness" in 1.605s (1.605s including waiting)
-Normal Created 19s kubelet Created container liveness
-Normal Started 19s kubelet Started container liveness
-Normal Pulling 0s (x2 over 21s) kubelet Pulling image "k8s.gcr.io/liveness"
-Warning Unhealthy 0s (x3 over 6s) kubelet Liveness probe failed: HTTP probe failed with statuscode: 500
-Normal Killing 0s kubelet Container liveness failed liveness probe, will be restarted
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  21s                default-scheduler  Successfully assigned default/liveness-http to kind-control-plane
+  Normal   Pulled     19s                kubelet            Successfully pulled image "registry.k8s.io/liveness" in 1.605s (1.605s including waiting)
+  Normal   Created    19s                kubelet            Created container liveness
+  Normal   Started    19s                kubelet            Started container liveness
+  Normal   Pulling    0s (x2 over 21s)   kubelet            Pulling image "registry.k8s.io/liveness"
+  Warning  Unhealthy  0s (x3 over 6s)    kubelet            Liveness probe failed: HTTP probe failed with statuscode: 500
+  Normal   Killing    0s                 kubelet            Container liveness failed liveness probe, will be restarted
 ```
 
 ## TCP probes (liveness and readiness)
 
-The `pod-health-tcp-both.yml` manifest defines a pod with both a TCP readiness probe and a TCP liveness probe on the same port:
+The `05-probes-tcp.yaml` manifest defines a pod with both a TCP readiness probe and a TCP liveness probe on the same port:
 
 ```sh
-kubectl apply -f pod-health-tcp-both.yml
+kubectl apply -f 05-probes-tcp.yaml
 ```
 
 ```
@@ -242,8 +238,8 @@ kubectl describe pod goproxy | grep -A5 "Readiness\|Liveness"
 
 ```sh
 kubectl delete pod -l app=goproxy
-kubectl delete -f busybox-probes-readiness-ko.yml
-kubectl delete -f busybox-probes-readiness-ok.yml
-kubectl delete -f pod-health-cmd-readiness.yml
-kubectl delete -f pod-health-http-liveness.yml
+kubectl delete -f 01-readiness-probe-failing.yaml
+kubectl delete -f 02-readiness-probe-passing.yaml
+kubectl delete -f 03-readiness-exec.yaml
+kubectl delete -f 04-liveness-http.yaml
 ```

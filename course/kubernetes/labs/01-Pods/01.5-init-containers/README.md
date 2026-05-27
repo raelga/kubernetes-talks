@@ -3,7 +3,7 @@
 The following configuration file defines a pod with two init containers:
 
 ```sh
-kubectl apply -f busybox-init-containers.yml
+kubectl apply -f 01-init-containers.yaml
 ```
 
 The expected output is:
@@ -77,7 +77,7 @@ Address: 10.96.0.10#53
 So we can create a dummy service to make the init containers finish:
 
 ```sh
-kubectl apply -f busybox-init-containers-dummy-svc.yaml
+kubectl apply -f 02-dummy-service.yaml
 ```
 
 ```
@@ -99,5 +99,11 @@ busybox-init-containers 0/1 Init:1/2 0 68s
 busybox-init-containers 0/1 PodInitializing 0 69s
 busybox-init-containers 0/1 Running 0 71s
 busybox-init-containers 1/1 Running 0 86s
+```
 
+### Cleanup
+
+```sh
+kubectl delete -f 01-init-containers.yaml
+kubectl delete -f 02-dummy-service.yaml
 ```
