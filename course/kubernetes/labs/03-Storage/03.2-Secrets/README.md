@@ -1,10 +1,15 @@
-# Secret Storage Examples
+# Secrets
 
-This section provides examples of how to use secret storage in Kubernetes.
+Secrets are similar to ConfigMaps but designed for sensitive data (passwords, tokens, keys). Key differences from ConfigMaps:
 
-## Creating secrets using kubectl
+- Secret values are **base64-encoded** in the manifest (not encrypted — base64 is encoding, not encryption).
+- Kubernetes can be configured to **encrypt Secrets at rest** in etcd.
+- Secrets can be consumed as **environment variables** or **volume mounts**, just like ConfigMaps.
+- When mounted as a volume, secret files are stored in a **tmpfs** (RAM-backed filesystem), so they are never written to disk on the node.
 
-Create a secret named `credentials` with two key-value pairs:
+## Creating Secrets with kubectl
+
+Create a secret from literal values:
 
 ```sh
 kubectl create secret generic credentials \
@@ -12,38 +17,105 @@ kubectl create secret generic credentials \
     --from-literal=password='secreto'
 ```
 
-Create a secret named `readme` from the `README.md` file:
+```
+secret/credentials created
+```
+
+Create a secret from a file:
 
 ```sh
 kubectl create secret generic readme \
     --from-file=README.md
 ```
 
-## Create the secret from a manifest
+```
+secret/readme created
+```
+
+Inspect the secrets:
+
+```sh
+kubectl get secrets
+```
+
+```
+NAME          TYPE     DATA   AGE
+credentials   Opaque   2      10s
+readme        Opaque   1      5s
+```
+
+The values are base64-encoded. You can decode them with:
+
+```sh
+kubectl get secret credentials -o jsonpath='{.data.username}' | base64 -d
+```
+
+```
+admin
+```
+
+## Creating Secrets from a manifest
+
+The `01-secret.yaml` file defines a secret with base64-encoded values:
 
 ```sh
 kubectl apply -f 01-secret.yaml
 ```
 
-## Create the shell pod with the secrets attached
+```
+secret/secret-config created
+```
+
+## Create a pod with Secrets attached
+
+The pod mounts the secret as a read-only volume at `/etc/secret-volume/` and injects one key as an environment variable:
 
 ```sh
 kubectl apply -f 02-shell.yaml
 ```
 
-## Attach to the pod and review the secrets
-
-```sh
-kubectl exec -ti shell-secret -- /bin/bash
+```
+pod/shell-secret created
 ```
 
-Inside the pod, check the mounted secrets and environment variables:
+```sh
+kubectl wait --for=condition=Ready pod/shell-secret --timeout=60s
+```
+
+## Review Secrets inside the pod
+
+Check the environment variable:
 
 ```sh
-echo $SECRET_KEY
-ls /etc/secret-volume/
-cat /etc/secret-volume/secret-key
+kubectl exec shell-secret -- env | grep SECRET
 ```
+
+```
+SECRET_KEY=Hola desde el Lab
+```
+
+List the mounted secret files:
+
+```sh
+kubectl exec shell-secret -- ls /etc/secret-volume/
+```
+
+```
+.secret-file
+secret-key
+```
+
+Read the secret value:
+
+```sh
+kubectl exec shell-secret -- cat /etc/secret-volume/secret-key
+```
+
+```
+Hola desde el Lab
+```
+
+The values are automatically decoded from base64 when mounted — containers see the original plaintext values.
 
 ### Cleanup
 
