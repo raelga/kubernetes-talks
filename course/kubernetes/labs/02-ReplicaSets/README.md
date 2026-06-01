@@ -30,6 +30,9 @@
   - [4 - Container probes](#4---container-probes)
     - [Readiness probe](#readiness-probe)
     - [Liveness probe](#liveness-probe)
+    - [Liveness probe only (failing)](#liveness-probe-only-failing)
+    - [Both probes (failing)](#both-probes-failing)
+    - [Both probes (working)](#both-probes-working)
     - [Clean up](#clean-up-1)
   - [5 - Manual rolling update](#5---manual-rolling-update)
     - [Deploy the initial `ReplicaSet`](#deploy-the-initial-replicaset)
@@ -112,7 +115,7 @@ spec:
     spec:
       containers:
       
-      - name: app
+      - name: cats
         image: raelga/cats:gatet
 ```
 
@@ -216,7 +219,7 @@ diff -u -N /tmp/LIVE-860683615/apps.v1.ReplicaSet.default.cats-gatet /tmp/MERGED
        
        - image: raelga/cats:gatet
          imagePullPolicy: IfNotPresent
-         name: app
+         name: cats
 
 -        resources: {}
 +        resources:
@@ -541,7 +544,7 @@ metadata:
 spec:
   containers:
     
-    - name: app
+    - name: cats
       image: raelga/cats:liam
 ...
 ```
@@ -693,7 +696,7 @@ metadata:
 spec:
   containers:
     
-    - name: app
+    - name: cats
       image: raelga/cats:liam
 ```
 
@@ -943,7 +946,7 @@ Let's add a `ReadinessProbe`, on the port 80:
     spec:
       containers:
       
-      - name: app
+      - name: cats
         image: raelga/cats:neu
         readinessProbe:
           tcpSocket:
@@ -1043,7 +1046,7 @@ Let's add a `LivenessProbe`, on the port 80:
     spec:
       containers:
       
-      - name: app
+      - name: cats
         image: raelga/cats:neu
         livenessProbe:
           httpGet:
@@ -1122,6 +1125,52 @@ probes-fzbgb   0/1     CrashLoopBackOff    6          4m31s
 ```
 
 A `CrashloopBackOff` means that we have a pod starting, crashing, starting again, and then crashing again. Failed containers that are restarted by the kubelet are restarted with an exponential back-off delay (10s, 20s, 40s …) capped at five minutes, and is reset after ten minutes of successful execution.
+
+### Liveness probe only (failing)
+
+What happens when we have a liveness probe that fails but **no readiness probe**? The pods show as READY (because there's no readiness check) but keep restarting:
+
+```bash
+kubectl delete rs cats-neu
+kubectl apply -f 404_probes-rs-liveness-ko.yaml && kubectl get pods -l app=cats -w --sort-by=.metadata.creationTimestamp
+```
+
+The `--sort-by=.metadata.creationTimestamp` flag sorts pods by creation time, making it easier to follow the sequence. All 12 pods will become READY briefly, then start restarting as the liveness probe hits `/bad-endpoint` (returns 404):
+
+```
+NAME             READY   STATUS    RESTARTS      AGE
+cats-neu-xxxxx   1/1     Running   0             15s
+cats-neu-xxxxx   1/1     Running   1 (2s ago)    25s
+cats-neu-xxxxx   1/1     Running   2 (2s ago)    35s
+```
+
+Without a readiness probe, these failing pods would still receive traffic — a dangerous situation in production.
+
+### Both probes (failing)
+
+Now let's add both a failing readiness probe (wrong port 81) and a failing liveness probe (wrong path):
+
+```bash
+kubectl apply -f 405_probes-rs-both-ko.yaml && kubectl get pods -l app=cats -w --sort-by=.metadata.creationTimestamp
+```
+
+The pods are **not READY** (readiness probe fails on port 81) **and** keep restarting (liveness probe fails on `/bad-endpoint`). This is the worst case — pods are in a restart loop and never serve traffic.
+
+### Both probes (working)
+
+Finally, let's fix both probes — readiness on the correct port 80, liveness on the correct path `/`:
+
+```bash
+kubectl apply -f 406_probes-rs-both-ok.yaml && kubectl get pods -l app=cats -w --sort-by=.metadata.creationTimestamp
+```
+
+```
+NAME             READY   STATUS    RESTARTS   AGE
+cats-neu-xxxxx   0/1     Running   0          5s
+cats-neu-xxxxx   1/1     Running   0          25s
+```
+
+All pods become READY after ~25 seconds (10s `initialDelaySeconds` + 3 × 5s `successThreshold` × `periodSeconds`) and stay healthy with zero restarts.
 
 ### Clean up
 

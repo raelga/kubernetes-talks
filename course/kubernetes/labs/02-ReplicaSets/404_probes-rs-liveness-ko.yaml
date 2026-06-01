@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: cats-neu
+  labels:
+    app: cats
+spec:
+  replicas: 12
+  selector:
+    matchLabels:
+      app: cats
+  template:
+    metadata:
+      labels:
+        app: cats
+    spec:
+      containers:
+      - name: cats
+        image: raelga/cats:neu
+        livenessProbe:
+          httpGet:
+            path: /bad-endpoint
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 2
