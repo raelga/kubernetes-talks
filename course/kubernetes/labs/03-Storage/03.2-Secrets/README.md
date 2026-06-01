@@ -4,47 +4,51 @@ This section provides examples of how to use secret storage in Kubernetes.
 
 ## Creating secrets using kubectl
 
-This command creates a secret named `credentials` with two key-value pairs:
+Create a secret named `credentials` with two key-value pairs:
 
-- `username=admin`
-- `password=secreto`
-
-```
+```sh
 kubectl create secret generic credentials \
     --from-literal=username=admin \
     --from-literal=password='secreto'
 ```
 
-This command creates a secret named `readme` from the `README.md` file.
+Create a secret named `readme` from the `README.md` file:
 
-```
+```sh
 kubectl create secret generic readme \
     --from-file=README.md
 ```
 
-## Create the secret config
+## Create the secret from a manifest
 
-This command applies the configuration from the `secret.yaml` file
-to create the secret in Kubernetes.
-
-```
-kubectl apply -f secret.yaml
+```sh
+kubectl apply -f 01-secret.yaml
 ```
 
 ## Create the shell pod with the secrets attached
 
-This command applies the configuration from the `shell.yaml` file
-to create a pod with attached secrets.
-
-```
-kubectl apply -f shell.yaml
+```sh
+kubectl apply -f 02-shell.yaml
 ```
 
 ## Attach to the pod and review the secrets
 
-This command allows you to execute a bash shell inside the `shell-secret` pod.
-Once inside, you can review the secrets.
-
-```
+```sh
 kubectl exec -ti shell-secret -- /bin/bash
+```
+
+Inside the pod, check the mounted secrets and environment variables:
+
+```sh
+echo $SECRET_KEY
+ls /etc/secret-volume/
+cat /etc/secret-volume/secret-key
+```
+
+### Cleanup
+
+```sh
+kubectl delete -f 02-shell.yaml
+kubectl delete -f 01-secret.yaml
+kubectl delete secret credentials readme
 ```

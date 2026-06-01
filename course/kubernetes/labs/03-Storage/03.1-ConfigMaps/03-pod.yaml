@@ -1,0 +1,39 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell
+  labels:
+    app: shell
+spec:
+  containers:
+    - name: shell
+      image: raelga/toolbox
+      command: ["bash", "-c", "sleep 3600"]
+      env:
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: game-env
+              key: environment
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: game-env
+              key: debug_level
+        - name: EXTRA
+          value: lab
+      resources:
+        requests:
+          cpu: "25m"
+          memory: "128Mi"
+        limits:
+          cpu: "1"
+          memory: "256Mi"
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/game-config
+  volumes:
+    - name: config-volume
+      configMap:
+        name: game-config
