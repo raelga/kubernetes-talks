@@ -2,54 +2,54 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: simple-pod-1
+  name: cats-gatet-pod-1
   labels:
-    app: simple
+    app: cats
 spec:
   containers:
-    - name: app
+    - name: cats
       image: raelga/cats:gatet
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: simple-pod-2
+  name: cats-gatet-pod-2
   labels:
-    app: simple
+    app: cats
 spec:
   containers:
-    - name: app
+    - name: cats
       image: raelga/cats:gatet
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: simple-pod-3
+  name: cats-gatet-pod-3
   labels:
-    app: simple
+    app: cats
 spec:
   containers:
-    - name: app
+    - name: cats
       image: raelga/cats:gatet
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: simple-pod-4
+  name: cats-gatet-pod-4
   labels:
-    app: simple
+    app: cats
 spec:
   containers:
-    - name: app
+    - name: cats
       image: raelga/cats:gatet
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: simple-pod-5
+  name: cats-gatet-pod-5
   labels:
-    app: simple
+    app: cats
 spec:
   containers:
-    - name: app
+    - name: cats
       image: raelga/cats:gatet

@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: simple
+  name: cats-gatet
 spec:
   replicas: 50
   selector:
     matchLabels:
-      app: simple
+      app: cats
   template:
     metadata:
       labels:
-        app: simple
+        app: cats
     spec:
       containers:
-      - name: app
+      - name: cats
         image: raelga/cats:gatet
         resources:
           requests:

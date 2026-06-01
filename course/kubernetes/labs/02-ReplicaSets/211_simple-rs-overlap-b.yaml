@@ -2,19 +2,19 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: simple-also
+  name: cats-also
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: simple
+      app: cats
   template:
     metadata:
       labels:
-        app: simple
+        app: cats
     spec:
       containers:
-      - name: app
+      - name: cats
         image: raelga/cats:liam
         resources:
           requests:

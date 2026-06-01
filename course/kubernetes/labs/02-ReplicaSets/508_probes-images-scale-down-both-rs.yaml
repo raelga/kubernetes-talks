@@ -2,22 +2,22 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: probes-images
+  name: cats-neu
   labels:
-    app: probes-images
+    app: cats
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: probes-images
+      app: cats
   template:
     metadata:
       labels:
-        app: probes-images
+        app: cats
         version: v2.0
     spec:
       containers:
-      - name: app
+      - name: cats
         image: raelga/cats:blanca
         readinessProbe:
           httpGet:
@@ -35,23 +35,23 @@ spec:
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: probes-images-v2.0
+  name: cats-blanca
   labels:
-    app: probes-images
+    app: cats
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: probes-images
+      app: cats
       version: v2.0
   template:
     metadata:
       labels:
-        app: probes-images
+        app: cats
         version: v2.0
     spec:
       containers:
-      - name: app
+      - name: cats
         image: raelga/cats:blanca
         readinessProbe:
           httpGet:

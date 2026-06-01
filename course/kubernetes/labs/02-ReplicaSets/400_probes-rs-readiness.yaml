@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: probes
+  name: cats-neu
   labels:
-    app: probes
+    app: cats
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: probes
+      app: cats
   template:
     metadata:
       labels:
-        app: probes
+        app: cats
     spec:
       containers:
-      - name: app
+      - name: cats
         image: raelga/cats:neu
         readinessProbe:
           tcpSocket:

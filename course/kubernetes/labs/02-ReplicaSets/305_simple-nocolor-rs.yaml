@@ -2,21 +2,21 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: simple-nocolor
+  name: cats-nocolor
   labels:
-    app: simple
+    app: cats
 spec:
   replicas: 5
   selector:
     matchLabels:
-      app: simple
+      app: cats
     matchExpressions:
-      - { key: color, operator: DoesNotExist }
+      - { key: cat, operator: DoesNotExist }
   template:
     metadata:
       labels:
-        app: simple
+        app: cats
     spec:
       containers:
-      - name: app
+      - name: cats
         image: raelga/cats:gatet

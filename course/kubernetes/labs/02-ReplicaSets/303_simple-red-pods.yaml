@@ -2,11 +2,11 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: simple-red-pod-1
+  name: cats-red-pod-1
   labels:
-    app: simple
-    color: red
+    app: cats
+    cat: red
 spec:
   containers:
-    - name: app
+    - name: cats
       image: raelga/cats:liam
