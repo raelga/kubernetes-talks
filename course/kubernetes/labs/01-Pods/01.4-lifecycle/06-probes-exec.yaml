@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    test: probes
+  name: probes-cmd
+spec:
+  containers:
+    - name: shell
+      image: busybox
+      args:
+        - /bin/sh
+        - -c
+        - 'touch /tmp/live /tmp/ready; sleep 3600;'
+      livenessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/live
+        initialDelaySeconds: 10
+        periodSeconds: 2
+        failureThreshold: 1
+        successThreshold: 1
+      readinessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/ready
+        initialDelaySeconds: 10
+        periodSeconds: 2
+        failureThreshold: 1
+        successThreshold: 1

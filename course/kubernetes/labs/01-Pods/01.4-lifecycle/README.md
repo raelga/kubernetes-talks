@@ -147,56 +147,40 @@ Events:
   Warning  Unhealthy  1s (x11 over 56s)  kubelet            Readiness probe failed: cat: can't open '/tmp/healthy': No such file or directory
 ```
 
-Now we can review how a liveness probe works.
+Now we can review how a liveness probe works. Unlike readiness probes,
+when a liveness probe fails the container is **restarted**.
 
 Deploy the following configuration file:
 
 ```sh
-kubectl apply -f 04-liveness-http.yaml
+kubectl apply -f 04-liveness-exec.yaml
 ```
 
-The expected output is:
-
 ```
-pod/liveness-http created
+pod/liveness-cmd created
 ```
 
-Using the get with a watch flag, we can see the pod starting and
-eventually will start rebooting.
+The container creates `/tmp/healthy` after 5 seconds, then removes it after 30 seconds. The liveness probe checks for this file every 5 seconds.
 
 ```sh
 kubectl get pods -w
 ```
 
 ```
-NAME            READY   STATUS              RESTARTS    AGE
-liveness-http   0/1     ContainerCreating   0           3s
-liveness-http   1/1     Running             0           5s
-liveness-http   1/1     Running             0           3s
-liveness-http   1/1     Running             1 (2s ago)  21s
-liveness-http   1/1     Running             2 (2s ago)  39s
+NAME            READY   STATUS    RESTARTS     AGE
+liveness-cmd    1/1     Running   0            10s
+liveness-cmd    1/1     Running   1 (2s ago)   45s
 ```
 
-Again, using the describe command, we can see the events of the pod and
-the reason why the pod is being restarted:
+After ~35 seconds the file is removed, the probe fails, and the container restarts. Using describe we can see the failure:
 
 ```sh
-kubectl describe pods liveness-http
+kubectl describe pod liveness-cmd | tail -5
 ```
 
 ```
-Name: liveness-http
-...
-Events:
-  Type     Reason     Age                From               Message
-  ----     ------     ----               ----               -------
-  Normal   Scheduled  21s                default-scheduler  Successfully assigned default/liveness-http to kind-control-plane
-  Normal   Pulled     19s                kubelet            Successfully pulled image "registry.k8s.io/e2e-test-images/agnhost:2.40" in 1.605s (1.605s including waiting)
-  Normal   Created    19s                kubelet            Created container liveness
-  Normal   Started    19s                kubelet            Started container liveness
-  Normal   Pulling    0s (x2 over 21s)   kubelet            Pulling image "registry.k8s.io/e2e-test-images/agnhost:2.40"
-  Warning  Unhealthy  0s (x3 over 6s)    kubelet            Liveness probe failed: HTTP probe failed with statuscode: 500
-  Normal   Killing    0s                 kubelet            Container liveness failed liveness probe, will be restarted
+  Warning  Unhealthy  5s (x2 over 10s)  kubelet  Liveness probe failed: cat: can't open '/tmp/healthy': No such file or directory
+  Normal   Killing    5s                kubelet  Container liveness failed liveness probe, will be restarted
 ```
 
 ## TCP probes (liveness and readiness)
@@ -234,12 +218,72 @@ kubectl describe pod goproxy | grep -A5 "Readiness\|Liveness"
     Readiness:      tcp-socket :8080 delay=5s timeout=1s period=10s #success=1 #failure=3
 ```
 
+## Combined probes (readiness and liveness)
+
+The `06-probes-exec.yaml` manifest defines a pod with both readiness and liveness probes using exec commands. The container creates `/tmp/live` and `/tmp/ready` on startup.
+
+```sh
+kubectl apply -f 06-probes-exec.yaml
+```
+
+```
+pod/probes-cmd created
+```
+
+```sh
+kubectl get pods -w
+```
+
+```
+NAME         READY   STATUS    RESTARTS   AGE
+probes-cmd   0/1     Running   0          2s
+probes-cmd   1/1     Running   0          12s
+```
+
+You can manually trigger probe failures by deleting the files:
+
+```sh
+kubectl exec probes-cmd -- rm /tmp/ready
+```
+
+The pod becomes not ready (but is not restarted):
+
+```sh
+kubectl get pods
+```
+
+```
+NAME         READY   STATUS    RESTARTS   AGE
+probes-cmd   0/1     Running   0          30s
+```
+
+Now delete the liveness file:
+
+```sh
+kubectl exec probes-cmd -- rm /tmp/live
+```
+
+The container is restarted because the liveness probe fails:
+
+```sh
+kubectl get pods -w
+```
+
+```
+NAME         READY   STATUS    RESTARTS      AGE
+probes-cmd   0/1     Running   1 (2s ago)    35s
+probes-cmd   1/1     Running   1 (12s ago)   45s
+```
+
+After restart, both files are recreated and the pod becomes ready again.
+
 ### Cleanup
 
 ```sh
-kubectl delete pod -l app=goproxy
 kubectl delete -f 01-readiness-probe-failing.yaml
 kubectl delete -f 02-readiness-probe-passing.yaml
 kubectl delete -f 03-readiness-exec.yaml
-kubectl delete -f 04-liveness-http.yaml
+kubectl delete -f 04-liveness-exec.yaml
+kubectl delete -f 05-probes-tcp.yaml
+kubectl delete -f 06-probes-exec.yaml
 ```

@@ -168,12 +168,43 @@ The output will confirm that the pod was deleted:
 pod "shell" deleted
 ```
 
+## Restart Policy
+
+The `restartPolicy` field controls what happens when a container exits. Deploy two pods with `restartPolicy: Never` — one that exits successfully and one that fails:
+
+```sh
+kubectl apply -f 02-shell-restart-policy.yaml
+```
+
+```
+pod/shell-exit-ok created
+pod/shell-exit-fail created
+```
+
+Watch the pod status:
+
+```sh
+kubectl get pods -l app=shell -w
+```
+
+```
+NAME              READY   STATUS      RESTARTS   AGE
+shell-exit-ok     0/1     Completed   0          5s
+shell-exit-fail   0/1     Error       0          5s
+```
+
+The pod that exited with code 0 shows `Completed`, while the one that exited with code 1 shows `Error`. Neither restarts because `restartPolicy: Never` prevents it.
+
+```sh
+kubectl delete -f 02-shell-restart-policy.yaml
+```
+
 ## Hello Sh
 
 The output will confirm that the pod was created:
 
 ```sh
-kubectl apply -f 02-hello-sh.yaml
+kubectl apply -f 03-hello-sh.yaml
 ```
 
 The output will confirm that the pod was created:
@@ -194,10 +225,10 @@ The output will display the message printed by the `hello-sh` pod:
 Hello Kubernetes from hello-sh!
 ```
 
-To see the differences between the `02-hello-sh.yaml` and `03-hello-sh-updated.yaml` files, use the `diff` command:
+To see the differences between the `03-hello-sh.yaml` and `04-hello-sh-updated.yaml` files, use the `diff` command:
 
 ```sh
-diff 02-hello-sh.yaml 03-hello-sh-updated.yaml
+diff 03-hello-sh.yaml 04-hello-sh-updated.yaml
 ```
 
 The output will show the lines that differ between the two files:
@@ -212,10 +243,10 @@ The output will show the lines that differ between the two files:
 
 ```
 
-To update the `hello-sh` pod with the configuration in `03-hello-sh-updated.yaml`, run the following command:
+To update the `hello-sh` pod with the configuration in `04-hello-sh-updated.yaml`, run the following command:
 
 ```sh
-kubectl apply -f 03-hello-sh-updated.yaml
+kubectl apply -f 04-hello-sh-updated.yaml
 ```
 
 However, you may encounter an error message like the one below. This is because some fields in the pod spec cannot be updated once the pod is created.
@@ -263,10 +294,10 @@ pod "hello-sh" deleted
 
 ## Hello Web
 
-To create a new pod using the configuration in `04-hello-web.yaml`, run the following command:
+To create a new pod using the configuration in `05-hello-web.yaml`, run the following command:
 
 ```sh
-kubectl apply -f 04-hello-web.yaml
+kubectl apply -f 05-hello-web.yaml
 ```
 
 The output will confirm that the pod was created:
@@ -328,16 +359,16 @@ pod "hello-web" deleted
 
 ## Busybox
 
-To create a new pod using the configuration in `05-busybox-single.yaml`, run the following command:
+To create a new pod using the configuration in `06-busybox-single.yaml`, run the following command:
 
 ```sh
-kubectl apply -f 05-busybox-single.yaml
+kubectl apply -f 06-busybox-single.yaml
 ```
 
-To create multiple pods using the configuration in `06-busybox-30.yaml`, run the following command:
+To create multiple pods using the configuration in `07-busybox-30.yaml`, run the following command:
 
 ```sh
-kubectl apply -f 06-busybox-30.yaml
+kubectl apply -f 07-busybox-30.yaml
 ```
 
 ```
@@ -388,10 +419,10 @@ pod "busybox-30" deleted
 
 ### Equality
 
-To create a new pod with the configuration in `08-pod-selector-equality.yaml`, run the following command:
+To create a new pod with the configuration in `09-pod-selector-equality.yaml`, run the following command:
 
 ```sh
-kubectl apply -f 08-pod-selector-equality.yaml
+kubectl apply -f 09-pod-selector-equality.yaml
 ```
 
 The output will confirm that the pod was created:
@@ -417,10 +448,10 @@ Events:
 ```
 
 # Set
-To create a new pod with the configuration in `09-pod-selector-set.yaml`, run the following command:
+To create a new pod with the configuration in `10-pod-selector-set.yaml`, run the following command:
 
 ```sh
-kubectl apply -f  09-pod-selector-set.yaml
+kubectl apply -f  10-pod-selector-set.yaml
 ```
 
 The output will confirm that the pod was created:
@@ -446,11 +477,12 @@ dummy-test   1/1     Running   0               4m6s
 ### Cleanup
 
 ```sh
-kubectl delete -f 08-pod-selector-equality.yaml
-kubectl delete -f 09-pod-selector-set.yaml
+kubectl delete -f 09-pod-selector-equality.yaml
+kubectl delete -f 10-pod-selector-set.yaml
 kubectl delete -f 01-shell.yaml
-kubectl delete -f 02-hello-sh.yaml
-kubectl delete -f 04-hello-web.yaml
-kubectl delete -f 05-busybox-single.yaml
+kubectl delete -f 02-shell-restart-policy.yaml
+kubectl delete -f 03-hello-sh.yaml
+kubectl delete -f 05-hello-web.yaml
+kubectl delete -f 06-busybox-single.yaml
 kubectl delete pod -l app=busybox
 ```
