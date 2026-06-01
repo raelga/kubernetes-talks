@@ -18,6 +18,7 @@
     - [Scale to 50 replicas](#scale-to-50-replicas)
     - [Scale down back to 5 replicas](#scale-down-back-to-5-replicas)
     - [Pod adoption](#pod-adoption)
+    - [Overlapping selectors](#overlapping-selectors)
   - [3 - Selectors and Pods](#3---selectors-and-pods)
     - [Deploy some **blue** pods](#deploy-some-blue-pods)
     - [Deploy a **blue** `ReplicaSet`](#deploy-a-blue-replicaset)
@@ -472,6 +473,57 @@ simple-pod-5   ReplicaSet
 ```
 
 All pods are now owned by the ReplicaSet.
+
+### Overlapping selectors
+
+What happens when two ReplicaSets use the **same selector**? You might expect the second one to "see" the first one's pods and do nothing. Let's test it.
+
+Create the first ReplicaSet with 3 replicas using `app: simple`:
+
+```bash
+kubectl delete rs simple
+kubectl apply -f 210_simple-rs-overlap-a.yaml && kubectl wait --for=condition=Ready pod -l app=simple --timeout=60s
+```
+
+```
+replicaset.apps/simple-broad created
+```
+
+Now create a second ReplicaSet with the **same selector** (`app: simple`) and also 3 replicas, but using a different image:
+
+```bash
+kubectl apply -f 211_simple-rs-overlap-b.yaml
+```
+
+```
+replicaset.apps/simple-also created
+```
+
+Check the pods:
+
+```bash
+kubectl get pods -o custom-columns='NAME:.metadata.name,IMAGE:.spec.containers[0].image,OWNER:.metadata.ownerReferences[0].name'
+```
+
+```
+NAME                 IMAGE               OWNER
+simple-also-6ntsf    raelga/cats:liam    simple-also
+simple-also-dr6nm    raelga/cats:liam    simple-also
+simple-also-zllvk    raelga/cats:liam    simple-also
+simple-broad-dqrlp   raelga/cats:gatet   simple-broad
+simple-broad-ntqp7   raelga/cats:gatet   simple-broad
+simple-broad-qgbbq   raelga/cats:gatet   simple-broad
+```
+
+**6 pods total**, not 3. Each ReplicaSet created its own set of pods. Even though both selectors match all 6 pods, Kubernetes uses `ownerReferences` to track which controller owns which pod. A ReplicaSet **only counts pods it owns**, not all pods matching its selector.
+
+This is an important distinction: **label selectors find pods, but ownership determines control**.
+
+Clean up before the next section:
+
+```bash
+kubectl delete rs simple-broad simple-also
+```
 
 ## 3 - Selectors and Pods
 
