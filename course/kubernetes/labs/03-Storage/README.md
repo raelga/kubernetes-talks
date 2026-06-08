@@ -15,3 +15,4 @@ Kubernetes provides several mechanisms to manage configuration, sensitive data, 
 | [03.2-Secrets](03.2-Secrets/) | Secrets | Store and inject sensitive data (passwords, tokens). Base64 encoding and volume mounting. |
 | [03.3-Volumes](03.3-Volumes/) | Persistent Volumes | Data persistence across pod restarts using PersistentVolumeClaims. |
 | [03.4-DownwardAPI](03.4-DownwardAPI/) | Downward API | Expose pod metadata (name, namespace, IP, labels, annotations) to containers. |
+| [03.5-AllVolumes](03.5-AllVolumes/) | All volume types | Capstone: ConfigMap, Secret, PVC, emptyDir (disk + Memory), and DownwardAPI all in one pod. |

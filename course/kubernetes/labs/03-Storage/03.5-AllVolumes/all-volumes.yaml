@@ -1,0 +1,113 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  config.properties: |
+    version=1.0
+    feature.dark-mode=true
+    feature.analytics=false
+  log_level: info
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+stringData:
+  db-password: "s3cr3t!"
+  api-token: "tok_abc123"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all-volumes
+  labels:
+    app: all-volumes
+    tier: demo
+  annotations:
+    version: "1.0.0"
+    team: platform
+spec:
+  containers:
+    - name: app
+      image: raelga/toolbox
+      command: ["bash", "-c", "sleep 3600"]
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+      env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: log_level
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: db-password
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      volumeMounts:
+        - name: config            # ConfigMap  → files
+          mountPath: /etc/config
+          readOnly: true
+        - name: secrets           # Secret     → tmpfs files
+          mountPath: /etc/secrets
+          readOnly: true
+        - name: persistent-data   # PVC        → durable across pod restarts
+          mountPath: /data
+        - name: scratch           # emptyDir   → ephemeral, node disk
+          mountPath: /scratch
+        - name: cache             # emptyDir   → ephemeral, RAM-backed
+          mountPath: /cache
+        - name: podinfo           # DownwardAPI → pod metadata as files
+          mountPath: /etc/podinfo
+          readOnly: true
+  volumes:
+    - name: config
+      configMap:
+        name: app-config
+    - name: secrets
+      secret:
+        secretName: app-secrets
+    - name: persistent-data
+      persistentVolumeClaim:
+        claimName: app-data
+    - name: scratch
+      emptyDir: {}
+    - name: cache
+      emptyDir:
+        medium: Memory
+        sizeLimit: 32Mi
+    - name: podinfo
+      downwardAPI:
+        items:
+          - path: labels
+            fieldRef:
+              fieldPath: metadata.labels
+          - path: annotations
+            fieldRef:
+              fieldPath: metadata.annotations
