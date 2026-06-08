@@ -131,9 +131,56 @@ cat: can't open '/tmp-data/ephemeral.txt': No such file or directory
 
 This demonstrates the key difference: **PVC data survives pod deletion**, while **emptyDir data does not**.
 
+## emptyDir with Memory backing (tmpfs)
+
+By default emptyDir uses the node's disk. Setting `medium: Memory` makes Kubernetes back it with a **tmpfs** (RAM-backed filesystem) instead. This means:
+
+- Reads and writes never touch the node's disk — useful for sensitive scratch data or very fast I/O.
+- The volume counts against the container's memory limit.
+- A `sizeLimit` caps how much RAM the volume can consume.
+
+```sh
+kubectl apply -f 03-emptydir-memory.yaml
+kubectl wait --for=condition=Ready pod/emptydir-memory --timeout=60s
+```
+
+Confirm it is mounted as tmpfs:
+
+```sh
+kubectl exec emptydir-memory -- mount | grep /cache
+```
+
+```
+tmpfs on /cache type tmpfs (rw,relatime,size=32768k,inode64,noswap)
+```
+
+Check the 32 Mi size limit:
+
+```sh
+kubectl exec emptydir-memory -- df -h /cache
+```
+
+```
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs            32M  4.0K   32M   1% /cache
+```
+
+Write and read — it works like any other directory but is backed by RAM:
+
+```sh
+kubectl exec emptydir-memory -- bash -c 'echo "fast data" > /cache/item.txt && cat /cache/item.txt'
+```
+
+```
+fast data
+```
+
+> ℹ️ For inter-container sharing via emptyDir, see the [Multi-container Pods lab](../../../01-Pods/01.3-Multi/) which covers the sidecar pattern in detail.
+
 ### Cleanup
 
 ```sh
 kubectl delete -f 02-shell.yaml
 kubectl delete -f 01-pvc.yaml
+kubectl delete -f 03-emptydir-memory.yaml
 ```

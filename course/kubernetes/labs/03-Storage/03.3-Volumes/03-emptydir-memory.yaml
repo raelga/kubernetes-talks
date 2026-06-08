@@ -1,0 +1,40 @@
+---
+# emptyDir with medium: Memory — backed by a tmpfs (RAM) filesystem.
+# Reads/writes never touch the node's disk, which is useful for sensitive
+# scratch data or when you need very fast I/O.
+# sizeLimit caps how much RAM this volume can consume.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: emptydir-memory
+  labels:
+    app: emptydir
+spec:
+  containers:
+    - name: shell
+      image: raelga/toolbox
+      command:
+        - bash
+        - -c
+        - |
+          echo "Filesystem type of /cache:"
+          mount | grep /cache
+          echo "Writing to RAM-backed cache..."
+          echo "fast data" > /cache/item.txt
+          cat /cache/item.txt
+          sleep 3600
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+      volumeMounts:
+        - name: cache
+          mountPath: /cache
+  volumes:
+    - name: cache
+      emptyDir:
+        medium: Memory
+        sizeLimit: 32Mi
