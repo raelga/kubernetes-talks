@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  labels:
+    app: hello
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+        - name: hello
+          image: raelga/toolbox
+          command:
+            - bash
+            - -c
+            - |
+              echo "=== config ===" && env | grep -E 'APP_ENV|LOG_LEVEL'
+              echo "=== secret ===" && env | grep -E 'DB_HOST|API_KEY'
+              sleep 3600
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
