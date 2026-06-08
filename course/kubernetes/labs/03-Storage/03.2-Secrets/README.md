@@ -56,7 +56,9 @@ admin
 
 ## Creating Secrets from a manifest
 
-The `01-secret.yaml` file defines a secret with base64-encoded values:
+### Base64-encoded values (`data`)
+
+The `01-secret.yaml` file defines a secret with **base64-encoded** values in the `data` field. This is the standard wire format Kubernetes uses internally:
 
 ```sh
 kubectl apply -f 01-secret.yaml
@@ -65,6 +67,32 @@ kubectl apply -f 01-secret.yaml
 ```
 secret/secret-config created
 ```
+
+### Plaintext values (`stringData`)
+
+`03-secret-string.yaml` uses `stringData` instead. Kubernetes accepts plaintext here and base64-encodes it automatically on the server side — useful when writing manifests by hand and you want to avoid running `echo -n "..." | base64`:
+
+```sh
+kubectl apply -f 03-secret-string.yaml
+```
+
+```
+secret/secret-config-as-string created
+```
+
+Verify the value was stored and can be decoded:
+
+```sh
+kubectl get secret secret-config-as-string -o jsonpath='{.data.secret-key}' | base64 -d
+```
+
+```
+Hola desde el Lab
+```
+
+> ⚠️ `stringData` is write-only — the API converts it to `data` (base64) on write and never returns `stringData` on reads. Running `kubectl get -o yaml` will show the value under `data`, not `stringData`.
+
+Both `data` and `stringData` can coexist in the same manifest; `stringData` takes precedence for duplicate keys.
 
 ## Create a pod with Secrets attached
 
@@ -122,5 +150,6 @@ The values are automatically decoded from base64 when mounted — containers see
 ```sh
 kubectl delete -f 02-shell.yaml
 kubectl delete -f 01-secret.yaml
+kubectl delete -f 03-secret-string.yaml
 kubectl delete secret credentials readme
 ```
