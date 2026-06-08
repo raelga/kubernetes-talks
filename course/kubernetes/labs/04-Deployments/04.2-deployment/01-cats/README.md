@@ -1,89 +1,138 @@
-# Deployment Lab - Cats Application
+# Deployment
 
-## Overview
+A **Deployment** manages ReplicaSets and provides declarative updates for Pods. Instead of editing Pods directly, you describe the desired state and the Deployment controller changes the actual state at a controlled rate. It adds the features a bare ReplicaSet lacks:
 
-This lab demonstrates Kubernetes Deployments, which provide declarative updates for Pods and ReplicaSets. Unlike ReplicaSets, Deployments offer additional features like rolling updates, rollback capabilities, and deployment strategies.
+- **Rolling updates** — replace Pods gradually with zero downtime.
+- **Rollback** — revert to a previous revision if something breaks.
+- **Revision history** — every change is recorded.
 
-## Prerequisites
+The `cats.yaml` manifest defines a Deployment of **5 replicas** with a `RollingUpdate` strategy (`maxSurge: 2`, `maxUnavailable: 1`).
 
-- A running Kubernetes cluster
-- `kubectl` configured to access your cluster
-- Basic understanding of Kubernetes pods, ReplicaSets, and labels
+## Deploy the application
 
-## Lab Objectives
-
-- Deploy an application using Kubernetes Deployments
-- Expose the application using a Service
-- Perform rolling updates to different application versions
-- Observe deployment behavior and pod lifecycle
-- Practice cleanup operations
-
-## Instructions
-
-### 1. Deploy the initial application version
-
-```bash
-kubectl apply -f cats.yaml
+```sh
+kubectl apply -f cats.yaml -f service.yml
 ```
 
-### 2. Expose the application as a service
-
-```bash
-kubectl apply -f service.yaml
+```
+deployment.apps/cats created
+service/cats created
 ```
 
-### 3. Test the deployment
+Watch the rollout finish:
 
-```bash
-curl "http://$(kubectl get svc cats \
- -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}")"
-```
-
-### 4. Monitor the deployment
-
-Open a new terminal and run the following command to watch pod changes in real-time:
-
-```bash
-watch kubectl get pods
-```
-
-### 5. Deploy the "lia" version with monitoring
-
-```bash
-kubectl apply -f lia.yaml
-watch kubectl get pods
-```
-
-### 6. Deploy the "liam" version with monitoring
-
-```bash
-kubectl apply -f liam.yaml
-watch kubectl get pods
-```
-
-## Cleanup
-
-Remove all resources created in this lab:
-
-```bash
-kubectl delete all -l app=cats
-```
-
-## Key Concepts
-
-- **Deployment**: Provides declarative updates to Pods and ReplicaSets
-- **Rolling Updates**: Gradually replaces old pods with new ones
-- **Deployment Strategy**: Controls how updates are rolled out
-- **Revision History**: Deployments maintain a history for rollback purposes
-
-## Additional Commands
-
-Check deployment status:
-```bash
+```sh
 kubectl rollout status deployment/cats
 ```
 
-View deployment history:
-```bash
+```
+Waiting for deployment "cats" rollout to finish: 0 of 5 updated replicas are available...
+deployment "cats" successfully rolled out
+```
+
+A Deployment creates a ReplicaSet, which in turn creates the Pods. Note the ReplicaSet name includes a hash of the Pod template:
+
+```sh
+kubectl get deployment,rs -l app=cats
+```
+
+```
+NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/cats   5/5     5            5           16s
+
+NAME                              DESIRED   CURRENT   READY   AGE
+replicaset.apps/cats-64645d55c7   5         5         5       16s
+```
+
+## Access the application
+
+On Kind, reach the `LoadBalancer` Service through a port-forward:
+
+```sh
+kubectl port-forward svc/cats 8080:80
+```
+
+```sh
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
+```
+
+```
+200
+```
+
+Open <http://localhost:8080> to see the cat. Press `Ctrl+C` to stop the port-forward.
+
+## Rolling update
+
+Updating the image rolls out a new ReplicaSet while scaling down the old one. In a second terminal, watch the Pods:
+
+```sh
+kubectl get pods -l app=cats -w
+```
+
+Apply the `lia` version (`raelga/cats:lia`):
+
+```sh
+kubectl apply -f lia.yaml
+```
+
+```
+deployment.apps/cats configured
+```
+
+```sh
+kubectl rollout status deployment/cats
+```
+
+```
+Waiting for deployment "cats" rollout to finish: 2 out of 5 new replicas have been updated...
+Waiting for deployment "cats" rollout to finish: 1 old replicas are pending termination...
+deployment "cats" successfully rolled out
+```
+
+Because of `maxSurge: 2` / `maxUnavailable: 1`, Kubernetes brings up to 2 extra Pods at a time and never drops more than 1 below the desired count — so the app stays available throughout. The page should now show a different cat.
+
+## Revision history & rollback
+
+Every applied change creates a revision:
+
+```sh
 kubectl rollout history deployment/cats
+```
+
+```
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+```
+
+Roll back to the previous revision (back to `blanca`):
+
+```sh
+kubectl rollout undo deployment/cats
+kubectl rollout status deployment/cats
+```
+
+```
+deployment.apps/cats rolled back
+deployment "cats" successfully rolled out
+```
+
+Confirm the image reverted:
+
+```sh
+kubectl get pods -l app=cats -o jsonpath='{.items[0].spec.containers[0].image}{"\n"}'
+```
+
+```
+raelga/cats:blanca
+```
+
+> 💡 Tip: add `--record` (deprecated) or set a `kubernetes.io/change-cause` annotation to populate the `CHANGE-CAUSE` column, e.g.
+> `kubectl annotate deployment/cats kubernetes.io/change-cause="deploy lia" --overwrite`.
+
+### Cleanup
+
+```sh
+kubectl delete all -l app=cats
 ```

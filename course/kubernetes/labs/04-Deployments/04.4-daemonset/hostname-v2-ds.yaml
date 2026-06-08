@@ -48,9 +48,6 @@ spec:
               - path: "annotations"
                 fieldRef:
                   fieldPath: metadata.annotations
-              - path: "labels"
-                fieldRef:
-                  fieldPath: metadata.labels
               - path: "cpu_limit"
                 resourceFieldRef:
                   containerName: hostname

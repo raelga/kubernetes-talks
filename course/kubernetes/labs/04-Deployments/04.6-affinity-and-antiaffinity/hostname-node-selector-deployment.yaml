@@ -13,7 +13,8 @@ spec:
       labels:
         app: hostname-node-selector
     spec:
-      nodeName: ip-10-0-3-117.ec2.internal
+      nodeSelector:
+        kubernetes.io/hostname: node-to-be-replaced
       containers:
         - name: hostname
           image: ubuntu:trusty

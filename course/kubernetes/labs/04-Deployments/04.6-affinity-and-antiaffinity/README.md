@@ -1,177 +1,155 @@
-# Pod Affinity, Anti-Affinity, and Taints/Tolerations Lab
+# Scheduling: Affinity, Anti-Affinity, Taints & Tolerations
 
-## Overview
+By default the Kubernetes scheduler places Pods on any node with enough resources. These features give you fine-grained control over **where** Pods land:
 
-This lab explores advanced Kubernetes scheduling concepts including node selectors, pod affinity/anti-affinity, and taints/tolerations. These features give you fine-grained control over where pods are scheduled in your cluster.
+- **Node selectors / node affinity** — attract Pods to specific nodes.
+- **Pod affinity** — co-locate Pods near each other.
+- **Pod anti-affinity** — spread Pods apart (for high availability).
+- **Taints & tolerations** — repel Pods from nodes unless they explicitly tolerate it.
 
-## Prerequisites
+> A multi-node cluster makes these labs meaningful. See the [top-level README](../README.md) for a 3-node Kind config.
 
-- A running Kubernetes cluster with multiple nodes
-- `kubectl` configured to access your cluster
-- Basic understanding of Kubernetes pods and deployments
+## Part 1 — Node selector
 
-## Lab Objectives
+`hostname-node-selector-deployment.yaml` pins its Pod to a node via `nodeSelector` on the built-in `kubernetes.io/hostname` label. It ships with a **placeholder** value, so the Pod is intentionally unschedulable at first:
 
-- Understand node selection mechanisms
-- Implement pod affinity and anti-affinity rules
-- Work with taints and tolerations
-- Observe pod scheduling behavior
-- Compare different scheduling strategies
-
-## Part 1: Node Selector
-
-### 1. Deploy with node selector
-
-```bash
+```sh
 kubectl apply -f hostname-node-selector-deployment.yaml
+kubectl get pods -l app=hostname-node-selector
 ```
 
-### 2. Monitor pod placement
-
-Keep this shell visible to watch pod scheduling:
-
-```bash
-watch kubectl get pod -o=custom-columns=NODE:.spec.nodeName,NAME:.metadata.name
+```
+NAME                                      READY   STATUS    RESTARTS   AGE
+hostname-node-selector-7bd5fc86fc-2npjx   0/1     Pending   0          5s
 ```
 
-### 3. Get available nodes
+`describe` shows why — no node matches the selector:
 
-```bash
+```sh
+kubectl describe pod -l app=hostname-node-selector | grep -A2 Events
+```
+
+```
+  Warning  FailedScheduling  10s  default-scheduler  0/3 nodes are available: 3 node(s) didn't match Pod's node affinity/selector.
+```
+
+List your real nodes and patch the Deployment to target one of them:
+
+```sh
 kubectl get nodes -o name
 ```
 
-### 4. Update deployment to target specific node
-
-Replace the node name with an actual node from your cluster:
-
-```bash
-kubectl patch deployment hostname-node-selector -p '{"spec":{"template":{"spec":{"nodeName":"ip-10-0-2-161.ec2.internal"}}}}'
+```
+node/labs-test-control-plane
+node/labs-test-worker
+node/labs-test-worker2
 ```
 
-## Part 2: Affinity and Anti-Affinity
-
-### 5. Test node affinity
-
-Deploy pods with node affinity rules:
-
-```bash
-kubectl apply -f hostname-affinity-deployment.yaml
+```sh
+NODE=labs-test-worker   # replace with one of your worker nodes
+kubectl patch deployment hostname-node-selector \
+  -p "{\"spec\":{\"template\":{\"spec\":{\"nodeSelector\":{\"kubernetes.io/hostname\":\"$NODE\"}}}}}"
+kubectl rollout status deployment/hostname-node-selector
 ```
 
-### 6. Test pod anti-affinity
+The Pod now schedules onto the chosen node:
 
-Deploy pods with anti-affinity rules to spread across nodes:
-
-```bash
-kubectl apply -f hostname-antiaffinity-deployment.yaml
+```sh
+kubectl get pods -l app=hostname-node-selector -o=custom-columns=NODE:.spec.nodeName,NAME:.metadata.name
 ```
 
-### 7. Review pod distribution
-
-```bash
-kubectl get pod -o=custom-columns=NODE:.spec.nodeName,NAME:.metadata.name
+```
+NODE               NAME
+labs-test-worker   hostname-node-selector-58b678d588-smpdk
 ```
 
-**Expected output example:**
-```
-NODE                         NAME
-ip-10-0-3-172.ec2.internal   hostname-affinity-699bffc99b-7gvnq
-ip-10-0-3-172.ec2.internal   hostname-affinity-699bffc99b-m8zjf
-ip-10-0-3-172.ec2.internal   hostname-affinity-699bffc99b-ngxqj
-ip-10-0-2-244.ec2.internal   hostname-anti-affinity-54dcf744b4-58frh
-ip-10-0-3-172.ec2.internal   hostname-anti-affinity-54dcf744b4-6jdlb
-ip-10-0-3-172.ec2.internal   hostname-anti-affinity-54dcf744b4-ltsz5
-ip-10-0-2-244.ec2.internal   hostname-node-selector-8668c8cb75-wk7n6
+## Part 2 — Pod affinity and anti-affinity
+
+`hostname-affinity-deployment.yaml` uses **podAffinity** (3 replicas that prefer to sit together) and `hostname-antiaffinity-deployment.yaml` uses **podAntiAffinity** (3 replicas that prefer to spread). Both use `preferredDuringScheduling…` so they are soft preferences, not hard requirements.
+
+```sh
+kubectl apply -f hostname-affinity-deployment.yaml -f hostname-antiaffinity-deployment.yaml
+kubectl rollout status deployment/hostname-affinity
+kubectl rollout status deployment/hostname-anti-affinity
 ```
 
-## Part 3: Taints and Tolerations
+Look at the distribution:
 
-### 8. Identify the busiest node
-
-Find the node with the most pods:
-
-```bash
-export TOP_NODE=$(kubectl get pod -o=custom-columns=NODE:.spec.nodeName --no-headers | sort | uniq -c | sort -r | awk '{print $2}' | head -n1)
-echo ${TOP_NODE}
+```sh
+kubectl get pod -o=custom-columns=NODE:.spec.nodeName,NAME:.metadata.name --sort-by=.spec.nodeName | grep affinity
 ```
 
-### 9. Monitor pod movement
-
-Run this command in a visible shell to watch pod changes:
-
-```bash
-kubectl get pods -o wide -w
+```
+labs-test-worker    hostname-anti-affinity-6b9fb6b989-69l4w
+labs-test-worker    hostname-anti-affinity-6b9fb6b989-pfk8m
+labs-test-worker2   hostname-affinity-5c679c5877-5hfcf
+labs-test-worker2   hostname-affinity-5c679c5877-k8gtw
+labs-test-worker2   hostname-affinity-5c679c5877-vdw4t
+labs-test-worker2   hostname-anti-affinity-6b9fb6b989-2sgtq
 ```
 
-### 10. Apply taint to the node
+The three **affinity** Pods all landed on the same node (co-located), while the **anti-affinity** Pods were spread across the available nodes (2 + 1, since there are only 2 schedulable workers for 3 replicas).
 
-```bash
+## Part 3 — Taints and tolerations
+
+A **taint** marks a node as repelling Pods; a **toleration** lets a Pod ignore that taint. The `NoExecute` effect even **evicts** running Pods that don't tolerate it.
+
+Pick the busiest node and taint it:
+
+```sh
+TOP_NODE=$(kubectl get pod -o=custom-columns=NODE:.spec.nodeName --no-headers \
+  | grep -v '<none>' | sort | uniq -c | sort -r | awk '{print $2}' | head -n1)
+echo "$TOP_NODE"
 kubectl taint nodes ${TOP_NODE} area=vip:NoExecute
 ```
 
-### 11. Inspect the tainted node
-
-```bash
-kubectl describe node ${TOP_NODE}
+```
+labs-test-worker2
+node/labs-test-worker2 tainted
 ```
 
-### 12. Observe pod eviction
+The Pods that were running there are evicted and rescheduled (or go `Pending` if the other nodes are full):
 
-Check what happened to the pods on the tainted node:
-
-```bash
-kubectl get pods -o wide
+```sh
+kubectl get pods -o wide -l app=hostname-affinity
 ```
 
-### 13. Deploy pods that tolerate the taint
+```
+NAME                                 READY   STATUS    NODE
+hostname-affinity-5c679c5877-855qg   0/1     Pending   <none>
+hostname-affinity-5c679c5877-cnbl6   0/1     Pending   <none>
+hostname-affinity-5c679c5877-hxq4x   0/1     Pending   <none>
+```
 
-```bash
+Now deploy `hostname-toleration-deployment.yaml`, whose Pods **tolerate** `area=vip:NoExecute` — they are allowed back onto the tainted node:
+
+```sh
 kubectl apply -f hostname-toleration-deployment.yaml
+kubectl get pods -l app=hostname-tolerations -o=custom-columns=NODE:.spec.nodeName,NAME:.metadata.name
 ```
 
-### 14. Verify toleration works
+```
+NODE                NAME
+labs-test-worker2   hostname-tolerations-596699cb6-2zn9s
+labs-test-worker2   hostname-tolerations-596699cb6-rl7dn
+labs-test-worker    hostname-tolerations-596699cb6-8d9ht
+```
 
-The new pods should be able to run on the tainted node.
+The toleration Pods can schedule onto `labs-test-worker2` even though it is tainted.
 
-## Cleanup
+### Cleanup
 
-Remove all resources and node taints:
-
-```bash
+```sh
 kubectl delete -f .
 kubectl taint nodes ${TOP_NODE} area=vip:NoExecute-
 ```
 
-## Key Concepts
+## Scheduling rules at a glance
 
-- **Node Selector**: Simple key-value matching for node selection
-- **Node Affinity**: More expressive node selection with required/preferred rules
-- **Pod Affinity**: Schedule pods near other pods
-- **Pod Anti-Affinity**: Schedule pods away from other pods
-- **Taints**: Mark nodes as unsuitable for certain pods
-- **Tolerations**: Allow pods to be scheduled on tainted nodes
-
-## Scheduling Rules Comparison
-
-| Method | Use Case | Flexibility |
-|--------|----------|-------------|
-| Node Selector | Simple node targeting | Low |
-| Node Affinity | Complex node rules | High |
-| Pod Affinity | Co-location of pods | High |
-| Pod Anti-Affinity | Pod separation | High |
-| Taints/Tolerations | Node specialization | Medium |
-
-## Best Practices
-
-- Use anti-affinity for high availability
-- Use affinity for performance optimization
-- Combine multiple scheduling rules for complex requirements
-- Test scheduling rules in development environments
-- Consider resource requirements alongside scheduling rules
-
-## Troubleshooting
-
-- Use `kubectl describe pod` to see scheduling failures
-- Check node labels with `kubectl get nodes --show-labels`
-- Verify taint syntax: `key=value:effect`
-- Remember to remove taints during cleanup
+| Method | Direction | Strength | Use case |
+|--------|-----------|----------|----------|
+| Node selector | Attract to node | Hard | Simple node targeting |
+| Node affinity | Attract to node | Hard or soft | Expressive node rules |
+| Pod affinity | Attract to pods | Hard or soft | Co-location |
+| Pod anti-affinity | Repel from pods | Hard or soft | High availability |
+| Taint / toleration | Repel from node | Hard | Dedicated / specialised nodes |

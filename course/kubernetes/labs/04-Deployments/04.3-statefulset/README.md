@@ -1,113 +1,124 @@
-# StatefulSet Lab - MySQL
+# StatefulSet
 
-## Overview
+A **StatefulSet** manages Pods that need a **stable identity** and **persistent per-Pod storage** — databases, message brokers, and other clustered, stateful apps. Compared to a Deployment, a StatefulSet gives each Pod:
 
-This lab demonstrates Kubernetes StatefulSets, which are designed for stateful applications that require stable network identities, persistent storage, and ordered deployment/scaling. You'll deploy MySQL as a StatefulSet and connect it to WordPress.
+- A **stable name**: `mysql-0`, `mysql-1`, … (not a random hash).
+- A **stable network identity** via a headless Service: `mysql-0.mysql`.
+- Its **own PersistentVolumeClaim**, created from a `volumeClaimTemplate`, that survives Pod rescheduling.
+- **Ordered** creation, scaling, and deletion.
+
+This lab deploys MySQL as a StatefulSet.
 
 ## Prerequisites
 
-- A running Kubernetes cluster with dynamic volume provisioning
-- `kubectl` configured to access your cluster
-- Basic understanding of Kubernetes Deployments, Services, and Persistent Volumes
-- A default StorageClass configured in your cluster
+A default `StorageClass` for dynamic provisioning. Kind ships with one named `standard` already set as default — verify with:
 
-## Lab Objectives
-
-- Deploy a MySQL database using StatefulSet
-- Understand StatefulSet characteristics (stable network identity, persistent storage)
-- Use ephemeral containers for debugging
-- Connect WordPress to the StatefulSet MySQL
-- Compare StatefulSets with Deployments
-
-## Instructions
-
-### 1. Check existing storage resources
-
-```bash
-kubectl get -n default pvc,pv,storageclass
+```sh
+kubectl get storageclass
 ```
 
-### 2. Set default StorageClass (if needed)
-
-```bash
-kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```
+NAME                 PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+standard (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  10m
 ```
 
-### 3. Deploy MySQL StatefulSet
+> On clusters where the default class has a different name (e.g. `gp2` on EKS), mark it default with:
+> `kubectl patch storageclass <name> -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'`
 
-```bash
-kubectl apply -f mysql-sts.yaml
+## Deploy MySQL
+
+The credentials live in a Secret; the StatefulSet and its headless Service are in `mysql-sts.yaml`:
+
+```sh
+kubectl apply -f mysql-credentials-secret.yaml -f mysql-sts.yaml
+kubectl rollout status statefulset/mysql
 ```
 
-### 4. Verify StatefulSet deployment
-
-```bash
-kubectl get statefulset
-kubectl get pods -l app=mysql
-kubectl get pvc
+```
+secret/mysql-credentials created
+service/mysql created
+statefulset.apps/mysql created
+partitioned roll out complete: 1 new pods have been updated...
 ```
 
-### 5. Check for any deployment issues
+The Pod is named `mysql-0` (ordinal index), and the Service is **headless** (`CLUSTER-IP: None`), which is what gives each Pod a stable DNS name:
 
-```bash
-kubectl describe pod mysql-0
+```sh
+kubectl get statefulset,pod,svc -l app=mysql
 ```
 
-### 6. Debug using ephemeral containers
+```
+NAME                     READY   AGE
+statefulset.apps/mysql   1/1     14s
 
-Use ephemeral containers to connect to the MySQL database:
+NAME          READY   STATUS    RESTARTS   AGE
+pod/mysql-0   1/1     Running   0          14s
 
-```bash
-kubectl debug pod/mysql-0 --image=mysql -ti -- mysql -h 127.0.0.1 -padmin
+NAME            TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)    AGE
+service/mysql   ClusterIP   None         <none>        3306/TCP   14s
 ```
 
-This demonstrates the ephemeral container feature for debugging running pods.
+## Per-Pod persistent storage
 
-### 7. Deploy WordPress connected to StatefulSet MySQL
+The `volumeClaimTemplate` named `volume` produces a PVC per Pod, named `<template>-<pod>` → `volume-mysql-0`:
 
-```bash
-kubectl apply -f wordpress-deployment.yaml
+```sh
+kubectl get pvc -l app=mysql
 ```
 
-### 8. Get the WordPress service endpoint
-
-```bash
-kubectl get svc wordpress
+```
+NAME             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+volume-mysql-0   Bound    pvc-ffa5482e-5d96-435b-96ce-fd7893daac4b   1Gi        RWO            standard       14s
 ```
 
-### 9. Test the complete application
+## Connect to the database
 
-Access WordPress through the LoadBalancer endpoint and verify it can connect to the MySQL StatefulSet.
+Once MySQL finishes initialising (give it ~20–30s after the Pod is Ready), connect with the MySQL client inside the Pod. The root password comes from the Secret (`admin`):
 
-## Cleanup
-
-Remove all resources created in this lab:
-
-```bash
-kubectl delete -f .
+```sh
+kubectl exec -it mysql-0 -- mysql -uroot -padmin -e "SHOW DATABASES;"
 ```
 
-**Note**: StatefulSet PVCs are not automatically deleted and may need manual cleanup.
+```
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| wordpress          |
++--------------------+
+```
 
-## Key Concepts
+> The `wordpress` database was created automatically from the `MYSQL_DATABASE` env var.
+> You can also debug a running Pod without a shell using an ephemeral container:
+> `kubectl debug -it pod/mysql-0 --image=mysql:8 -- mysql -h127.0.0.1 -padmin`
 
-- **StatefulSet**: Manages stateful applications with stable network identities
-- **Ordered Deployment**: Pods are created, updated, and deleted in order
-- **Stable Network Identity**: Each pod gets a predictable hostname (mysql-0, mysql-1, etc.)
-- **Persistent Storage**: Each pod gets its own persistent volume
-- **Ephemeral Containers**: Temporary containers for debugging purposes
+## Stable identity survives rescheduling
 
-## StatefulSet vs Deployment
+Delete the Pod — the StatefulSet recreates it with the **same name** and **reattaches the same PVC** (data is preserved):
 
-| Feature | StatefulSet | Deployment |
-|---------|-------------|------------|
-| Pod Names | Predictable (mysql-0, mysql-1) | Random |
-| Storage | Per-pod persistent volumes | Shared or ephemeral |
-| Deployment Order | Sequential | Parallel |
-| Use Case | Databases, clustered apps | Stateless applications |
+```sh
+kubectl delete pod mysql-0
+kubectl rollout status statefulset/mysql
+kubectl get pvc -l app=mysql
+```
 
-## Troubleshooting
+```
+pod "mysql-0" deleted
+partitioned roll out complete: 1 new pods have been updated...
+NAME             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+volume-mysql-0   Bound    pvc-ffa5482e-5d96-435b-96ce-fd7893daac4b   1Gi        RWO            standard       60s
+```
 
-- If the StatefulSet pod is stuck in `Pending`, check StorageClass and PVC status
-- Ensure your cluster has dynamic volume provisioning enabled
-- For debugging, use ephemeral containers or `kubectl logs` to inspect issues
+The PVC (`pvc-ffa5482e…`) is unchanged — a Deployment with shared/ephemeral storage could not guarantee this.
+
+### Cleanup
+
+Deleting the StatefulSet does **not** delete its PVCs (by design, to protect data). Remove them explicitly:
+
+```sh
+kubectl delete -f mysql-sts.yaml -f mysql-credentials-secret.yaml
+kubectl delete pvc -l app=mysql
+```

@@ -1,115 +1,102 @@
-# DaemonSet Lab - Hostname Service
+# DaemonSet
 
-## Overview
+A **DaemonSet** ensures that a copy of a Pod runs on **every node** (or a subset of nodes). As nodes join the cluster, the DaemonSet adds Pods to them; as nodes leave, those Pods are garbage-collected. This is the standard pattern for node-level agents:
 
-This lab demonstrates Kubernetes DaemonSets, which ensure that a copy of a pod runs on every node in the cluster. DaemonSets are commonly used for system daemons, monitoring agents, log collectors, and other node-level services.
+- Log collectors (Fluentd, Filebeat)
+- Monitoring agents (Node Exporter)
+- CNI and kube-proxy networking
+- Storage daemons
 
-## Prerequisites
+## Deploy the DaemonSet
 
-- A running Kubernetes cluster with multiple nodes
-- `kubectl` configured to access your cluster
-- Basic understanding of Kubernetes pods and deployments
+The `hostname-ds.yaml` manifest runs a small Ubuntu container that prints its hostname every 10 seconds:
 
-## Lab Objectives
-
-- Deploy a DaemonSet that runs on every cluster node
-- Understand DaemonSet behavior and scheduling
-- Perform rolling updates on DaemonSets
-- Explore the Downward API for accessing pod/node information
-- Compare DaemonSets with other workload types
-
-## Instructions
-
-### 1. Deploy the initial DaemonSet
-
-```bash
+```sh
 kubectl apply -f hostname-ds.yaml
+kubectl rollout status ds/hostname
 ```
 
-### 2. Verify DaemonSet deployment
-
-Check that pods are running on all nodes:
-
-```bash
-kubectl get pods -l app=hostname
-kubectl get nodes
+```
+daemonset.apps/hostname created
+daemon set "hostname" successfully rolled out
 ```
 
-**Expected Result**: The number of pods should equal the number of nodes in your cluster.
-
-### 3. Monitor DaemonSet logs
-
-```bash
-kubectl logs -f -l app=hostname
+```sh
+kubectl get ds hostname
 ```
 
-### 4. Perform a rolling update with Downward API
-
-Deploy version 2 which includes Downward API volume mounts:
-
-```bash
-kubectl apply -f hostname-v2-ds.yaml
+```
+NAME       DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+hostname   2         2         2       2            2           <none>          21s
 ```
 
-### 5. Watch the rolling update
+There is **one Pod per node**, scheduled directly by the DaemonSet controller:
 
-```bash
-kubectl get pods -l app=hostname -w
-```
-
-### 6. Explore the Downward API
-
-Connect to one of the updated pods and examine the Downward API information:
-
-```bash
-kubectl exec -ti $(kubectl get pods -l app=hostname -o name --field-selector=status.phase==Running | head -n1) -- /bin/bash
-```
-
-Inside the pod, check the `/etc/podinfo` folder to see the information provided by the Downward API.
-
-### 7. Examine pod distribution
-
-Verify pods are distributed across all nodes:
-
-```bash
+```sh
 kubectl get pods -l app=hostname -o wide
 ```
 
-## Cleanup
-
-Remove all resources created in this lab:
-
-```bash
-kubectl delete all -l app=hostname
+```
+NAME             READY   STATUS    RESTARTS   AGE   IP            NODE                NOMINATED NODE   READINESS GATES
+hostname-4h4l6   1/1     Running   0          21s   10.244.2.22   labs-test-worker    <none>           <none>
+hostname-5cgxx   1/1     Running   0          21s   10.244.1.20   labs-test-worker2   <none>           <none>
 ```
 
-## Key Concepts
+> ℹ️ On a 3-node Kind cluster `DESIRED` is **2**, not 3, because the control-plane node carries a `node-role.kubernetes.io/control-plane:NoSchedule` taint that the DaemonSet does not tolerate. Add a matching toleration (or run on a cluster without that taint) to also schedule there.
 
-- **DaemonSet**: Ensures one pod copy runs on every node
-- **Node Selection**: DaemonSets automatically schedule on all nodes (unless restricted)
-- **Rolling Updates**: DaemonSets support rolling update strategies
-- **Downward API**: Provides pod and node metadata to containers
-- **System Services**: Common use case for cluster-wide services
+Check the logs across all DaemonSet Pods:
 
-## DaemonSet Use Cases
+```sh
+kubectl logs -l app=hostname --tail=1
+```
 
-- **Log Collection**: Fluentd, Filebeat for centralized logging
-- **Monitoring**: Node monitoring agents like Node Exporter
-- **Storage**: Distributed storage daemons like Ceph
-- **Networking**: CNI plugins and network monitoring tools
-- **Security**: Security scanning and compliance agents
+```
+DaemonSet running on hostname-4h4l6
+DaemonSet running on hostname-5cgxx
+```
 
-## Comparison with Other Workloads
+## Rolling update with the Downward API
 
-| Feature | DaemonSet | Deployment | StatefulSet |
-|---------|-----------|------------|-------------|
-| Scheduling | One per node | Distributed | Ordered |
-| Scaling | Auto (with nodes) | Manual/Auto | Manual |
-| Use Case | System services | Stateless apps | Stateful apps |
+`hostname-v2-ds.yaml` updates the command and adds a **Downward API** volume that exposes the Pod's labels, annotations, and resource limits/requests as files. DaemonSets honour the `RollingUpdate` strategy:
 
-## Troubleshooting
+```sh
+kubectl apply -f hostname-v2-ds.yaml
+kubectl rollout status ds/hostname
+```
 
-- If pods don't appear on all nodes, check node taints and tolerations
-- DaemonSets ignore resource requests/limits for scheduling decisions
-- Use `kubectl describe daemonset` to check for issues
-- Downward API data is mounted as files in the specified volume path
+```
+daemonset.apps/hostname configured
+daemon set "hostname" successfully rolled out
+```
+
+Inspect the injected metadata inside one of the Pods:
+
+```sh
+POD=$(kubectl get pods -l app=hostname -o name | head -1)
+kubectl exec $POD -- ls /etc/podinfo/
+```
+
+```
+annotations
+cpu_limit
+cpu_request
+labels
+mem_limit
+mem_request
+```
+
+The resource fields are converted using the `divisor` set in the manifest (CPU in milli-cores, memory in Mi):
+
+```sh
+kubectl exec $POD -- sh -c 'echo "cpu_limit=$(cat /etc/podinfo/cpu_limit) mem_limit=$(cat /etc/podinfo/mem_limit)Mi"'
+```
+
+```
+cpu_limit=10 mem_limit=31Mi
+```
+
+### Cleanup
+
+```sh
+kubectl delete -f hostname-ds.yaml
+```
