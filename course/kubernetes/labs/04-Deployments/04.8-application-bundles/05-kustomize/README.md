@@ -1,4 +1,4 @@
-k### Service version
+# Service version
 
 ```
 kubectl apply -k argocd/service

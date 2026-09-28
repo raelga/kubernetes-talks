@@ -27,6 +27,18 @@ Because the Deployment's pod template references the hashed name, **any change t
 
 `secrets.env` is listed in `.gitignore` — in a real project you would populate it from a secrets manager (Vault, AWS Secrets Manager, etc.) at deploy time.
 
+Create the local `secrets.env` file before running Kustomize:
+
+```sh
+cat > secrets.env <<'EOF'
+DB_HOST=mysql.default.svc.cluster.local
+API_KEY=abc123
+EOF
+```
+
+This file is intentionally ignored by Git.
+
+
 ## Preview the generated output
 
 Before applying anything, inspect what Kustomize produces:
@@ -217,4 +229,6 @@ API_KEY=abc123
 
 ```sh
 kubectl delete -k .
+sed -i 's/LOG_LEVEL=debug/LOG_LEVEL=info/' app.env
+rm -f secrets.env
 ```

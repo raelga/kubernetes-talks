@@ -10,14 +10,20 @@ kubectl patch -n kubernetes-dashboard service kubernetes-dashboard -p '{"spec":{
 
 ### Access the Kubernetes Dashboard
 
+On cloud clusters, the `LoadBalancer` service can get an external hostname or IP:
 
+```sh
+kubectl get -n kubernetes-dashboard svc kubernetes-dashboard
 ```
-export APP_URL=$(kubectl get -n kubernetes-dashboard svc kubernetes-dashboard \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}") && \
-    echo https://${APP_URL}/
-while true; do curl -I ${APP_URL}; sleep 5; done;
-echo ${APP_URL}
+
+On Kind, use a port-forward instead:
+
+```sh
+kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard 8443:443
 ```
+
+Then open <https://localhost:8443/>.
+
 
 ### Create a service account to access the dashboard
 
@@ -29,8 +35,9 @@ kubectl describe clusterrole cluster-admin
 kubectl apply -n kubernetes-dashboard -f cluster-admin-dashboard-rbac.yaml
 ```
 
-```
-kubectl describe secret -n kubernetes-dashboard $(kubectl get secret -n kubernetes-dashboard | awk '/^cluster-admin-dashboard-token-/{print $1}') | awk '$1=="token:"{print $2}'
+```sh
+kubectl -n kubernetes-dashboard get secret cluster-admin-dashboard-token \
+  -o jsonpath='{.data.token}' | base64 -d
 ```
 
 ### Deploy Guestbook app using kubectl

@@ -67,10 +67,10 @@ Visit the WordPress URL. You'll notice that all MySQL-backed data is gone becaus
 ### 8. Deploy MySQL with persistent storage
 
 ```bash
-kubectl apply -f mysql-deployment.yaml
+kubectl apply -f mysql-deployment-pvc.yaml
 ```
 
-This version should include a PVC for data persistence.
+This version includes a PVC for data persistence.
 
 ### 9. Delete the MySQL pod again
 
