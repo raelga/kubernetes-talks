@@ -9,7 +9,7 @@ A **DaemonSet** ensures that a copy of a Pod runs on **every node** (or a subset
 
 ## Deploy the DaemonSet
 
-The `hostname-ds.yaml` manifest runs a small Ubuntu container that prints its hostname every 10 seconds:
+The `hostname-ds.yaml` manifest runs a small Ubuntu container on each worker node. It uses the **Downward API** to inject `spec.nodeName` as `NODE_NAME`, then prints the Kubernetes node where the Pod was scheduled every 10 seconds:
 
 ```sh
 kubectl apply -f hostname-ds.yaml
@@ -51,13 +51,13 @@ kubectl logs -l app=hostname --tail=1
 ```
 
 ```
-DaemonSet running on hostname-4h4l6
-DaemonSet running on hostname-5cgxx
+DaemonSet pod hostname-4h4l6 is running on Kubernetes node labs-test-worker
+DaemonSet pod hostname-5cgxx is running on Kubernetes node labs-test-worker2
 ```
 
 ## Rolling update with the Downward API
 
-`hostname-v2-ds.yaml` updates the command and adds a **Downward API** volume that exposes the Pod's labels, annotations, and resource limits/requests as files. DaemonSets honour the `RollingUpdate` strategy:
+`hostname-v2-ds.yaml` updates the command to also print the Pod namespace, and adds a **Downward API** volume that exposes the Pod's labels, annotations, namespace, and resource limits/requests as files. DaemonSets honour the `RollingUpdate` strategy:
 
 ```sh
 kubectl apply -f hostname-v2-ds.yaml
@@ -83,9 +83,10 @@ cpu_request
 labels
 mem_limit
 mem_request
+namespace
 ```
 
-The resource fields are converted using the `divisor` set in the manifest (CPU in milli-cores, memory in Mi):
+The `namespace` file comes from `metadata.namespace`. The resource fields are converted using the `divisor` set in the manifest (CPU in milli-cores, memory in Mi):
 
 ```sh
 kubectl exec $POD -- sh -c 'echo "cpu_limit=$(cat /etc/podinfo/cpu_limit) mem_limit=$(cat /etc/podinfo/mem_limit)Mi"'
@@ -93,6 +94,14 @@ kubectl exec $POD -- sh -c 'echo "cpu_limit=$(cat /etc/podinfo/cpu_limit) mem_li
 
 ```
 cpu_limit=10 mem_limit=31Mi
+```
+
+```sh
+kubectl exec $POD -- cat /etc/podinfo/namespace
+```
+
+```
+default
 ```
 
 ### Cleanup

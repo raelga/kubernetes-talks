@@ -19,13 +19,22 @@ spec:
         # This container is run once on each Node in the cluster
         - name: hostname
           image: ubuntu:trusty
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           command:
             - /bin/sh
           args:
             - -c
             - >-
               while [ true ]; do
-              echo "DaemonSet running on $(hostname)" ;
+              echo "DaemonSet pod ${POD_NAME} is running on Kubernetes node ${NODE_NAME}" ;
               sleep 10 ;
               done
           resources:
