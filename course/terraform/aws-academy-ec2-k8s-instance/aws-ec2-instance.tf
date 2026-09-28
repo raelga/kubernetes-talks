@@ -65,6 +65,7 @@ output "ssh_cmd" {
     "ssh -o StrictHostKeyChecking=no -i ~/.ssh/labsuser.pem -i %s %s@%s",
     module.ec2.terraform_private_key_path, module.ec2.system_user, module.ec2.public_ip
   )
+  sensitive = true
 }
 
 output "ssh_host" {

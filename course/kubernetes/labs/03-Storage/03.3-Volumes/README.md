@@ -175,7 +175,7 @@ kubectl exec emptydir-memory -- bash -c 'echo "fast data" > /cache/item.txt && c
 fast data
 ```
 
-> ℹ️ For inter-container sharing via emptyDir, see the [Multi-container Pods lab](../../../01-Pods/01.3-Multi/) which covers the sidecar pattern in detail.
+> ℹ️ For inter-container sharing via emptyDir, see the [Multi-container Pods lab](../../01-Pods/01.3-Multi/) which covers the sidecar pattern in detail.
 
 ### Cleanup
 
