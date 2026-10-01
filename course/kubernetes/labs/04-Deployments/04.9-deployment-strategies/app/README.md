@@ -21,7 +21,7 @@ $ docker run -d \
     --name app \
     -p 8080:8080 \
     -h host-1 \
-    -e VERSION=v1.0.0
+    -e VERSION=v1.0.0 \
     raelga/k8s-deployment-strategies
 ```
 

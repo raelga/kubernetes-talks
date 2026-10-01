@@ -1,103 +1,122 @@
-Shadow deployment
-=================
+# Shadow deployment using Istio
 
-> Version B receives real-world traffic alongside version A and doesn’t impact
-the response.
+A shadow deployment mirrors real requests to version 2 while returning only the
+version 1 response. Mirrored traffic must not trigger unsafe side effects; use
+isolated downstream dependencies when testing state-changing workloads.
 
-![kubernetes shadow deployment](grafana-shadow.png)
+![Kubernetes shadow deployment](grafana-shadow.png)
 
-A shadow deployment consists of releasing version B alongside version A, fork
-version A’s incoming requests and send them to version B as well without
-impacting production traffic. This is particularly useful to test production
-load on a new feature. A rollout of the application is triggered when stability
-and performance meet the requirements.
+## Prerequisites and shared Istio installation
 
-This technique is fairly complex to setup and needs special requirements,
-especially with egress traffic. For example, given a shopping cart platform,
-if you want to shadow test the payment service you can end-up having customers
-paying twice for their order. In this case, you can solve it by creating a
-mocking service that replicates the response from the provider.
+Use an EKS or Kind cluster with `kubectl`, Helm 3, and `curl`. Install Istio
+1.30.5 once for the cluster if these shared releases are not already present:
 
-In this example, we make use of [Istio](https://istio.io) to mirror traffic to
-the secondary deployment.
-
-## Steps to follow
-
-1. version 1 is serving HTTP traffic using Istio
-1. deploy version 2
-1. mirror version 1 incoming traffic to version 2
-1. wait enought time to confirm that version 2 is stable and not throwing
-   unexpected errors
-1. switch incoming traffic from version 1 to version 2
-
-## In practice
-
-Before starting, it is recommended to know the basic concept of the
-[Istio routing API](https://istio.io/blog/2018/v1alpha3-routing/).
-
-### Deploy Istio
-
-In this example, Istio 1.13.4 is used. To install Istio, follow the
-[instructions](https://istio.io/latest/docs/setup/install/helm/) from the
-Istio website.
-
-Automatic sidecar injection should be enabled by default. Then annotate the
-default namespace to enable it.
-
-```
-$ kubectl label namespace default istio-injection=enabled
+```bash
+helm repo add istio https://istio-release.storage.googleapis.com/charts \
+  --force-update
+helm repo update
+helm upgrade --install istio-base istio/base \
+  --namespace istio-system --create-namespace --version 1.30.5 --wait
+helm upgrade --install istiod istio/istiod \
+  --namespace istio-system --version 1.30.5 --wait
+helm upgrade --install istio-ingress istio/gateway \
+  --namespace istio-ingress --create-namespace --version 1.30.5 \
+  --set labels.istio=ingressgateway --wait
+kubectl rollout status deployment/istiod -n istio-system --timeout=5m
+kubectl rollout status deployment/istio-ingress -n istio-ingress --timeout=5m
 ```
 
-### Deploy both applications
+On EKS, enable cross-zone balancing and route only to nodes with a local gateway endpoint:
 
-Back to the shadow directory from this repo, deploy both applications using the
-istioctl command to inject the Istio sidecar container which is used to proxy
-requests:
-
-```
-$ kubectl apply -f app-v1.yaml -f app-v2.yaml
-```
-
-Expose both services via the Istio Gateway and create a VirtualService to match
-requests to the my-app-v1 service:
-
-```
-$ kubectl apply -f ./gateway.yaml -f ./virtualservice.yaml
+```bash
+helm upgrade istio-ingress istio/gateway \
+  --namespace istio-ingress --version 1.30.5 --reuse-values \
+  --set service.externalTrafficPolicy=Local \
+  --set-string 'service.annotations.service\.beta\.kubernetes\.io/aws-load-balancer-cross-zone-load-balancing-enabled=true' \
+  --wait
 ```
 
-At this point, if you make a request against the Istio ingress gateway with the
-given host `my-app.local`, you should only see version 1 responding:
+The control plane and ingress gateway are shared cluster infrastructure. This
+scenario uses its own sidecar-injected namespace and cleanup removes only that
+namespace.
 
-```
-$ curl $(minikube service istio-ingressgateway -n istio-system --url | head -n1) -H 'Host: my-app.local'
-Host: my-app-v1-6d577d97b4-lxn22, Version: v1.0.0
-```
+## Deploy the applications and primary route
 
-### Enable traffic mirroring
+Run all remaining commands from this directory:
 
-```
-$ kubectl apply -f ./virtualservice-mirror.yaml
-```
-
-Throw few requests to the service, only version 1 should be seen in the
-response:
-
-```
-$ curl $(minikube service istio-ingressgateway -n istio-system --url | head -n1) -H 'Host: my-app.local'
+```bash
+kubectl create namespace shadow-istio --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace shadow-istio istio-injection=enabled --overwrite
+kubectl apply -n shadow-istio -f app-v1.yaml -f app-v2.yaml
+kubectl rollout status deployment/my-app-v1 -n shadow-istio --timeout=5m
+kubectl rollout status deployment/my-app-v2 -n shadow-istio --timeout=5m
+kubectl apply -n shadow-istio -f gateway.yaml -f virtualservice.yaml
+kubectl get pods -n shadow-istio
 ```
 
-If you check the logs from both pods, you should see all version 1 incoming
-requests being mirrored to version 2:
+Each application Pod should show both the application and sidecar containers as
+ready.
 
-```
-$ kubectl logs deploy/my-app-v1 -c my-app
-$ kubectl logs deploy/my-app-v2 -c my-app
+### Access on EKS
+
+Wait for the gateway hostname, then set the scenario URL:
+
+```bash
+kubectl get service istio-ingress -n istio-ingress -w
+export ISTIO_URL="http://$(kubectl get service istio-ingress \
+  -n istio-ingress \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 ```
 
-### Cleanup
+### Access on Kind
 
+Keep this port-forward running in a separate terminal:
+
+```bash
+kubectl port-forward service/istio-ingress -n istio-ingress 8080:80
 ```
-$ kubectl delete gateway/my-app virtualservice/my-app
-$ kubectl delete -f ./app-v1.yaml -f ./app-v2.yaml
-$ kubectl delete -f <PATH-TO-ISTIO>/install/kubernetes/istio-demo.yaml
+
+In the scenario terminal, set the URL:
+
+```bash
+export ISTIO_URL=http://127.0.0.1:8080
+```
+
+Confirm that the primary route returns version 1:
+
+```bash
+curl -H 'Host: my-app.local' "$ISTIO_URL"
+```
+
+## Enable and verify mirroring
+
+Apply the mirror route and send a request sample. Client responses must continue
+to report only version 1:
+
+```bash
+kubectl apply -n shadow-istio -f virtualservice-mirror.yaml
+
+for i in $(seq 1 10); do
+  curl -s -H 'Host: my-app.local' "$ISTIO_URL"
+done | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+```
+
+Both application logs should contain the requests, proving that version 2
+received mirrored copies without supplying the client response:
+
+```bash
+kubectl logs deployment/my-app-v1 -n shadow-istio -c my-app --tail=20
+kubectl logs deployment/my-app-v2 -n shadow-istio -c my-app --tail=20
+```
+
+Disable mirroring by restoring the primary-only route:
+
+```bash
+kubectl apply -n shadow-istio -f virtualservice.yaml
+```
+
+## Cleanup
+
+```bash
+kubectl delete namespace shadow-istio
 ```

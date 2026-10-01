@@ -1,38 +1,53 @@
+# Grafana Operator
 
-### Install Grafana
+This lab requires the Prometheus release from the previous lab in the `monitoring` namespace.
 
+## Install the operator
+
+```sh
+helm upgrade --install grafana-operator \
+  oci://ghcr.io/grafana-operator/helm-charts/grafana-operator \
+  --namespace monitoring --create-namespace --version v5.0.0 \
+  --wait --timeout=10m
 ```
-helm upgrade -i grafana-operator oci://ghcr.io/grafana-operator/helm-charts/grafana-operator --namespace monitoring --version v5.0.0
+
+Review the installed custom resources:
+
+```sh
+kubectl describe crd grafanas.grafana.integreatly.org
+kubectl describe crd grafanadatasources.grafana.integreatly.org
+kubectl describe crd grafanadashboards.grafana.integreatly.org
 ```
 
-### Review Grafana Custom Resource Definition
+## Deploy Grafana
 
-```
-k describe crd grafanas.grafana.integreatly.org
-```
-
-### Setup Grafana
-
-Now that Prometheus and Grafana are up and running, you can access Grafana:
-
-```
+```sh
 kubectl apply -f 00-grafana --namespace monitoring
+kubectl wait -n monitoring --for=condition=Available \
+  deployment/grafana-deployment --timeout=300s
 ```
 
-Wait for the load balancer to be provisioned:
+On EKS, wait for the external hostname:
 
-```
-kubectl get svc -n monitoring grafana-service -w
-```
-
-```
-echo "http://$(kubectl get svc -n monitoring grafana-service \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}")"
+```sh
+kubectl get service grafana-service -n monitoring -w
 ```
 
-To login, username: `admin`, password: `admin`.
+On Kind, use a port-forward:
 
+```sh
+kubectl port-forward -n monitoring service/grafana-service 3000:80
+```
 
-### Fetch some dashboards
+Log in with username `admin` and password `admin`. The Kubernetes API dashboard and Prometheus datasource are reconciled automatically by the operator.
 
-https://grafana.com/grafana/dashboards/7249-kubernetes-cluster/
+```sh
+kubectl get grafanas,grafanadatasources,grafanadashboards -n monitoring
+```
+
+## Cleanup
+
+```sh
+kubectl delete -f 00-grafana --namespace monitoring
+helm uninstall grafana-operator --namespace monitoring
+```

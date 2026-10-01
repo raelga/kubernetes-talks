@@ -1,87 +1,104 @@
-Canary deployment using the nginx-ingress controller
-====================================================
+# Canary deployment using ingress-nginx
 
-> In the following example, we shift traffic between 2 applications using the
-[canary annotations of the Nginx ingress
-controller](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#canary).
+This scenario uses ingress-nginx canary annotations to send 10% of requests to
+version 2 while the primary Ingress continues to route to version 1.
 
-## Steps to follow
+## Prerequisites
 
-1. version 1 is serving traffic
-1. deploy version 2
-1. create a new "canary" ingress with traffic splitting enabled
-1. wait enought time to confirm that version 2 is stable and not throwing
-   unexpected errors
-1. delete the canary ingress
-1. point the main application ingress to send traffic to version 2
-1. shutdown version 1
-
-## In practice
-
-### Deploy the ingress-nginx controller (if needed)
-
-```
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.22.0/deploy/mandatory.yaml
-```
-
-### Expose the ingress-nginx (if needed)
-
-```
-kubectl expose deployment \
- -n ingress-nginx nginx-ingress-controller \
-    --port 80 \
-    --type LoadBalancer \
-    --name ingress-nginx
-```
-
-### Wait for nginx to be running (if needed)
-
-```
-kubectl rollout status deploy nginx-ingress-controller \
-  -n ingress-nginx -w deployment "nginx-ingress-controller" successfully rolled out
-```
-
-### Deploy version 1 and expose the service via an ingress
-
-```
-kubectl apply -f ./app-v1.yaml -f ./ingress-v1.yaml
-```
-
-### Deploy version 2
-
-```
-kubectl apply -f ./app-v2.yaml
-```
-
-### In a different terminal you can check that requests are responding with version 1
-
-```
-nginx_service=$(kubectl service ingress-nginx -n ingress-nginx --url)
-while sleep 0.1; do curl "$nginx_service" -H "Host: my-app.com"; done
-```
-
-### Create a canary ingress in order to split traffic: 90% to v1, 10% to v2
-
-```
-kubectl apply -f ./ingress-v2-canary.yaml
-```
-
-### Now you should see that the traffic is being splitted
-
-### When you are happy with the v2, delete the canary ingress
-
-```
-kubectl delete -f ./ingress-v2-canary.yaml
-```
-
-### Then finish the rollout, set 100% traffic to version 2
-
-```
-kubectl apply -f ./ingress-v2.yaml
-```
-
-### Cleanup
+Use an EKS or Kind cluster with `kubectl`, Helm 3, and `curl`. Install the shared
+ingress-nginx controller if it is not already present:
 
 ```bash
-$ kubectl delete all -l app=my-app
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx \
+  --force-update
+helm repo update
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace --version 4.15.1 --wait
+kubectl rollout status deployment/ingress-nginx-controller \
+  --namespace ingress-nginx --timeout=5m
+```
+
+The controller is shared cluster infrastructure. The cleanup below removes only
+this scenario.
+
+## Deploy both versions
+
+Run all remaining commands from this directory:
+
+```bash
+kubectl apply -f app-v1.yaml -f ingress-v1.yaml
+kubectl rollout status deployment/my-app-v1 --timeout=5m
+kubectl apply -f app-v2.yaml
+kubectl rollout status deployment/my-app-v2 --timeout=5m
+```
+
+### Access on EKS
+
+Wait for the external hostname, then set the scenario URL:
+
+```bash
+kubectl get service ingress-nginx-controller -n ingress-nginx -w
+export INGRESS_URL="http://$(kubectl get service ingress-nginx-controller \
+  -n ingress-nginx \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+```
+
+### Access on Kind
+
+Keep this port-forward running in a separate terminal:
+
+```bash
+kubectl port-forward service/ingress-nginx-controller \
+  -n ingress-nginx 8080:80
+```
+
+In the scenario terminal, set the URL:
+
+```bash
+export INGRESS_URL=http://127.0.0.1:8080
+```
+
+Confirm the primary Ingress serves only version 1:
+
+```bash
+for i in $(seq 1 10); do curl -s -H 'Host: my-app.com' "$INGRESS_URL"; done \
+  | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+```
+
+## Send 10% to the canary
+
+Apply the second Ingress, whose canary annotations route 10% to the v2 Service:
+
+```bash
+kubectl apply -f ingress-v2-canary.yaml
+
+for i in $(seq 1 100); do curl -s -H 'Host: my-app.com' "$INGRESS_URL"; done \
+  | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+```
+
+The result should contain both versions, with approximately 10 v2 responses.
+To stop the canary immediately, remove only its Ingress:
+
+```bash
+kubectl delete -f ingress-v2-canary.yaml
+```
+
+## Promote version 2
+
+Replace the primary route, verify that every response is v2, and remove v1:
+
+```bash
+kubectl apply -f ingress-v2.yaml
+
+for i in $(seq 1 10); do curl -s -H 'Host: my-app.com' "$INGRESS_URL"; done \
+  | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+
+kubectl delete -f app-v1.yaml
+```
+
+## Cleanup
+
+```bash
+kubectl delete -f ingress-v2-canary.yaml -f ingress-v2.yaml \
+  -f ingress-v1.yaml -f app-v2.yaml -f app-v1.yaml --ignore-not-found
 ```

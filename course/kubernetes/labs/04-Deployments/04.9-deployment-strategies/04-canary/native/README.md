@@ -1,136 +1,105 @@
-Canary deployment using Kubernetes native functionnalities
-==========================================================
+# Canary deployment using native Kubernetes replicas
 
-> In the following example we apply the poor man's canary using Kubernetes
-native features (replicas). If you want a finer grained control over traffic
-shifting, check the [nginx-ingress](../nginx-ingress) example which use
-[Nginx](http://nginx.org/) to split traffic or the [a/b testing](../../ab-testing)
-example which shift traffic using [Istio](https://istio.io).
+This scenario approximates weighted traffic without an ingress controller. The
+Service selects both versions, so endpoint counts determine their expected
+shares: 10 version 1 replicas and 1 version 2 replica send about 1 in 11 requests
+to version 2.
 
-## Steps to follow
+## Deploy the baseline and canary
 
-1. 10 replicas of version 1 is serving traffic
-1. deploy 1 replicas version 2 (meaning ~10% of traffic)
-1. wait enought time to confirm that version 2 is stable and not throwing
-   unexpected errors
-1. scale up version 2 replicas to 10
-1. wait until all instances are ready
-1. shutdown version 1
-
-## In practice
-
-## Steps to follow
-
-1. version 1 is serving traffic
-1. deploy version 2
-1. wait until version 2 is ready
-1. switch incoming traffic from version 1 to version 2
-1. shutdown version 1
-
-## In practice
-
-### Deploy the first application
-
-```
-kubectl apply -f app-v1.yaml
-kubectl get svc -w
-```
-### Test if the deployment was successful
-
-```
-export INGRESS_SVC_NAME=$(kubectl get svc -l app.kubernetes.io/name=nginx-ingress -o name)
-export MYAPP_URL=$(kubectl get ${INGRESS_SVC_NAME} \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}")
-
-curl -H "Host: my-app.com" "http://${MYAPP_URL}"
-```
-
-### To see the deployment in action, open a new terminal and run the following command
-
-```
-watch kubectl get pods
-```
-
-### Leave some requests to the service in the background
-
-```
-while sleep 0.5; do curl -H "Host: my-app.com" "http://${MYAPP_URL}" --connect-timeout 5; done
-```
-
-! Keep this shell visible all the time.
-
-### Then deploy version 2 of the application
-
-```
-kubectl apply -f app-v2.yaml
-```
-
-### Wait for all the version 2 pods to be running
-
-```
-kubectl rollout status deploy my-app-v2 -w
-```
-
-```
-deployment "my-app-v2" successfully rolled out
-```
-
-### Side by side, 3 pods are running with version 2 but the service still send traffic to the first deployment.
-
-# If necessary, you can manually test one of the pod by port-forwarding it to your local environment:
-
-```
-kubectl port-forward <name of pod> 8080:8080
-```
-
-Or by creating a second load balancer
-
-```
-kubectl apply -f svc-v2.yaml
-kubectl get svc -w
-```
-
-### Test if the second deployment was successful
-
-```
-curl "http://$(kubectl get svc my-app-v2 \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}")"
-```
-
-### Once your are ready, you can switch the traffic to the new version by patching the service to send traffic to all pods with label version=v2.0.0
-
-! Show the curl terminal before patching
-
-```
-kubectl patch service my-app -p '{"spec":{"selector":{"version":"v2.0.0"}}}'
-```
-
-### In case you need to rollback to the previous version
-
-```
-kubectl patch service my-app -p '{"spec":{"selector":{"version":"v1.0.0"}}}'
-```
-
-### If everything is working as expected, you can then delete the v1.0.0 deployment
-
-```
-kubectl delete deploy my-app-v1
-```
-
-### If everything is working as expected, you can then delete the v2.0.0 termporary load balancer
-
-```
-kubectl delete svc my-app-v2
-```
-
-### Check the remaining resources
-
-```
-kubectl get services,deployments,pods
-```
-
-### Cleanup
+Run these commands from this directory:
 
 ```bash
-kubectl delete all -l app=my-app
+kubectl apply -f app-v1.yaml
+kubectl rollout status deployment/my-app-v1 --timeout=5m
+kubectl apply -f app-v2.yaml
+kubectl rollout status deployment/my-app-v2 --timeout=5m
+kubectl get deployment my-app-v1 my-app-v2
+```
+
+The deployments should report 10 ready v1 replicas and 1 ready v2 replica.
+Replica weighting is approximate: kube-proxy balances connections rather than
+enforcing an exact request percentage, and persistent connections can skew the
+result.
+
+## Platform-neutral verification from inside the cluster
+
+Create a short-lived client Pod and count response versions:
+
+```bash
+kubectl run canary-client --rm -i --restart=Never \
+  --image=curlimages/curl:8.17.0 -- \
+  sh -c 'for i in $(seq 1 110); do curl -s http://my-app; done' \
+  | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+```
+
+Both versions should appear, with substantially fewer v2 responses.
+
+## Access on EKS
+
+Wait for the Service load-balancer hostname, then send a request:
+
+```bash
+kubectl get service my-app -w
+export MY_APP_URL="http://$(kubectl get service my-app \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+curl "$MY_APP_URL"
+```
+
+## Access on Kind
+
+Keep this port-forward running in a separate terminal:
+
+```bash
+kubectl port-forward service/my-app 8080:80
+```
+
+Then access the application from the scenario terminal:
+
+```bash
+export MY_APP_URL=http://127.0.0.1:8080
+curl "$MY_APP_URL"
+```
+
+## Scale and promote
+
+Scale version 2 to match version 1. The in-cluster verification should then show
+an approximately even split:
+
+```bash
+kubectl scale deployment/my-app-v2 --replicas=10
+kubectl rollout status deployment/my-app-v2 --timeout=5m
+
+kubectl run canary-client --rm -i --restart=Never \
+  --image=curlimages/curl:8.17.0 -- \
+  sh -c 'for i in $(seq 1 100); do curl -s http://my-app; done' \
+  | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+```
+
+Promote v2 by removing v1 endpoints, verify that only v2 responds, and then
+remove the old deployment:
+
+```bash
+kubectl scale deployment/my-app-v1 --replicas=0
+kubectl rollout status deployment/my-app-v1 --timeout=5m
+
+kubectl run canary-client --rm -i --restart=Never \
+  --image=curlimages/curl:8.17.0 -- \
+  sh -c 'for i in $(seq 1 20); do curl -s http://my-app; done' \
+  | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+
+kubectl delete deployment/my-app-v1
+```
+
+Before deleting v1, rollback remains possible with:
+
+```bash
+kubectl scale deployment/my-app-v1 --replicas=10
+kubectl scale deployment/my-app-v2 --replicas=1
+```
+
+## Cleanup
+
+```bash
+kubectl delete -f app-v2.yaml -f app-v1.yaml --ignore-not-found
 ```

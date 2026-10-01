@@ -1,55 +1,63 @@
-## Install helm
+# Helm hello chart
 
-```
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh
-chmod 700 get_helm.sh
-./get_helm.sh
-```
+Install Helm 3 by following the [official instructions](https://helm.sh/docs/intro/install/).
 
-## Add some helm repositories
+## Inspect and install the chart locally
 
-```
- helm repo add cloudecho https://cloudecho.github.io/charts/ && \
- helm repo update
+```sh
+helm repo add cloudecho https://cloudecho.github.io/charts/
+helm repo update
+helm pull cloudecho/hello --version 0.1.2 --untar
+helm lint hello/
 ```
 
-### Local install
-
-```
-helm pull cloudecho/hello --untar
-```
-
-```
-helm install -n hello-local --create-namespace hello hello/
+```sh
+helm upgrade --install hello hello/ \
+  --namespace hello-local --create-namespace --wait
+helm list --namespace hello-local
 ```
 
-```
-helm list -n hello-local
-```
+Access the local release through a port-forward on either EKS or Kind:
 
-```
-helm -n hello-local uninstall hello
+```sh
+kubectl port-forward --namespace hello-local service/hello 8080:8080
 ```
 
-Connect to the App using `port-forward`
+Open <http://localhost:8080/>.
 
-```
-helm install -n hello-local --create-namespace hello hello/
-```
+Remove the local release:
 
-```
-export PUBLIC_IP=$(curl -sq http://checkip.amazonaws.com)
-export POD_NAME=$(kubectl get pods --namespace hello-local -l "app.kubernetes.io/name=hello,app.kubernetes.io/instance=hello" -o jsonpath="{.items[0].metadata.name}")
-
-export CONTAINER_PORT=$(kubectl get pod --namespace hello-local $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
-
-echo "Visit http://${PUBLIC_IP}:8080 to use your application"
-
-kubectl --namespace hello-local port-forward --address 0.0.0.0 $POD_NAME 8080:$CONTAINER_PORT
+```sh
+helm uninstall hello --namespace hello-local
+kubectl delete namespace hello-local
 ```
 
-### From the repo
+## Install directly from the repository
 
+On EKS, expose the chart through an AWS load balancer:
+
+```sh
+helm upgrade --install my-hello cloudecho/hello \
+  --namespace hello --create-namespace --version 0.1.2 \
+  --set service.type=LoadBalancer --set service.port=80 --wait
+kubectl get service my-hello --namespace hello -w
 ```
-helm install my-hello cloudecho/hello -n hello --create-namespace --version=0.1.2 --set service.type=LoadBalancer --set service.port=80
+
+Open `http://<EXTERNAL-HOSTNAME>/`.
+
+On Kind, keep the service internal and use a port-forward:
+
+```sh
+helm upgrade --install my-hello cloudecho/hello \
+  --namespace hello --create-namespace --version 0.1.2 --wait
+kubectl port-forward --namespace hello service/my-hello 8080:8080
+```
+
+Open <http://localhost:8080/>.
+
+## Cleanup
+
+```sh
+helm uninstall my-hello --namespace hello
+kubectl delete namespace hello
 ```

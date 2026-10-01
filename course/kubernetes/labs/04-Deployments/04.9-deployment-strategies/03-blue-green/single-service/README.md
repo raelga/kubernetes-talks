@@ -1,133 +1,87 @@
-Blue/green deployment to release a single service
-=================================================
+# Blue/green deployment for one service
 
-> In this example, we release a new version of a single service using the
-blue/green deployment strategy.
+Version 2 starts alongside version 1. After it is verified, one Service selector switches traffic atomically between the two deployments.
 
-## Steps to follow
+## Deploy the blue version
 
-1. version 1 is serving traffic
-1. deploy version 2
-1. wait until version 2 is ready
-1. switch incoming traffic from version 1 to version 2
-1. shutdown version 1
+Run the commands from this directory:
 
-## In practice
-
-### Deploy the first application
-
-```
-kubectl apply -f app-v1.yaml 
-kubectl apply -f service-v1.yaml
-kubectl get svc -w
-```
-### Test if the deployment was successful
-
-```
-curl "http://$(kubectl get svc my-app \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}")"
+```sh
+kubectl apply -f app-v1.yaml -f service-v1.yaml
+kubectl rollout status deployment/my-app-v1 --timeout=300s
 ```
 
-### To see the deployment in action, open a new terminal and run the following command
+On EKS:
 
-```
-watch kubectl get pods
-```
-
-### Leave some requests to the service in the background
-
-```
-export APP_URL=$(kubectl get svc my-app \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}");
-while sleep 0.5; do curl "http://${APP_URL}" --connect-timeout 5; done
+```sh
+kubectl get service my-app -w
+APP_URL="http://$(kubectl get service my-app \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+curl "$APP_URL"
 ```
 
-! Keep this shell visible all the time.
+On Kind, keep a port-forward running in another terminal:
 
-### Then deploy version 2 of the application
-
-```
-kubectl apply -f app-v2.yaml
+```sh
+kubectl port-forward service/my-app 8080:80
 ```
 
-### Wait for all the version 2 pods to be running
+Then use:
 
-```
-kubectl rollout status deploy my-app-v2 -w
-```
-
-```
-deployment "my-app-v2" successfully rolled out
+```sh
+APP_URL=http://localhost:8080
+curl "$APP_URL"
 ```
 
-### Side by side, 3 pods are running with version 2 but the service still send traffic to the first deployment.
+The response reports `Version: v1.0.0`.
 
-# If necessary, you can manually test one of the pod by port-forwarding it to your local environment:
+## Deploy and verify the green version
 
-```
-export PUBLIC_IP=$(curl -sq http://checkip.amazonaws.com)
-echo "Visit http://${PUBLIC_IP}:8080 to use your application"
-```
-
-```
-kubectl port-forward <name of pod> 8080:8080
+```sh
+kubectl apply -f app-v2.yaml -f service-internal-v2.yaml
+kubectl rollout status deployment/my-app-v2 --timeout=300s
+kubectl port-forward service/my-app-internal 8081:80
 ```
 
-Or by creating an internal service
+In another terminal, verify green directly:
 
-```
-kubectl apply -f service-internal-v2.yaml
-kubectl port-forward service/my-app-internal --address=0.0.0.0 8080:80
-```
-
-Or by creating a second load balancer
-
-```
-kubectl apply -f service-v2.yaml
-kubectl get svc -w
+```sh
+curl http://localhost:8081
 ```
 
-### Test if the second deployment was successful
+The response reports `Version: v2.0.0`, while `$APP_URL` still reports v1.
 
-```
-curl "http://$(kubectl get svc my-app-v2 \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}")"
-```
+## Cut over and rollback
 
-### Once your are ready, you can switch the traffic to the new version by patching the service to send traffic to all pods with label version=v2.0.0
+Switch the public Service to green:
 
-! Show the curl terminal before patching
-
-```
-kubectl patch service my-app -p '{"spec":{"selector":{"version":"v2.0.0"}}}'
+```sh
+kubectl patch service my-app \
+  -p '{"spec":{"selector":{"version":"v2.0.0"}}}'
+curl "$APP_URL"
 ```
 
-### In case you need to rollback to the previous version
+Rollback is the inverse selector change:
 
-```
-kubectl patch service my-app -p '{"spec":{"selector":{"version":"v1.0.0"}}}'
-```
-
-### If everything is working as expected, you can then delete the v1.0.0 deployment
-
-```
-kubectl delete deploy my-app-v1
+```sh
+kubectl patch service my-app \
+  -p '{"spec":{"selector":{"version":"v1.0.0"}}}'
+curl "$APP_URL"
 ```
 
-### If everything is working as expected, you can then delete the v2.0.0 termporary load balancer
+After a successful cutover, point the Service to v2 again and remove v1:
 
-```
-kubectl delete svc my-app-v2
-```
-
-### Check the remaining resources
-
-```
-kubectl get services,deployments,pods
+```sh
+kubectl patch service my-app \
+  -p '{"spec":{"selector":{"version":"v2.0.0"}}}'
+kubectl delete deployment my-app-v1
 ```
 
-### Cleanup
+## Cleanup
 
-```bash
-kubectl delete all -l app=my-app
+```sh
+kubectl delete -f service-internal-v2.yaml --ignore-not-found
+kubectl delete -f app-v2.yaml --ignore-not-found
+kubectl delete service my-app --ignore-not-found
+kubectl delete deployment my-app-v1 --ignore-not-found
 ```

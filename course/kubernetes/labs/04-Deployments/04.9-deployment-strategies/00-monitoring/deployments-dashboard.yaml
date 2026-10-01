@@ -41,7 +41,8 @@ spec:
       "panels": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
           "description": "",
           "fieldConfig": {
@@ -124,7 +125,7 @@ spec:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "VqQ98CX7z"
+                "uid": "prometheus"
               },
               "editorMode": "code",
               "exemplar": false,

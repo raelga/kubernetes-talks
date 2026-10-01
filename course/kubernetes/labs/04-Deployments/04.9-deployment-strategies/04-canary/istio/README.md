@@ -1,119 +1,122 @@
-Canary deployment using Istio service mesh
-==========================================================
+# Canary deployment using Istio
 
-> In the following example, we will use the Istio service mesh to control
-traffic distribution for a canary deployment using an example application
-This is very similar to the Istio A/B testing example, however instead of
-serving a specific subset of clients based on headers, we are simply dividing
-the traffic in the desired ratios. As stateful connections could be a problem
-in this scenario, it is reccomended to serve clients based on some identifying
-data (ie. cookies or headers) like the A/B example if needed.
+This scenario uses an Istio VirtualService to route 90% of requests to version
+1 and 10% to version 2. Unlike replica weighting, the route weights are explicit.
 
-## Steps to follow
+## Prerequisites and shared Istio installation
 
-1. Deploy istio on the cluster
-1. Deploy two versions of the application
-1. Set up an istio virtual service and rule to control the traffic distribution
-1. Set up autoscaling on both deployments
-1. Verify that traffic is divided as expected and pods scale accordingly
-1. Change the traffic distribution
-1. Verify that traffic is divided as expected
-1. Increase traffic
-1. Verify pods scale accordingly
-
-## In practice
-
-If you're using minikube you'll need to prepare the environment for horizontal
-pod autoscaling and load balancing:
+Use an EKS or Kind cluster with `kubectl`, Helm 3, and `curl`. The HPA resources
+in this scenario require a working metrics-server; verify it before continuing:
 
 ```bash
-# Enable heapster and metrics-server
-$ minikube addons enable heapster
-$ minikube addons enable metrics-server
-
-# Start minikube tunnel in a seperate terminal to route traffic from outside
-# the cluster to the istio-ingressgateway clusterIP
-$ minikube tunnel
+kubectl get deployment metrics-server -n kube-system
+kubectl top nodes
 ```
 
-Deploy istio to your cluster
+Install Istio 1.30.5 once for the cluster if these shared releases are not
+already present:
 
 ```bash
-$ curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.1.1 sh -
-$ cd istio-1.1.1
-$ for i in install/kubernetes/helm/istio-init/files/crd*yaml; do kubectl apply -f $i; done
-$ kubectl apply -f install/kubernetes/istio-demo.yaml
-$ cd ..
+helm repo add istio https://istio-release.storage.googleapis.com/charts \
+  --force-update
+helm repo update
+helm upgrade --install istio-base istio/base \
+  --namespace istio-system --create-namespace --version 1.30.5 --wait
+helm upgrade --install istiod istio/istiod \
+  --namespace istio-system --version 1.30.5 --wait
+helm upgrade --install istio-ingress istio/gateway \
+  --namespace istio-ingress --create-namespace --version 1.30.5 \
+  --set labels.istio=ingressgateway --wait
+kubectl rollout status deployment/istiod -n istio-system --timeout=5m
+kubectl rollout status deployment/istio-ingress -n istio-ingress --timeout=5m
 ```
 
-Watch and verify that all istio pods have are running/completed
-This may take a few minutes and some crashes are normal
+On EKS, make the classic load balancer route only to nodes with a local gateway endpoint and enable cross-zone balancing:
 
 ```bash
-$ watch kubectl get po --namespace=istio-system
+helm upgrade istio-ingress istio/gateway \
+  --namespace istio-ingress --version 1.30.5 --reuse-values \
+  --set service.externalTrafficPolicy=Local \
+  --set-string 'service.annotations.service\.beta\.kubernetes\.io/aws-load-balancer-cross-zone-load-balancing-enabled=true' \
+  --wait
 ```
 
-Deploy all of the yaml files in this directory
+The control plane and ingress gateway are shared cluster infrastructure. This
+scenario uses its own sidecar-injected namespace and cleanup removes only that
+namespace.
 
-TODO: Split files and apply/verify seperately
+## Deploy the canary
+
+Run all remaining commands from this directory:
 
 ```bash
-$ kubectl apply -f .
+kubectl create namespace canary-istio --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace canary-istio istio-injection=enabled --overwrite
+kubectl apply -n canary-istio -f app-v1.yaml -f app-v2.yaml
+kubectl rollout status deployment/my-app-v1 -n canary-istio --timeout=5m
+kubectl rollout status deployment/my-app-v2 -n canary-istio --timeout=5m
+kubectl apply -n canary-istio -f hpa.yaml -f istio.yaml
+kubectl get pods -n canary-istio
 ```
 
-Ensure that both application pods are running
+Each application Pod should show both the application and sidecar containers as
+ready.
+
+### Access on EKS
+
+Wait for the gateway hostname, then set the scenario URL:
 
 ```bash
-$ watch kubectl get po
+kubectl get service istio-ingress -n istio-ingress -w
+export ISTIO_URL="http://$(kubectl get service istio-ingress \
+  -n istio-ingress \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 ```
 
-In a new terminal, test if the deployments, services and routing rules are
-working by sending lots of requests to the ingress gateway. v1.0.0 should
-serve 90% of requests, and v2.0.0 should serve 10%
+### Access on Kind
+
+Keep this port-forward running in a separate terminal:
 
 ```bash
-$ watch -n 0.1 'curl $(kubectl get service istio-ingressgateway \
-    --namespace=istio-system \
-    --output='jsonpath={.spec.clusterIP}')
+kubectl port-forward service/istio-ingress -n istio-ingress 8080:80
 ```
 
-Check the state of the horizontal pod autoscalers
+In the scenario terminal, set the URL:
 
 ```bash
-$ kubectl get hpa
+export ISTIO_URL=http://127.0.0.1:8080
 ```
 
-Change the traffic distribution weights in istio.yaml so v2.0.0 serves 100% of
-requests and v1.0.0 serves 0%, and reapply the file.
-The fields can be found under VirtualService.spec.route[].weight
+## Verify and change the route
 
-TODO: use sed to change values or kubectl edit...?
+Count a request sample. It should be close to 90 v1 responses and 10 v2
+responses:
 
 ```bash
-$ kubectl apply -f istio.yaml
+for i in $(seq 1 100); do curl -s "$ISTIO_URL"; done \
+  | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+kubectl get hpa -n canary-istio
 ```
 
-Run curl in watch in 2 or 3 terminals to induce more traffic so the
-horizontal pod autoscalers spin up more pods. Validate that all traffic is 
-served by v2.0.0
+Route weights are at `spec.http[].route[].weight`. To promote v2, edit the
+VirtualService and set the v1 weight to `0` and the v2 weight to `100`:
 
 ```bash
-$ watch -n 0.1 'curl $(kubectl get service istio-ingressgateway \
-    --namespace=istio-system \
-    --output='jsonpath={.spec.clusterIP}')
+kubectl edit virtualservice/my-app -n canary-istio
+
+for i in $(seq 1 20); do curl -s "$ISTIO_URL"; done \
+  | grep -o 'Version: v[0-9.]*' | sort | uniq -c
 ```
 
-Watch the v2 pods scale up as the cpu load increases
+Only `Version: v2.0.0` should remain. If load is generated for long enough,
+observe HPA decisions with:
 
 ```bash
-$ watch kubectl get hpa
+kubectl get hpa -n canary-istio -w
 ```
 
-### Cleanup
+## Cleanup
 
 ```bash
-$ kubectl delete -f .
-$ cd istio-1.1.1
-$ kubectl delete -f install/kubernetes/istio-demo.yaml
-$ for i in install/kubernetes/helm/istio-init/files/crd*yaml; do kubectl delete -f $i; done
+kubectl delete namespace canary-istio
 ```

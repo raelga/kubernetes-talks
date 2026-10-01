@@ -1,106 +1,101 @@
 # Kubernetes deployment strategies
 
-This lab is based on https://github.com/ContainerSolutions/k8s-deployment-strategies/tree/master, but using a cloud based Kubernetes Cluster instead of minikube.
+Kubernetes supports several release patterns. Choose a strategy based on the
+amount of additional capacity, traffic control, and operational risk that the
+workload can tolerate.
 
-> In Kubernetes there are a few different ways to release an application, you have
-> to carefully choose the right strategy to make your infrastructure resilient.
+1. [Recreate](01-recreate/): stop the old version before starting the new one.
+2. [Ramped](02-ramped/): replace instances gradually with a rolling update.
+3. [Blue/green](03-blue-green/): run both versions, then switch traffic.
+4. [Canary](04-canary/): expose a small share of traffic to the new version
+   before promotion.
+5. [A/B testing](05-ab-testing/): route selected requests by weight or request
+   attributes.
+6. [Shadow](06-shadow/): mirror requests to the new version without using its
+   response.
 
-- [recreate](recreate/): terminate the old version and release the new one
-- [ramped](ramped/): release a new version on a rolling update fashion, one
-  after the other
-- [blue/green](blue-green/): release a new version alongside the old version
-  then switch traffic
-- [canary](canary/): release a new version to a subset of users, then proceed
-  to a full rollout
-- [a/b testing](ab-testing/): release a new version to a subset of users in a
-  precise way (HTTP headers, cookie, weight, etc.). This doesn’t come out of the
-  box with Kubernetes, it imply extra work to setup a smarter
-  loadbalancing system (Istio, Linkerd, Traeffik, custom nginx/haproxy, etc).
-- [shadow](shadow/): release a new version alongside the old version. Incoming
-  traffic is mirrored to the new version and doesn't impact the
-  response.
+![Deployment strategy decision diagram](decision-diagram.png)
 
-![deployment strategy decision diagram](decision-diagram.png)
+## Prerequisites and controller scope
 
-Before experimenting, checkout the original repository at [ContainerSolutions/k8s-deployment-strategies/](https://github.com/ContainerSolutions/k8s-deployment-strategies/tree/master).
+Use either an EKS cluster or a Kind cluster with a current `kubectl`, Helm 3,
+and `curl`. Confirm the selected context before applying a scenario:
 
-## Getting started
-
-Deploy a cluster using the resources available at the labs.
-
-## Visualizing using Prometheus and Grafana
-
-The following steps describe how to setup Prometheus and Grafana to visualize
-the progress and performance of a deployment.
-
-### Install Helm3
-
-To install Helm3, follow the instructions provided on their
-[website](https://github.com/kubernetes/helm/releases).
-
-### Install Prometheus (if required)
-
-```
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm install prometheus prometheus-community/prometheus \
-    --create-namespace --namespace=monitoring
+```bash
+kubectl config current-context
+kubectl get nodes
 ```
 
-### Install Grafana (if required)
+The ingress-nginx and Istio installations used by some scenarios are
+cluster-level, shared infrastructure. Install each once when its guide asks for
+it. Scenario cleanup removes only scenario workloads or namespaces and leaves
+those shared components available for the other labs. The Istio canary HPA also
+requires metrics-server in the cluster.
 
-```
-helm upgrade -i grafana-operator oci://ghcr.io/grafana-operator/helm-charts/grafana-operator --namespace monitoring --version v5.0.0
-```
+On EKS, the control-plane security group must reach the node security group on TCP `15017` for Istio's sidecar-injection webhook. The AWS Academy Terraform stack in this repository manages that rule through `node_security_group_additional_rules`; add an equivalent rule when using another EKS stack.
 
-### Setup Grafana (if required)
+## Optional Prometheus and Grafana visualization
 
-Now that Prometheus and Grafana are up and running, you can access Grafana:
+Run these commands from this directory. Prometheus persistence requires a
+default StorageClass, so verify it first:
 
-```
-kubectl apply -f 00-monitoring/grafana.yaml --namespace monitoring
-```
-
-Wait for the load balancer to be provisioned:
-
-```
-kubectl get svc -n monitoring grafana-service
+```bash
+kubectl get storageclass
 ```
 
-```
-echo "http://$(kubectl get svc -n monitoring grafana-service \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['ip', 'hostname']}")"
-```
+Kind normally reports `standard` as `(default)` and needs no change. In the AWS
+Academy EKS stack, `gp2` exists but may not be the default; make it the default
+before installing Prometheus:
 
-To login, username: `admin`, password: `admin`.
-
-### Deploy the Grafana deployment Dashboard
-
-```
-kubectl apply -f 00-monitoring/deployments-dashboard.yaml --namespace monitoring
+```bash
+kubectl annotate storageclass gp2 \
+  storageclass.kubernetes.io/is-default-class=true --overwrite
 ```
 
-#### Example graph
+Install Prometheus and the Grafana Operator, then apply this lab's resources:
 
-Recreate:
+```bash
+helm repo add prometheus-community \
+  https://prometheus-community.github.io/helm-charts --force-update
+helm repo update
+helm upgrade --install prometheus prometheus-community/prometheus \
+  --namespace monitoring --create-namespace --wait
 
-![Kubernetes deployment recreate](01-recreate/grafana-recreate.png)
+helm upgrade --install grafana-operator \
+  oci://ghcr.io/grafana-operator/helm-charts/grafana-operator \
+  --namespace monitoring --version v5.0.0 --wait
 
-Ramped:
+kubectl apply -f 00-monitoring/grafana.yaml
+kubectl apply -f 00-monitoring/deployments-dashboard.yaml
+kubectl rollout status deployment/grafana-deployment -n monitoring --timeout=5m
+```
 
-![Kubernetes deployment ramped](02-ramped/grafana-ramped.png)
+### Access Grafana on EKS
 
-Blue/Green:
+Wait until the service has a load-balancer hostname, then open the printed URL:
 
-![Kubernetes deployment blue-green](03-blue-green/grafana-blue-green.png)
+```bash
+kubectl get service grafana-service -n monitoring -w
+export GRAFANA_HOST="$(kubectl get service grafana-service -n monitoring \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+echo "http://${GRAFANA_HOST}"
+```
 
-Canary:
+### Access Grafana on Kind
 
-![Kubernetes deployment canary](04-canary/grafana-canary.png)
+Keep this command running and open <http://127.0.0.1:3000>:
 
-A/B testing:
+```bash
+kubectl port-forward service/grafana-service -n monitoring 3000:80
+```
 
-![kubernetes ab-testing deployment](05-ab-testing/grafana-ab-testing.png)
+Sign in with username `admin` and password `admin`.
 
-Shadow:
+## Example dashboards
 
-![kubernetes shadow deployment](06-shadow/grafana-shadow.png)
+- [Recreate](01-recreate/grafana-recreate.png)
+- [Ramped](02-ramped/grafana-ramped.png)
+- [Blue/green](03-blue-green/grafana-blue-green.png)
+- [Canary](04-canary/grafana-canary.png)
+- [A/B testing](05-ab-testing/grafana-ab-testing.png)
+- [Shadow](06-shadow/grafana-shadow.png)

@@ -56,6 +56,7 @@ spec:
       dashboards: "grafana"
   datasource:
     name: prometheus
+    uid: prometheus
     type: prometheus
     access: proxy
     basicAuth: true

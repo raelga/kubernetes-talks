@@ -1,94 +1,72 @@
-Ramped deployment
-=================
+# Ramped deployment
 
-> Version B is slowly rolled out and replacing version A. Also known as
-rolling-update or incremental.
+Version 2 gradually replaces version 1 with a rolling update. This example keeps all nine replicas available with `maxUnavailable: 0` and adds at most two surge replicas.
 
-![kubernetes ramped deployment](grafana-ramped.png)
+![Kubernetes ramped deployment](grafana-ramped.png)
 
-The ramped deployment strategy consists of slowly rolling out a version of an
-application by replacing instances one after the other until all the instances
-are rolled out. It usually follows the following process: with a pool of version
-A behind a load balancer, one instance of version B is deployed. When the
-service is ready to accept traffic, the instance is added to the pool. Then, one
-instance of version A is removed from the pool and shut down.
+## Deploy version 1
 
-Depending on the system taking care of the ramped deployment, you can tweak the
-following parameters to increase the deployment time:
+Run the commands from this directory:
 
-- Parallelism, max batch size: Number of concurrent instances to roll out.
-- Max surge: How many instances to add in addition of the current amount.
-- Max unavailable: Number of unavailable instances during the rolling update
-  procedure.
-
-## Steps to follow
-
-1. version 1 is serving traffic
-1. deploy version 2
-1. wait until all replicas are replaced with version 2
-
-## In practice
-
-### Deploy the first application
-
-```
+```sh
 kubectl apply -f app-v1.yaml
-kubectl get svc -w
-```
-### Test if the deployment was successful
-
-```
-curl "http://$(kubectl get svc my-app \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}")"
+kubectl rollout status deployment/my-app --timeout=300s
 ```
 
-### To see the deployment in action, open a new terminal and run the following command
+On EKS:
 
-```
-watch kubectl get pods
-```
-
-### Leave some requests to the service in the background
-
-```
-export APP_URL=$(kubectl get svc my-app \
-    -o jsonpath="{.status.loadBalancer.ingress[*]['hostname']}");
-while sleep 0.5; do curl "http://${APP_URL}" --connect-timeout 5; done
+```sh
+kubectl get service my-app -w
+APP_URL="http://$(kubectl get service my-app \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+curl "$APP_URL"
 ```
 
-! Keep this shell visible all the time.
+On Kind, keep a port-forward running in another terminal:
 
-### Then deploy version 2 of the application
-
+```sh
+kubectl port-forward service/my-app 8080:80
 ```
+
+Then use:
+
+```sh
+APP_URL=http://localhost:8080
+curl "$APP_URL"
+```
+
+The response reports `Version: v1.0.0`.
+
+## Roll out version 2
+
+Apply the update and pause it after the first surge Pods appear:
+
+```sh
 kubectl apply -f app-v2.yaml
-```
-# If you can also pause the rollout if you want to run the application for a subset of users
-
-```
-kubectl rollout pause deploy my-app
+kubectl rollout pause deployment/my-app
+kubectl get pods -L version
 ```
 
-# Then if you are satisfied with the result, resume rollout
+Both versions should be visible. Resume and wait for completion:
 
-```
-kubectl rollout resume deploy my-app
-```
-
-### In case you discover some issue with the new version, you can undo the rollout
-
-```
-kubectl rollout undo deploy my-app
+```sh
+kubectl rollout resume deployment/my-app
+kubectl rollout status deployment/my-app --timeout=600s
+curl "$APP_URL"
 ```
 
-### Cleanup deployments (if needed)
+The response reports `Version: v2.0.0`.
 
-```bash
-kubectl delete deployments -l app=my-app
+Rollback remains available through the Deployment history:
+
+```sh
+kubectl rollout undo deployment/my-app
+kubectl rollout status deployment/my-app --timeout=600s
 ```
 
-### Cleanup everything else (if needed)
+## Cleanup
 
-```bash
-kubectl delete all -l app=my-app
+```sh
+kubectl delete -f app-v2.yaml --ignore-not-found
+kubectl delete service my-app --ignore-not-found
 ```

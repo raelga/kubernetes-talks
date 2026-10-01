@@ -1,127 +1,116 @@
-A/B testing using Istio
-=======================
+# A/B testing using Istio
 
-> Version B is released to a subset of users under specific condition.
+A/B testing routes selected requests to a new version according to a controlled
+condition. This scenario demonstrates both a 90/10 weighted route and explicit
+routing by the `X-API-Version` request header.
 
-![kubernetes ab-testing deployment](grafana-ab-testing.png)
+## Prerequisites and shared Istio installation
 
-A/B testing deployments consists of routing a subset of users to a new
-functionality under specific conditions. It is usually a technique for making
-business decisions based on statistics rather than a deployment strategy.
-However, it is related and can be implemented by adding extra functionality to a
-canary deployment so we will briefly discuss it here.
+Use an EKS or Kind cluster with `kubectl`, Helm 3, and `curl`. Install Istio
+1.30.5 once for the cluster if these shared releases are not already present:
 
-This technique is widely used to test conversion of a given feature and only
-roll-out the version that converts the most.
-
-Here is a list of conditions that can be used to distribute traffic amongst the
-versions:
-
-- Weight
-- Cookie value
-- Query parameters
-- Geolocalisation
-- Technology support: browser version, screen size, operating system, etc.
-- Language
-
-## Steps to follow
-
-1. version 1 is serving HTTP traffic using Istio
-1. deploy version 2
-1. wait until all instances are ready
-1. update Istio VirtualService with 90% traffic targetting version 1 and 10%
-   traffic targetting version 2
-
-## In practice
-
-Before starting, it is recommended to know the basic concept of the
-[Istio routing API](https://istio.io/blog/2018/v1alpha3-routing/).
-
-### Deploy Istio
-
-In this example, Istio 1.13.4 is used. To install Istio, follow the
-[instructions](https://istio.io/latest/docs/setup/install/helm/) from the
-Istio website.
-
-Automatic sidecar injection should be enabled by default. Then annotate the
-default namespace to enable it.
-
-```
-$ kubectl label namespace default istio-injection=enabled
+```bash
+helm repo add istio https://istio-release.storage.googleapis.com/charts \
+  --force-update
+helm repo update
+helm upgrade --install istio-base istio/base \
+  --namespace istio-system --create-namespace --version 1.30.5 --wait
+helm upgrade --install istiod istio/istiod \
+  --namespace istio-system --version 1.30.5 --wait
+helm upgrade --install istio-ingress istio/gateway \
+  --namespace istio-ingress --create-namespace --version 1.30.5 \
+  --set labels.istio=ingressgateway --wait
+kubectl rollout status deployment/istiod -n istio-system --timeout=5m
+kubectl rollout status deployment/istio-ingress -n istio-ingress --timeout=5m
 ```
 
-### Deploy both applications
+On EKS, enable cross-zone balancing and route only to nodes with a local gateway endpoint:
 
-Back to the a/b testing directory from this repo, deploy both applications using
-the istioctl command to inject the Istio sidecar container which is used to
-proxy requests:
-
-```
-$ kubectl apply -f app-v1.yaml -f app-v2.yaml
-```
-
-Expose both services via the Istio Gateway and create a VirtualService to match
-requests to the my-app-v1 service:
-
-```
-$ kubectl apply -f ./gateway.yaml -f ./virtualservice.yaml
+```bash
+helm upgrade istio-ingress istio/gateway \
+  --namespace istio-ingress --version 1.30.5 --reuse-values \
+  --set service.externalTrafficPolicy=Local \
+  --set-string 'service.annotations.service\.beta\.kubernetes\.io/aws-load-balancer-cross-zone-load-balancing-enabled=true' \
+  --wait
 ```
 
-At this point, if you make a request against the Istio ingress gateway with the
-given host `my-app.local`, you should only see version 1 responding:
+The control plane and ingress gateway are shared cluster infrastructure. This
+scenario uses its own sidecar-injected namespace and cleanup removes only that
+namespace.
 
-```
-$ curl $(minikube service istio-ingressgateway -n istio-system --url | head -n1) -H 'Host: my-app.local'
-Host: my-app-v1-6d577d97b4-lxn22, Version: v1.0.0
-```
+## Deploy the applications and initial route
 
-### Shift traffic based on weight
+Run all remaining commands from this directory:
 
-Apply the Istio VirtualService rule based on weight:
-
-```
-$ kubectl apply -f ./virtualservice-weight.yaml
-```
-
-You can now test if the traffic is correctly splitted amongst both versions:
-
-```
-$ service=$(minikube service istio-ingressgateway -n istio-system --url | head -n1)
-$ while sleep 0.1; do curl "$service" -H 'Host: my-app.local'; done
+```bash
+kubectl create namespace ab-testing-istio --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace ab-testing-istio istio-injection=enabled --overwrite
+kubectl apply -n ab-testing-istio -f app-v1.yaml -f app-v2.yaml
+kubectl rollout status deployment/my-app-v1 -n ab-testing-istio --timeout=5m
+kubectl rollout status deployment/my-app-v2 -n ab-testing-istio --timeout=5m
+kubectl apply -n ab-testing-istio -f gateway.yaml -f virtualservice.yaml
+kubectl get pods -n ab-testing-istio
 ```
 
-You should approximately see 1 request on 10 ending up in the version 2.
+Each application Pod should show both the application and sidecar containers as
+ready.
 
-In the `./virtualservice-weight.yaml` file, you can edit the weight of each
-destination and apply the updated rule to Minikube:
+### Access on EKS
 
-```
-$ kubectl apply -f ./virtualservice-weight.yaml
-```
+Wait for the gateway hostname, then set the scenario URL:
 
-### Shift traffic based on headers
-
-Apply the Istio VirtualService rule based on headers:
-
-```
-$ kubectl apply -f ./virtualservice-match.yaml
+```bash
+kubectl get service istio-ingress -n istio-ingress -w
+export ISTIO_URL="http://$(kubectl get service istio-ingress \
+  -n istio-ingress \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 ```
 
-You can now test if the traffic is hitting the correct set of instances:
+### Access on Kind
 
-```
-$ service=$(minikube service istio-ingressgateway -n istio-system --url | head -n1)
-$ curl $service -H 'Host: my-app.local' -H 'X-API-Version: v1.0.0'
-Host: my-app-v1-6d577d97b4-s4h6k, Version: v1.0.0
+Keep this port-forward running in a separate terminal:
 
-$ curl $service -H 'Host: my-app.local' -H 'X-API-Version: v2.0.0'
-Host: my-app-v2-65f9fdbb88-jtctt, Version: v2.0.0
+```bash
+kubectl port-forward service/istio-ingress -n istio-ingress 8080:80
 ```
 
-### Cleanup
+In the scenario terminal, set the URL:
 
+```bash
+export ISTIO_URL=http://127.0.0.1:8080
 ```
-$ kubectl delete gateway/my-app virtualservice/my-app
-$ kubectl delete -f ./app-v1.yaml -f ./app-v2.yaml
-$ kubectl delete -f <PATH-TO-ISTIO>/install/kubernetes/istio-demo.yaml
+
+Confirm that the initial route serves version 1:
+
+```bash
+curl -H 'Host: my-app.local' "$ISTIO_URL"
+```
+
+## Verify weighted routing
+
+```bash
+kubectl apply -n ab-testing-istio -f virtualservice-weight.yaml
+
+for i in $(seq 1 100); do
+  curl -s -H 'Host: my-app.local' "$ISTIO_URL"
+done | grep -o 'Version: v[0-9.]*' | sort | uniq -c
+```
+
+The sample should be close to 90 v1 responses and 10 v2 responses.
+
+## Verify header routing
+
+```bash
+kubectl apply -n ab-testing-istio -f virtualservice-match.yaml
+curl -H 'Host: my-app.local' -H 'X-API-Version: v1.0.0' "$ISTIO_URL"
+curl -H 'Host: my-app.local' -H 'X-API-Version: v2.0.0' "$ISTIO_URL"
+```
+
+The first response should report `Version: v1.0.0`; the second should report
+`Version: v2.0.0`.
+
+## Cleanup
+
+```bash
+kubectl delete namespace ab-testing-istio
 ```
