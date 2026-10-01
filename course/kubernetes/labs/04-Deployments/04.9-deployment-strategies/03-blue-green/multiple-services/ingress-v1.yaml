@@ -1,22 +1,29 @@
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: my-app
   labels:
     app: my-app
-  annotations:
-    kubernetes.io/ingress.class: traefik
 spec:
+  ingressClassName: nginx
   rules:
-  - host: a.domain.com
-    http:
-      paths:
-      - backend:
-          serviceName: my-app-a-v1
-          servicePort: 80
-  - host: b.domain.com
-    http:
-      paths:
-      - backend:
-          serviceName: my-app-b-v1
-          servicePort: 80
+    - host: a.domain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-app-a-v1
+                port:
+                  number: 80
+    - host: b.domain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-app-b-v1
+                port:
+                  number: 80
