@@ -4,6 +4,26 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
+if ! command -v kubectl >/dev/null 2>&1; then
+  echo "kubectl is required." >&2
+  exit 1
+fi
+
+if ! command -v helm >/dev/null 2>&1; then
+  if ! command -v wget >/dev/null 2>&1; then
+    echo "wget is required to install Helm." >&2
+    exit 1
+  fi
+
+  HELM_INSTALLER=$(mktemp)
+  trap 'rm -f "$HELM_INSTALLER"' 0 HUP INT TERM
+  wget -qO "$HELM_INSTALLER" \
+    https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+  bash "$HELM_INSTALLER"
+  rm -f "$HELM_INSTALLER"
+  trap - 0 HUP INT TERM
+fi
+
 DEFAULT_STORAGE_CLASS=$(kubectl get storageclass \
   -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 

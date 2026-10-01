@@ -42,7 +42,8 @@ Run this single command from this directory:
 ./00-monitoring/install.sh
 ```
 
-The installer ensures that the cluster has a default StorageClass, then
+The installer downloads and installs Helm 4 with `wget` when Helm is not
+available. It then ensures that the cluster has a default StorageClass,
 installs or upgrades Prometheus and Grafana Operator, applies the Grafana
 instance, datasource, and deployment-strategies dashboard, and waits until
 Grafana is available. It is safe to run again against an existing installation.
