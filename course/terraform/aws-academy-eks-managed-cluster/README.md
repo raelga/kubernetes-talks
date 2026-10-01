@@ -30,6 +30,8 @@ Should look something like:
 
 It will require about 15 minutes to complete.
 
+The stack provisions EKS 1.36, the current default version in `us-east-1`.
+
 ```
 terraform init; terraform apply;
 ```

@@ -40,7 +40,7 @@ module "eks" {
   version = "19.1.0"
 
   cluster_name    = "lab-eks"
-  cluster_version = "1.30"
+  cluster_version = "1.36"
 
   # IAM
 
