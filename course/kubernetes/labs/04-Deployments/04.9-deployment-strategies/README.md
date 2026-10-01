@@ -36,38 +36,25 @@ On EKS, the control-plane security group must reach the node security group on T
 
 ## Optional Prometheus and Grafana visualization
 
-Run these commands from this directory. Prometheus persistence requires a
-default StorageClass, so verify it first:
+Run this single command from this directory:
 
 ```bash
-kubectl get storageclass
+./00-monitoring/install.sh
 ```
 
-Kind normally reports `standard` as `(default)` and needs no change. In the AWS
-Academy EKS stack, `gp2` exists but may not be the default; make it the default
-before installing Prometheus:
+The installer verifies that the cluster has a default StorageClass, then
+installs or upgrades Prometheus and Grafana Operator, applies the Grafana
+instance, datasource, and deployment-strategies dashboard, and waits until
+Grafana is available. It is safe to run again against an existing installation.
+
+Prometheus persistence requires a default StorageClass. Kind normally provides
+`standard`. The AWS Academy EKS stack in this repository configures `gp2` as
+the default. For another cluster without a default, select an appropriate
+StorageClass before running the installer; for example:
 
 ```bash
 kubectl annotate storageclass gp2 \
   storageclass.kubernetes.io/is-default-class=true --overwrite
-```
-
-Install Prometheus and the Grafana Operator, then apply this lab's resources:
-
-```bash
-helm repo add prometheus-community \
-  https://prometheus-community.github.io/helm-charts --force-update
-helm repo update
-helm upgrade --install prometheus prometheus-community/prometheus \
-  --namespace monitoring --create-namespace --wait
-
-helm upgrade --install grafana-operator \
-  oci://ghcr.io/grafana-operator/helm-charts/grafana-operator \
-  --namespace monitoring --version v5.0.0 --wait
-
-kubectl apply -f 00-monitoring/grafana.yaml
-kubectl apply -f 00-monitoring/deployments-dashboard.yaml
-kubectl rollout status deployment/grafana-deployment -n monitoring --timeout=5m
 ```
 
 ### Access Grafana on EKS
