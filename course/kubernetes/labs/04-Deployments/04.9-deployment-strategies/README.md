@@ -42,20 +42,14 @@ Run this single command from this directory:
 ./00-monitoring/install.sh
 ```
 
-The installer verifies that the cluster has a default StorageClass, then
+The installer ensures that the cluster has a default StorageClass, then
 installs or upgrades Prometheus and Grafana Operator, applies the Grafana
 instance, datasource, and deployment-strategies dashboard, and waits until
 Grafana is available. It is safe to run again against an existing installation.
 
-Prometheus persistence requires a default StorageClass. Kind normally provides
-`standard`. The AWS Academy EKS stack in this repository configures `gp2` as
-the default. For another cluster without a default, select an appropriate
-StorageClass before running the installer; for example:
-
-```bash
-kubectl annotate storageclass gp2 \
-  storageclass.kubernetes.io/is-default-class=true --overwrite
-```
+Prometheus persistence requires a default StorageClass. If the cluster has no
+default, the installer marks `gp2` (EKS) or `standard` (Kind) as default. It
+stops without changing the cluster when none of those StorageClasses exist.
 
 ### Access Grafana on EKS
 

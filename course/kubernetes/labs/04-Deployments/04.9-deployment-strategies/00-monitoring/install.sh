@@ -8,10 +8,23 @@ DEFAULT_STORAGE_CLASS=$(kubectl get storageclass \
   -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 
 if [ -z "$DEFAULT_STORAGE_CLASS" ]; then
-  echo "A default StorageClass is required for Prometheus persistence." >&2
+  for STORAGE_CLASS in gp2 standard; do
+    if kubectl get storageclass "$STORAGE_CLASS" >/dev/null 2>&1; then
+      kubectl annotate storageclass "$STORAGE_CLASS" \
+        storageclass.kubernetes.io/is-default-class=true --overwrite
+      DEFAULT_STORAGE_CLASS=$STORAGE_CLASS
+      break
+    fi
+  done
+fi
+
+if [ -z "$DEFAULT_STORAGE_CLASS" ]; then
+  echo "No default, gp2, or standard StorageClass is available." >&2
   echo "Mark an appropriate StorageClass as default, then run this command again." >&2
   exit 1
 fi
+
+echo "Using default StorageClass: $DEFAULT_STORAGE_CLASS"
 
 helm repo add prometheus-community \
   https://prometheus-community.github.io/helm-charts --force-update
