@@ -65,6 +65,21 @@ You can run a local VM or use a cloud server. For this example, we'll be deployi
 
 In **AWS Academy**, configure credentials before Terraform (for example `export AWS_PROFILE=upc`).
 
+### AutoDeploy using AWS Academy Learner Lab or CloudShell console
+
+With AWS credentials configured, run this command in a Linux x86_64 console:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/master/course/kubernetes/labs/06-from-scratch/lab.sh | bash
+```
+
+This installs Terraform and provisions the Lab 06 instance with Docker 20.10.21 pinned. It prints the SSH command; allow a few minutes for first-boot setup. Kubernetes components are still started manually following this lab.
+
+Keep `~/kubernetes-talks-06`: it contains the Terraform state required to destroy the instance. The script refuses to overwrite an existing checkout.
+
+### Manual deployment
+
+
 Setup your terraform AWS credentials and run `tf init`
 
 - Command in the `instance` terminal
