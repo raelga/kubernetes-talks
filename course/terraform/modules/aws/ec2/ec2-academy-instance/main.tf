@@ -102,12 +102,15 @@ echo "${tls_private_key.terraform.public_key_openssh}" | tee -a /home/${var.syst
 # PS1 with line break (user@host:path on first line, prompt on second)
 echo 'PS1='"'"'\n\[\e[38;5;245m\]┌─ \[\e[1;32m\]\u\[\e[0m\]@\[\e[1;34m\]\h\[\e[0m\]:\[\e[1;33m\]\w\[\e[0m\]\n\[\e[38;5;245m\]└─\[\e[0m\] \$ '"'"'' >> /home/${var.system_user}/.bashrc
 # Package installation
-sudo apt update && sudo apt -y install make apt-transport-https ca-certificates curl gnupg2 software-properties-common jq docker.io cgroup-tools tree awscli
+sudo apt update && sudo apt -y install make apt-transport-https ca-certificates curl gnupg2 software-properties-common jq cgroup-tools tree awscli
+# Docker: pinned to 20.10.x because kubelet v1.16 (dockershim) is incompatible with docker.io 24.x/26.x on Ubuntu 20.04.
+sudo apt -y install --allow-downgrades docker.io=20.10.21-0ubuntu1~20.04.2
+sudo apt-mark hold docker.io
 usermod -aG docker ${var.system_user}
 # Terraform installation
 wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update && sudo apt install terraform
+sudo apt update && sudo apt -y install terraform
 git clone --depth=1 https://github.com/raelga/kubernetes-talks.git /home/${var.system_user}/kubernetes-talks &&
   chown -R ${var.system_user}:${var.system_user} /home/${var.system_user}/kubernetes-talks
 reboot

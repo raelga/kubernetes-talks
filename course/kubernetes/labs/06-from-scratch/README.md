@@ -52,6 +52,9 @@
   - [Expose the `Deploment` with a `Service`](#expose-the-deploment-with-a-service)
   - [Try to connect to the service IP](#try-to-connect-to-the-service-ip)
   - [Sixth component: `kube-proxy`](#sixth-component-kube-proxy)
+  - [Deployment rollout](#deployment-rollout)
+  - [My App](#my-app)
+  - [Guestbook](#guestbook)
   - [Delete everything](#delete-everything)
 
 ## Start up an instance
@@ -59,6 +62,8 @@
 > ## **Open a new terminal named `instance`**
 
 You can run a local VM or use a cloud server. For this example, we'll be deploying an EC2 instance in AWS using terraform.
+
+In **AWS Academy**, configure credentials before Terraform (for example `export AWS_PROFILE=upc`).
 
 Setup your terraform AWS credentials and run `tf init`
 
@@ -74,7 +79,7 @@ tf init
 
 Initializing the backend...
 Initializing modules...
-- ec2 in ../00-Instance-Academy/terraform/modules/aws/ec2-academy/instance
+- ec2 in ../../../terraform/modules/aws/ec2/ec2-academy-instance
 
 Initializing provider plugins...
 - Finding latest version of hashicorp/random...
@@ -126,7 +131,16 @@ Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
 Outputs:
 
 public_ip = "34.202.212.85"
-ssh_cmd = "ssh -A ec2-user@34.202.212.85"
+ssh_host = "ubuntu@34.202.212.85"
+ssh_cmd = "ssh -o StrictHostKeyChecking=no -i ~/.ssh/labsuser.pem -i ~/.ssh-upc/k8s-terraform.pem ubuntu@34.202.212.85"
+```
+
+Wait until first-boot setup finishes (package install, Docker, repo clone). This usually takes a few minutes.
+
+- Command in the `instance` terminal
+
+```bash
+$(tf output -raw ssh_cmd) -- cloud-init status --wait
 ```
 
 SSH into the instance.
@@ -134,24 +148,15 @@ SSH into the instance.
 - Command in the `instance` terminal
 
 ```bash
-ssh $(tf output -raw ssh_host)
+$(tf output -raw ssh_cmd)
 ```
 
 - Expected output:
 
 ```bash
 ...
-   ,     #_
-   ~\_  ####_        Amazon Linux 2
-  ~~  \_#####\
-  ~~     \###|       AL2 End of Life is 2025-06-30.
-  ~~       \#/ ___
-   ~~       V~' '->
-    ~~~         /    A newer version of Amazon Linux is available!
-      ~~._.   _/
-         _/ _/       Amazon Linux 2023, GA and supported until 2028-03-15.
-       _/m/'           https://aws.amazon.com/linux/amazon-linux-2023/
-....
+Welcome to Ubuntu 20.04.x LTS ...
+...
 ```
 
 ---
@@ -170,8 +175,8 @@ ssh $(tf output -raw ssh_host)
 
 If your are using a remote server and want to access to the services from your local computer, is recommended connect to the instance building a tunnel to the service ports. For demo purposes and using the **simpliest** setup possible, we're not going to use authentication neither enable secure communication between services.
 
-For the `kube-apiserver`, use `ssh -L 8080:localhost:8080 34.254.155.10`.
-For the `etcd` server, use `ssh -L 2379:localhost:2379 34.254.155.10`.
+For the `kube-apiserver`, forward port `8080` on top of `ssh_cmd` from `terraform output` (insert `-L 8080:localhost:8080` after `ssh`).
+For the `etcd` server, use `-L 2379:localhost:2379` the same way.
 
 ### Short url usage
 
@@ -215,6 +220,19 @@ curl -o /dev/null -I -s go.rael.dev/etcd-v35 -w '%{redirect_url}'
 https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64.tar.gz
 ```
 
+### Helper scripts
+
+The `scripts/` directory has two helpers used while validating this lab:
+
+- `scripts/e2e-lab-test.sh` — runs the whole lab (etcd → apiserver → controller-manager → scheduler → kubelet → service → kube-proxy) non-interactively on the instance. Use it to smoke-test the environment before teaching the lab live; the manual, hands-on walkthrough below is the one to actually follow in class.
+- `scripts/ensure-docker-for-kubelet.sh` — fallback that downgrades Docker to a version compatible with kubelet v1.16's dockershim. The instance now provisions with the pinned version already, so this is only needed if Docker was manually upgraded afterwards (see [Fifth component: `kubelet`](#fifth-component-kubelet)).
+
+```bash
+scp -o StrictHostKeyChecking=no -r -i ~/.ssh/labsuser.pem -i ~/.ssh-upc/k8s-terraform.pem \
+  scripts $(tf output -raw ssh_host):~/lab-scripts
+$(tf output -raw ssh_cmd) 'bash ~/lab-scripts/e2e-lab-test.sh'
+```
+
 ## First component: `etcd`
 
 > ## **Open a new terminal named `etcd`**
@@ -227,7 +245,7 @@ This will be our `etcd` terminal.
 - Command in the `etcd` terminal
 
 ```bash
-ssh -L 2379:localhost:2379 $(tf output -raw ssh_host)
+ssh -o StrictHostKeyChecking=no -L 2379:localhost:2379 -i ~/.ssh/labsuser.pem -i ~/.ssh-upc/k8s-terraform.pem $(tf output -raw ssh_host)
 ```
 
 Download the a stable version of etcd v3, for this demo, v3.5.0.
@@ -559,7 +577,7 @@ This will be our `api` terminal.
 - Command in the `api` terminal
 
 ```bash
-ssh -L 8080:localhost:8080 $(tf output -raw ssh_host)
+ssh -o StrictHostKeyChecking=no -L 8080:localhost:8080 -i ~/.ssh/labsuser.pem -i ~/.ssh-upc/k8s-terraform.pem $(tf output -raw ssh_host)
 ```
 
 ### Start the `kube-apiserver`
@@ -836,16 +854,26 @@ etcdctl get /registry/configmaps/default/hello-cm -w fields
 "Count" : 1
 ```
 
-## Setup `kubectl` on your local computer
+## Setup `kubectl`
 
-The API Server was spawn on a shell with a SSH tunnel listening at localhost:8080.
+On the **lab EC2 instance**, install the client from the tarball you already downloaded:
+
+- Command in the `instance` terminal
+
+```bash
+sudo install ~/kubernetes/server/bin/kubectl /usr/local/bin/
+```
+
+If you use an SSH tunnel from your laptop, you can also run `kubectl` locally against `localhost:8080` (same config steps below).
+
+The API Server listens at `http://localhost:8080` on the instance (or on your laptop when port-forwarded).
 
 ### Define a the `localhost:8080` cluster
 
-- Command in the `local`
+- Command in the `instance` terminal (or `local` if tunneled)
 
 ```bash
-kubectl config set-cluster localhost --server localhost:8080
+kubectl config set-cluster localhost --server=http://localhost:8080
 ```
 
 - Expected output
@@ -1433,7 +1461,7 @@ SSH into the instance.
 - Command in the `controller` terminal
 
 ```bash
-ssh $(tf output -raw ssh_host)
+$(tf output -raw ssh_cmd)
 ```
 
 Before starting the `kube-controller-manager`, some certificates are required.
@@ -1709,7 +1737,7 @@ SSH into the instance.
 - Command in the `scheduler` terminal
 
 ```bash
-ssh $(tf output -raw ssh_host)
+$(tf output -raw ssh_cmd)
 ```
 
 - Command in the `scheduler` terminal
@@ -1848,7 +1876,7 @@ SSH into the instance.
 - Command in the `kubelet` terminal
 
 ```bash
-ssh $(tf output -raw ssh_host)
+$(tf output -raw ssh_cmd)
 ```
 
 ### Create a .kube/config file for kubelet
@@ -1868,11 +1896,11 @@ And then repeat the same commands to setup the `.kube/config` file.
 
 - Command in the `kubelet` terminal
 
-```
-kubectl config set-cluster local --server localhost:8080;
-kubectl config set-context local --cluster local;
-kubectl config use-context local;
-kubectl cluster-info;
+```bash
+kubectl config set-cluster localhost --server=http://localhost:8080
+kubectl config set-context localhost --cluster=localhost
+kubectl config use-context localhost
+kubectl cluster-info
 ```
 
 ### Check the resulting .kube/config file
@@ -1902,22 +1930,24 @@ preferences: {}
 users: []
 ```
 
-- Command
+The instance pins **Docker 20.10.x** (held via `apt-mark hold`), since **kubelet v1.16** (dockershim) is incompatible with newer Docker releases. Make sure the daemon is running:
+
+- Command in the `kubelet` terminal
 
 ```bash
-sudo ~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config
-```
-
-Something missing?
-
-```
 sudo service docker start
 ```
 
-- Command
+> If you provisioned the instance before this fix, or Docker was otherwise upgraded, run `bash scripts/ensure-docker-for-kubelet.sh` to downgrade it back to `20.10.x` first.
+
+Start the `kubelet`. On modern systemd hosts (unlike the AL2/Ubuntu 18.04 image this lab was originally written for), the default cgroup driver detection fails, so we pin `--runtime-cgroups`, `--kubelet-cgroups` and `--cgroup-driver` explicitly:
+
+- Command in the `kubelet` terminal
 
 ```bash
-sudo ~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config
+sudo ~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config \
+  --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice \
+  --cgroup-driver=cgroupfs
 ```
 
 - Expected output `kubelet` start up
@@ -1939,18 +1969,7 @@ I0915 00:54:20.860228   21441 desired_state_of_world_populator.go:131] Desired s
 ...
 ```
 
-If you see some errors like:
-
-```
-Failed to get system container stats
-```
-
-Use:
-
-```
-sudo ~/kubernetes/server/bin/kubelet --register-node --kubeconfig ~/.kube/config \
- --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice
-```
+> If you see `Failed to get system container stats` without the `--runtime-cgroups`/`--kubelet-cgroups` flags above, that confirms the cgroup detection issue — the command above already works around it.
 
 - Expected output in the `kube-scheduler` logs
 
@@ -2062,9 +2081,9 @@ kubectl get svc
 ```
 
 ```
-NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-hello        ClusterIP   10.0.0.170   <none>        80/TCP    5s
-kubernetes   ClusterIP   10.0.0.1     <none>        443/TCP   116m
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)        AGE
+hello        NodePort    10.0.0.170   <none>        80:31890/TCP   5s
+kubernetes   ClusterIP   10.0.0.1     <none>        443/TCP        116m
 ```
 
 - Command in the `local` terminal
@@ -2082,10 +2101,11 @@ Labels:            <none>
 Annotations:       kubectl.kubernetes.io/last-applied-configuration:
                      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"hello","namespace":"default"},"spec":{"ports":[{"port":80,"target...
 Selector:          app=hello
-Type:              ClusterIP
+Type:              NodePort
 IP:                10.0.0.170
 Port:              <unset>  80/TCP
 TargetPort:        80/TCP
+NodePort:          <unset>  31890/TCP
 Endpoints:         <none>
 Session Affinity:  None
 Events:            <none>
@@ -2124,7 +2144,7 @@ SSH into the instance.
 - Command in the `kube-proxy` terminal to connect to the instance
 
 ```bash
-ssh $(tf output -raw ssh_host)
+$(tf output -raw ssh_cmd)
 ```
 
 - Command in the `instance` terminal
@@ -2351,7 +2371,7 @@ kubectl apply -f my-app/service.yaml
 ```
 
 ```
-k apply -f my-app/deployment-v1.yaml
+kubectl apply -f my-app/deployment-v1.yaml
 ```
 
 ```
@@ -2367,24 +2387,28 @@ export MYAPP_URL="http://$(tf output -raw public_ip):$(kubectl get svc my-app -o
   && while sleep 0.5; do curl "${MYAPP_URL}" --connect-timeout 5; done
 ```
 
-```
+```bash
 kubectl apply -f my-app/deployment-v2.yaml \
   && kubectl get pods -w
 ```
 
-####################################################
-############# Clean up ############
-####################################################
+---
 
-````
+```
+####################################################
+#############          Clean up         ############
+####################################################
+```
+
+---
 
 ## Guestbook
 
-```
+```bash
 kubectl apply -f guestbook
 ```
 
-Expected output:
+- Expected output
 
 ```
 deployment.apps/guestbook created
@@ -2392,12 +2416,13 @@ service/guestbook created
 deployment.apps/redis-master created
 service/redis-master created
 deployment.apps/redis-slave created
-service/redis-slave created
 ```
 
-Review and use the Gestbook App:
+> Note: `redis-slave` only has a `Deployment` ([redis-slave.yml](guestbook/redis-slave.yml)), no matching `Service` — the slaves are reached through `redis-master` in this demo app.
 
-```
+Review and use the Guestbook app:
+
+```bash
 export GUESTBOOK_URL="http://$(tf output -raw public_ip):$(kubectl get svc guestbook -o=jsonpath='{.spec.ports[?(@.port==80)].nodePort}')" \
   && echo ${GUESTBOOK_URL}
 ```
@@ -2409,26 +2434,43 @@ export GUESTBOOK_URL="http://$(tf output -raw public_ip):$(kubectl get svc guest
 - Command in the `local` terminal
 
 ```bash
-tf destroy
-````
+tf destroy -auto-approve
+```
 
 - Expected output
 
 ```
-Acquiring state lock. This may take a few moments...
-data.terraform_remote_state.aws_network: Refreshing state...
-module.ec2.data.aws_ami.ubuntu: Refreshing state...
-module.ec2.aws_security_group.instance-sg: Refreshing state... [id=sg-00e57f209d72da0e1]
-module.ec2.aws_spot_instance_request.instance: Refreshing state... [id=sir-25jg459p]
-module.ec2.aws_spot_instance_request.instance: Destroying... [id=sir-25jg459p]
-module.ec2.aws_spot_instance_request.instance: Still destroying... [id=sir-25jg459p, 10s elapsed]
-module.ec2.aws_spot_instance_request.instance: Still destroying... [id=sir-25jg459p, 20s elapsed]
-module.ec2.aws_spot_instance_request.instance: Still destroying... [id=sir-25jg459p, 30s elapsed]
-module.ec2.aws_spot_instance_request.instance: Destruction complete after 30s
-module.ec2.aws_security_group.instance-sg: Destroying... [id=sg-00e57f209d72da0e1]
-module.ec2.aws_security_group.instance-sg: Still destroying... [id=sg-00e57f209d72da0e1, 10s elapsed]
-module.ec2.aws_security_group.instance-sg: Destruction complete after 11s
+random_integer.subnet_id: Refreshing state... [id=2]
+random_id.id: Refreshing state... [id=CJajeb2C8vA]
+module.ec2.tls_private_key.terraform: Refreshing state... [id=68c815e64cd21d1daf1ff3df7d96e57a160f9068]
+module.ec2.aws_security_group.instance-sg: Refreshing state... [id=sg-037432e0b3e3dc0a9]
+module.ec2.aws_instance.this: Refreshing state... [id=i-07afda05187743653]
+module.ec2.aws_eip.this: Refreshing state... [id=eipalloc-0a0439a5dd6d7a9af]
+module.ec2.aws_iam_instance_profile.this: Refreshing state... [id=AIPA5FJZUT4VWJ2UIKCMP]
+module.ec2.local_file.private_key_file: Refreshing state... [id=abdc2608e168075ea61b2378b4cf1fd5de4e813f]
 
-Destroy complete! Resources: 2 destroyed.
-Releasing state lock. This may take a few moments...
+Terraform will perform the following actions:
+  # (7 resources will be destroyed)
+
+module.ec2.aws_eip.this: Destroying...
+module.ec2.aws_eip.this: Destruction complete after 1s
+module.ec2.aws_instance.this: Destroying...
+module.ec2.aws_instance.this: Still destroying... [id=i-07afda05187743653, 10s elapsed]
+module.ec2.aws_instance.this: Destruction complete after 32s
+module.ec2.aws_iam_instance_profile.this: Destroying...
+module.ec2.aws_security_group.instance-sg: Destroying...
+module.ec2.local_file.private_key_file: Destroying...
+module.ec2.tls_private_key.terraform: Destroying...
+module.ec2.aws_iam_instance_profile.this: Destruction complete after 1s
+module.ec2.aws_security_group.instance-sg: Destruction complete after 1s
+module.ec2.local_file.private_key_file: Destruction complete after 0s
+module.ec2.tls_private_key.terraform: Destruction complete after 0s
+random_id.id: Destroying...
+random_id.id: Destruction complete after 0s
+random_integer.subnet_id: Destroying...
+random_integer.subnet_id: Destruction complete after 0s
+
+Destroy complete! Resources: 7 destroyed.
 ```
+
+> EC2 termination can take **1-3 minutes**. If `terraform destroy` is interrupted (e.g. CLI timeout), just run it again — it's safe to re-run and will finish destroying any resource left behind. Always confirm with `terraform state list` (should be empty) before leaving the lab.
