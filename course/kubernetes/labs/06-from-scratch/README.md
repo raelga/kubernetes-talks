@@ -70,7 +70,7 @@ In **AWS Academy**, configure credentials before Terraform (for example `export 
 With AWS credentials configured, run this command in a Linux x86_64 console:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/master/course/kubernetes/labs/06-from-scratch/lab.sh | bash
+curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/main/course/kubernetes/labs/06-from-scratch/lab.sh | bash
 ```
 
 This installs Terraform and provisions the Lab 06 instance with Docker 20.10.21 pinned. It prints the SSH command; allow a few minutes for first-boot setup. Kubernetes components are still started manually following this lab.

@@ -12,7 +12,7 @@ The main subject of this talk is to have an overview on the microservices archit
 The main subject of this talk is understanding the Kubernetes Control Plane by spinning up a cluster, component by component.
 
 - [Kubernetes from scratch Slides](https://go.rael.dev/cnbcn-extending-k8s)
-- [Kubernetes from scratch Lab](https://github.com/raelga/kubernetes-talks/tree/master/k8s-from-scratch)
+- [Kubernetes from scratch Lab](k8s-from-scratch/)
 
 ## Kubernetes Clouds
 

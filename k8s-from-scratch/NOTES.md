@@ -39,7 +39,7 @@ curl -sqL go.rael.dev/etcd-v35 | tar -zxvf -
 ```
 
 ### Check etcd (Terminal 2)
-(go to https://github.com/raelga/kubernetes-talks/blob/master/k8s-from-scratch/README.md#check-etcd-content for more detailed example)
+(go to [Check etcd content](README.md#check-etcd-content) for a more detailed example)
 
 ```
 # 1.4 Write some data onto ETCD
