@@ -16,21 +16,21 @@ The main subject of this talk is understanding the Kubernetes Control Plane by s
 
 ## Kubernetes Clouds
 
-The main subject of this talk is viewing the differences between each managed kubernetes solution offered by AWS, Azure and GCP.
+An overview of a global application on managed Kubernetes across AWS, Azure, Google Cloud and DigitalOcean, with Cloudflare Workers for edge routing and a shared data service.
 
 - [Kubernetes Clouds Slides](https://talks.godoc.org/github.com/raelga/kubernetes-talks/clouds/kubernetes-clouds.slide)
 - [Kubernetes Clouds Slides](clouds/)
 
-For the labs, the main object is having several clusters deployed all over the using each managed (or not) solution and deploy the same application using the common interface provided by Kubernetes.
+The presentation covers the goals, proposed architecture and global topology. The implementation guides below cover provisioning and deployment.
 
-- [Deploy Kubernetes in Amazon Web services](clouds/labs/aws/#deploy-kubernetes-in-aws)
-  - [AWS managed Kubernetes with EKS](clouds/labs/aws/#managed-kubernetes-with-eks)
-  - [AWS managed Kubernetes with EKS using eksctl](clouds/labs/aws/#amazon-web-services---eksctl-alpha)
-  - [AWS non-managed on EC2 with Kops](clouds/labs/aws/#amazon-web-services---kops)
-- [Deploy Kubernetes in Google Cloud Platform](clouds/labs/gcp/#deploy-kubernetes-in-google-cloud-platform)
-  - [GCP managed Kubernetes with GKE](clouds/labs/gcp/#managed-kubernetes-with-google-kubernetes-engine-gke)
-- [Deploy Kubernetes in Azure](clouds/labs/azure/#deploy-kubernetes-in-microsoft-azure)
-  - [Azure managed Kubernetes with AKS](clouds/labs/azure/#managed-kubernetes-with-azure-kubernetes-service-aks)
+- [Complete four-cloud lab runbook](clouds/RUNBOOK.md)
+- [Cloud infrastructure](clouds/infra/)
+  - [AWS managed Kubernetes with EKS](clouds/infra/aws/)
+  - [Google Cloud managed Kubernetes with GKE](clouds/infra/gcp/)
+  - [Azure managed Kubernetes with AKS](clouds/infra/azure/)
+  - [DigitalOcean managed Kubernetes](clouds/infra/digitalocean/)
+- [Application and Worker source](clouds/app/)
+- [Kubernetes manifests and deployment guide](clouds/k8s/)
 
 ## Providers
 

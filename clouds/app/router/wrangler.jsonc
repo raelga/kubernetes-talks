@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "clouds-guestbook-local",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-20",
+  "workers_dev": false,
+  "vars": {
+    "ORIGINS": {}
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "clouds-guestbook-local",
+      "remote": false
+    }
+  ]
+}

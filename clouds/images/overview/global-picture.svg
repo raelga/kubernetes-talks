@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" role="img" aria-label="Schematic globe with Cloudflare global edge routing to four regional Kubernetes applications: AWS EKS North America us-east-1; Azure AKS Europe westeurope; GCP GKE Asia asia-northeast1-a; DigitalOcean DOKS Oceania syd1. One external Cloudflare D1 provides shared state. Positions are schematic, not geographic coordinates.">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="20" y="20" width="250" height="160" rx="14"/>
+    <rect x="630" y="20" width="250" height="160" rx="14"/>
+    <rect x="20" y="250" width="250" height="160" rx="14"/>
+    <rect x="630" y="250" width="250" height="160" rx="14"/>
+    <circle cx="450" cy="115" r="78"/>
+    <ellipse cx="450" cy="115" rx="31" ry="78"/>
+    <ellipse cx="450" cy="115" rx="78" ry="29"/>
+    <path d="M 450 37 V 193 M 372 115 H 528 M 450 193 V 210"/>
+    <rect x="335" y="220" width="230" height="70" rx="14"/>
+    <path d="M 335 240 H 310 V 110 H 280" marker-end="url(#arrow)"/>
+    <path d="M 565 240 H 590 V 110 H 620" marker-end="url(#arrow)"/>
+    <path d="M 335 270 H 310 V 330 H 280" marker-end="url(#arrow)"/>
+    <path d="M 565 270 H 590 V 330 H 620" marker-end="url(#arrow)"/>
+    <path d="M 450 290 V 338" marker-end="url(#arrow)"/>
+    <rect x="355" y="348" width="190" height="60" rx="12"/>
+  </g>
+  <g fill="currentColor" font-family="sans-serif" text-anchor="middle">
+    <text x="145" y="54" font-size="24">AWS EKS</text>
+    <text x="145" y="91" font-size="22">North America</text>
+    <text x="145" y="121" font-size="18">us-east-1</text>
+    <text x="145" y="155" font-size="20">Application</text>
+    <text x="755" y="54" font-size="24">Azure AKS</text>
+    <text x="755" y="91" font-size="22">Europe</text>
+    <text x="755" y="121" font-size="18">westeurope</text>
+    <text x="755" y="155" font-size="20">Application</text>
+    <text x="145" y="284" font-size="24">GCP GKE</text>
+    <text x="145" y="321" font-size="22">Asia</text>
+    <text x="145" y="351" font-size="18">asia-northeast1-a</text>
+    <text x="145" y="385" font-size="20">Application</text>
+    <text x="755" y="284" font-size="24">DigitalOcean DOKS</text>
+    <text x="755" y="321" font-size="22">Oceania</text>
+    <text x="755" y="351" font-size="18">syd1</text>
+    <text x="755" y="385" font-size="20">Application</text>
+    <text x="450" y="248" font-size="24">Cloudflare</text>
+    <text x="450" y="277" font-size="22">Global edge</text>
+    <text x="450" y="385" font-size="24">Cloudflare D1</text>
+  </g>
+  <text x="470" y="326" fill="currentColor" font-family="sans-serif" font-size="18">Shared state</text>
+</svg>

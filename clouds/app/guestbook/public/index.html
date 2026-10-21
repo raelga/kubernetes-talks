@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Multi-cloud Kubernetes demonstration: identical message interfaces with cluster-local Redis or shared Cloudflare D1 storage.">
+  <title>Global Guestbook · Loading deployment</title>
+  <link rel="stylesheet" href="/style.css?v=20261021-ui">
+  <script src="/script.js?v=20261021-ui" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Global Guestbook home">
+        <svg class="app-logo" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <circle cx="29" cy="28" r="21" stroke="currentColor" stroke-width="2"/>
+          <ellipse cx="29" cy="28" rx="10" ry="21" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M9 22h40M9 34h29M29 7v42" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M27 51a9 9 0 0 1 0-18 13 13 0 0 1 25-1 9.5 9.5 0 1 1 2 19H27Z" fill="currentColor" stroke="#0b1220" stroke-width="3"/>
+          <path d="m34 42 5 5 9-10" stroke="#0b1220" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Global<span class="brand-light"> Guestbook</span></span>
+      </a>
+      <span class="topbar-note"><span class="status-dot"></span> Loading deployment metadata</span>
+    </header>
+
+    <main>
+      <section class="deployment-card" aria-labelledby="deployment-heading">
+        <div class="deployment-copy">
+          <p class="eyebrow">SERVING PROVIDER</p>
+          <h1 id="deployment-heading"><span id="provider-name">Loading…</span><span class="provider-dot" aria-hidden="true">.</span></h1>
+          <p class="deployment-description">Reading deployment metadata from GET /api/deployment.</p>
+          <div class="location-line">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg>
+            <span class="metadata-label">Region:</span><span id="region-name">Loading…</span><span class="location-divider">/</span><span class="metadata-label">Continent:</span><span id="continent-name">—</span>
+          </div>
+          <p class="pod-badge">Pod: <span id="pod-name">Loading…</span></p>
+          <p id="deployment-error" class="error deployment-error" role="alert" hidden></p>
+        </div>
+        <div class="map-panel">
+          <div class="map-heading"><span>CONFIGURED REGION</span><span class="map-live" id="map-status">LOADING</span></div>
+          <svg class="world-map" viewBox="0 0 420 220" role="img" aria-labelledby="map-title">
+            <title id="map-title">World map showing the deployment's approximate geographic area</title>
+            <defs><pattern id="map-grid" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#26364b"/></pattern></defs>
+            <rect width="420" height="220" fill="url(#map-grid)"/>
+            <g class="continents">
+              <path d="m32 55 23-18 44-10 28 11 14 24-17 17-21 4-10 22-19-3-8-19-24-6Zm83 48 24 9 14 27-10 30-17 28-10-17 3-29-13-22Z"/>
+              <path d="m143 25 20-9 17 10-9 22-20-2Zm47 32 22-12 24 6 10 16-20 8-18-5-5 17-20-7Z"/>
+              <path d="m204 88 31-4 27 19-3 32-23 34-17-13-5-29-18-19Z"/>
+              <path d="m239 47 35-18 40 7 30 17 36 9 10 19-27 12-22-7-14 22-22 3-8-20-26-5-14-17-24-1Zm56 68 18 4 9 19-9 5-12-17Zm32 26 20 2 9 11-29-2Z"/>
+              <path d="m334 159 28-10 25 13-4 22-28 4-24-13Zm57 30 8-5 3 14-9 8Z"/>
+            </g>
+            <g id="region-marker" class="region-marker" hidden><circle class="marker-halo" r="17"/><circle class="marker-ring" r="9"/><circle class="marker-core" r="4"/></g>
+          </svg>
+          <div class="map-footer"><span id="map-caption">Reading deployment metadata</span></div>
+        </div>
+      </section>
+
+      <div class="cloud-strip" aria-label="The same application across all providers">
+        <span class="cloud-strip-label">DEPLOYMENT PROVIDERS</span>
+        <span class="cloud-name" data-cloud="aws">AWS</span><span class="cloud-name" data-cloud="azure">Azure</span><span class="cloud-name" data-cloud="gcp">Google Cloud</span><span class="cloud-name" data-cloud="digitalocean">DigitalOcean</span>
+      </div>
+
+      <div class="workspace" id="messages-workspace" hidden>
+        <section class="compose-card panel" aria-labelledby="compose-heading">
+          <div class="section-kicker"><span class="tiny-square"></span> <span id="storage-mode">MESSAGE STORAGE</span></div>
+          <h2 id="compose-heading">Write a message</h2>
+          <form id="guestbook-form">
+            <div class="label-row"><span id="character-count">0 / 500</span></div>
+            <textarea id="message-text" name="message" rows="4" aria-label="Message" aria-describedby="message-help character-count" placeholder="Enter your message." required></textarea>
+            <p id="message-help" class="field-help">Up to 500 characters. Please don't share secrets.</p>
+            <button class="send-button" id="send-button" type="submit" disabled><span id="send-label">Save message</span></button>
+            <p id="form-status" class="form-status" role="status" aria-live="polite"></p>
+          </form>
+          <div class="shared-state-note"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 4 14 4 14 0V5M5 12v7c0 4 14 4 14 0v-7"/></svg><span><strong id="storage-title">Storage</strong><br><code>POST /api/messages</code> <span id="storage-description"></span></span></div>
+        </section>
+
+        <section class="messages-card panel" aria-labelledby="messages-heading" aria-busy="true" id="messages-panel">
+          <div class="messages-header"><div><div class="section-kicker">GET /api/messages</div><h2 id="messages-heading">Stored messages <span id="message-count" class="count-badge">—</span></h2></div><button id="refresh-button" class="refresh-button" type="button" aria-label="Refresh deployment and messages"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Refresh</span></button></div>
+          <p class="feed-caption">Latest 50 messages. Each row identifies the provider and region that wrote it.</p>
+          <p id="feed-status" class="feed-status" role="status" aria-live="polite">Loading messages…</p>
+          <ol id="messages" class="message-list" aria-label="Stored messages"></ol>
+          <div id="empty-state" class="empty-state" hidden><h3>No stored messages</h3><p>Save a message to check storage behavior.</p></div>
+          <div class="feed-footer"><span id="last-updated">Waiting for database response</span><span class="feed-footer-end" id="storage-footer"></span></div>
+        </section>
+      </div>
+    </main>
+    <footer class="page-footer"><span>Same application image · Provider-specific Kubernetes configuration</span><span>Deployment metadata comes from the serving Pod.</span></footer>
+  </div>
+</body>
+</html>

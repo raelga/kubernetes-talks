@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../../../shared
+configMapGenerator:
+- name: guestbook-shared-location
+  behavior: merge
+  literals:
+  - LAB_PROVIDER=aws
+  - LAB_REGION=us-east-1
+  - LAB_CONTINENT=North America

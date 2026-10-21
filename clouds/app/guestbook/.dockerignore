@@ -1,0 +1,6 @@
+*
+!go.mod
+!go.sum
+!main.go
+!public/
+!public/**

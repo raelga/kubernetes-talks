@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" role="img" aria-label="Four regional Kubernetes applications access shared state through a Cloudflare Worker backed by one Cloudflare D1 database outside Kubernetes">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="25" y="25" width="245" height="80" rx="14"/>
+    <rect x="25" y="125" width="245" height="80" rx="14"/>
+    <rect x="25" y="225" width="245" height="80" rx="14"/>
+    <rect x="25" y="325" width="245" height="80" rx="14"/>
+    <path d="M 270 65 H 330 V 365 H 270 M 270 165 H 330 M 270 265 H 330"/>
+    <path d="M 330 215 H 425" marker-end="url(#arrow)"/>
+    <rect x="435" y="155" width="235" height="120" rx="16"/>
+    <path d="M 670 215 H 725" marker-end="url(#arrow)"/>
+    <ellipse cx="805" cy="180" rx="70" ry="18"/>
+    <path d="M 735 180 V 257 C 735 281 875 281 875 257 V 180"/>
+  </g>
+  <g fill="currentColor" font-family="sans-serif" text-anchor="middle">
+    <text x="147" y="57" font-size="22">AWS EKS cluster</text>
+    <text x="147" y="85" font-size="20">Application</text>
+    <text x="147" y="157" font-size="22">Azure AKS cluster</text>
+    <text x="147" y="185" font-size="20">Application</text>
+    <text x="147" y="257" font-size="22">GCP GKE cluster</text>
+    <text x="147" y="285" font-size="20">Application</text>
+    <text x="147" y="357" font-size="22">DigitalOcean DOKS</text>
+    <text x="147" y="385" font-size="20">Application</text>
+    <text x="552" y="190" font-size="24">Cloudflare</text>
+    <text x="552" y="223" font-size="28">Worker</text>
+    <text x="552" y="254" font-size="20">Shared state access</text>
+    <text x="552" y="315" font-size="20">One shared source of data</text>
+    <text x="805" y="237" font-size="30">D1</text>
+    <text x="805" y="313" font-size="20">Cloudflare</text>
+    <text x="805" y="344" font-size="18">Outside Kubernetes</text>
+  </g>
+</svg>

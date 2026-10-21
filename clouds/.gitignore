@@ -1,0 +1,16 @@
+# Terraform providers, state, plans, and crash logs
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+
+# Kubernetes credentials and local kubeconfig fragments
+*.kubeconfig
+kubeconfig
+
+# Local Kustomize input; never commit the shared application credential
+k8s/shared/credentials.env

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" role="img" aria-label="Browser HTTPS to the Cloudflare global edge Worker, then HTTP to a selected regional Kubernetes Service and application">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="25" y="165" width="155" height="100" rx="14"/>
+    <rect x="270" y="145" width="220" height="140" rx="16"/>
+    <rect x="645" y="25" width="230" height="80" rx="12"/>
+    <rect x="645" y="125" width="230" height="80" rx="12"/>
+    <rect x="645" y="225" width="230" height="80" rx="12"/>
+    <rect x="645" y="325" width="230" height="80" rx="12"/>
+    <path d="M 180 215 H 260" marker-end="url(#arrow)"/>
+    <path d="M 490 215 H 555 M 555 65 V 365"/>
+    <path d="M 555 65 H 635" marker-end="url(#arrow)"/>
+    <path d="M 555 165 H 635" marker-end="url(#arrow)"/>
+    <path d="M 555 265 H 635" marker-end="url(#arrow)"/>
+    <path d="M 555 365 H 635" marker-end="url(#arrow)"/>
+  </g>
+  <g fill="currentColor" font-family="sans-serif" text-anchor="middle">
+    <text x="102" y="224" font-size="26">Browser</text>
+    <text x="225" y="195" font-size="18">HTTPS</text>
+    <text x="380" y="186" font-size="26">Cloudflare</text>
+    <text x="380" y="219" font-size="28">Worker</text>
+    <text x="380" y="254" font-size="20">Global edge</text>
+    <text x="520" y="195" font-size="18">HTTP</text>
+    <text x="760" y="57" font-size="22">AWS EKS</text>
+    <text x="760" y="85" font-size="18">Service → application</text>
+    <text x="760" y="157" font-size="22">Azure AKS</text>
+    <text x="760" y="185" font-size="18">Service → application</text>
+    <text x="760" y="257" font-size="22">GCP GKE</text>
+    <text x="760" y="285" font-size="18">Service → application</text>
+    <text x="760" y="357" font-size="22">DigitalOcean DOKS</text>
+    <text x="760" y="385" font-size="18">Service → application</text>
+    <text x="555" y="425" font-size="18">One regional origin per request</text>
+  </g>
+</svg>

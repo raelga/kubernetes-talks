@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" role="img" aria-label="Four architectural building blocks: managed Kubernetes, a portable application, global edge routing, and shared state">
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="25" y="55" width="190" height="320" rx="16"/>
+    <rect x="245" y="55" width="190" height="320" rx="16"/>
+    <rect x="465" y="55" width="190" height="320" rx="16"/>
+    <rect x="685" y="55" width="190" height="320" rx="16"/>
+    <rect x="83" y="104" width="74" height="24" rx="5"/>
+    <rect x="83" y="145" width="74" height="24" rx="5"/>
+    <path d="M 120 128 V 145"/>
+    <rect x="305" y="102" width="70" height="68" rx="8"/>
+    <path d="M 305 120 H 375 M 328 135 L 317 145 L 328 155 M 352 135 L 363 145 L 352 155"/>
+    <circle cx="560" cy="136" r="34"/>
+    <ellipse cx="560" cy="136" rx="14" ry="34"/>
+    <path d="M 526 136 H 594"/>
+    <ellipse cx="780" cy="111" rx="37" ry="10"/>
+    <path d="M 743 111 V 160 C 743 174 817 174 817 160 V 111"/>
+  </g>
+  <g fill="currentColor" font-family="sans-serif" text-anchor="middle">
+    <text x="120" y="225" font-size="28">Managed</text>
+    <text x="120" y="260" font-size="26">Kubernetes</text>
+    <text x="120" y="315" font-size="18">Four cloud providers</text>
+    <text x="340" y="225" font-size="28">Portable</text>
+    <text x="340" y="260" font-size="26">application</text>
+    <text x="340" y="315" font-size="18">Same app everywhere</text>
+    <text x="560" y="225" font-size="28">Global</text>
+    <text x="560" y="260" font-size="26">edge</text>
+    <text x="560" y="315" font-size="18">Route near users</text>
+    <text x="780" y="225" font-size="28">Shared</text>
+    <text x="780" y="260" font-size="26">state</text>
+    <text x="780" y="315" font-size="18">One data source</text>
+  </g>
+</svg>

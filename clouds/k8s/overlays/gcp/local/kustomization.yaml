@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+- ../../../local
+# e2-medium exposes 940m allocatable CPU; leave room for system Pods and Redis.
+replicas:
+- name: guestbook
+  count: 1
+configMapGenerator:
+- name: guestbook-local-location
+  behavior: merge
+  literals:
+  - LAB_PROVIDER=gcp
+  - LAB_REGION=asia-northeast1-a
+  - LAB_CONTINENT=Asia

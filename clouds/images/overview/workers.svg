@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" role="img" aria-label="A Cloudflare Worker executes JavaScript near users, selects a regional Kubernetes application geographically, and connects shared state through Cloudflare D1">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="25" y="150" width="170" height="110" rx="14"/>
+    <rect x="280" y="90" width="330" height="250" rx="18"/>
+    <path d="M 300 190 H 590"/>
+    <rect x="690" y="75" width="185" height="115" rx="14"/>
+    <path d="M 195 205 H 270" marker-end="url(#arrow)"/>
+    <path d="M 610 225 H 650 V 132 H 680" marker-end="url(#arrow)"/>
+    <path d="M 610 285 H 645 V 315 H 680" marker-end="url(#arrow)"/>
+    <ellipse cx="782" cy="280" rx="92" ry="18"/>
+    <path d="M 690 280 V 340 C 690 364 874 364 874 340 V 280"/>
+  </g>
+  <g fill="currentColor" font-family="sans-serif" text-anchor="middle">
+    <text x="110" y="195" font-size="26">User</text>
+    <text x="110" y="230" font-size="26">request</text>
+    <text x="445" y="133" font-size="28">Cloudflare Worker</text>
+    <text x="445" y="169" font-size="20">JavaScript at the edge</text>
+    <text x="445" y="228" font-size="24">Geographic routing</text>
+    <text x="445" y="267" font-size="22">HTTP request handling</text>
+    <text x="445" y="307" font-size="22">Shared-data API</text>
+    <text x="782" y="109" font-size="24">Regional</text>
+    <text x="782" y="141" font-size="24">Kubernetes</text>
+    <text x="782" y="173" font-size="22">application</text>
+    <text x="782" y="331" font-size="28">D1</text>
+    <text x="782" y="390" font-size="20">Cloudflare</text>
+  </g>
+</svg>
