@@ -1,7 +1,7 @@
 variable "region" {
   description = "AWS region for the EKS cluster."
   type        = string
-  default     = "us-east-1"
+  default     = "ap-southeast-2"
 }
 
 variable "cluster_api_allowed_cidrs" {

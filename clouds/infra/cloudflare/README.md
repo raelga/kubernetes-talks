@@ -31,7 +31,7 @@ This root supports fresh deployment with empty origins: `/state/*` works before 
 
 Both variants reuse the `guestbook` Deployment/Service in `k8s/base`, with `app=guestbook` selectors. `k8s/shared` adds `guestbook-shared-location` with `APP_MODE=shared` and `STATE_API_URL=https://guestbook.rael.dev`; the app appends `/state/messages` and verifies TLS. The `guestbook-shared-state` Secret generator reads ignored `k8s/shared/credentials.env`. Terminal exports do not override YAML. Browser requests use same-origin `/api/messages`; only app backends send the bearer token to Worker/D1.
 
-Configure Cloudflare once with the four `guestbook` Service addresses after Local datastore is ready. Shared datastore rolls the same Deployment behind the same Services: do not change origins again. Old and new modes may briefly coexist; wait for rollout completion and all desired replicas Ready before demonstrating. Switching does not migrate messages. Existing differently named apps are not renamed here; separately approved migration requires new Service addresses and a one-time origin update.
+For a future approved fresh run, configure Cloudflare once with the four `guestbook` Service addresses after Local datastore is ready. Shared datastore rolls the same Deployment behind the same Services: do not change origins again. Old and new modes may briefly coexist; wait for rollout completion and all desired replicas Ready before demonstrating. Switching does not migrate messages. Fresh clusters require no legacy app migration.
 
 Maintain ignored `infra/cloudflare/origins.auto.tfvars` with keys **exactly** `aws`, `azure`, `gcp`, `digitalocean`. Empty string values are ignored. With no configured origins, frontend requests return 503 while the authenticated state API remains available. See [origin configuration](../../RUNBOOK-DETAILED.md#real-origins-and-input-precedence). Auto tfvars override environment variables; explicit variable flags override auto files.
 
@@ -41,7 +41,7 @@ terraform init -lockfile=readonly
 terraform plan
 ```
 
-Review the intended account/zone/hostname, preserved D1 identity/token and configured origins before applying:
+Review the intended account/zone/hostname, D1 creation, reused private application token and real configured origins before applying. Historical D1 data is not restored merely by recreating the database:
 
 ```bash
 terraform apply
@@ -56,7 +56,7 @@ terraform -chdir=infra/cloudflare output origin_hostnames
 
 ## Routing and data semantics
 
-New sessions use trusted `request.cf.continent`: Americas → AWS, Europe/Africa → Azure, Asia → GCP, Oceania → DigitalOcean. Unknown geography is random; an existing valid `clouds_origin` cookie wins. Clear it to test visitor-continent selection. This is HTTP edge selection, not geographic DNS or measured latency. VPN/proxy exits can affect it.
+New sessions use trusted `request.cf.continent`: Americas (`NA`/`SA`) → DigitalOcean (`nyc1`, New York), Europe/Africa (`EU`/`AF`) → Azure (`westeurope`), Asia (`AS`) → GCP (`asia-northeast1-a`), Oceania (`OC`) → AWS (`ap-southeast-2`, Sydney). Unknown geography is random; an existing valid `clouds_origin` cookie wins. Clear it to test visitor-continent selection. This is HTTP edge selection, not geographic DNS or measured latency. VPN/proxy exits can affect it. All demo infrastructure is currently destroyed; this new topology has not been exercised live.
 
 Require exact `X-Lab-Origin` and `/api/deployment` provider/mode/storage for all four selected origins: `mode=local`, `storage=redis`, then `mode=shared`, `storage=d1`. A fallback response is not selected-origin proof. GET/HEAD wait at most 2 seconds for response headers per origin before failover; with three stalled origins, reaching the fourth can take about 6 seconds plus its response time. Successful routing sets a healthy-origin affinity cookie. POST is forwarded once, without this read timeout or cross-provider replay. Local read failover can show another cluster's independent dataset; keep healthy-origin affinity for isolation proof. Origin traffic is HTTP port 80; use demo data only.
 

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" role="img" aria-label="Schematic globe with Cloudflare global edge routing to four regional Kubernetes applications: AWS EKS North America us-east-1; Azure AKS Europe westeurope; GCP GKE Asia asia-northeast1-a; DigitalOcean DOKS Oceania syd1. One external Cloudflare D1 provides shared state. Positions are schematic, not geographic coordinates.">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" role="img" aria-label="Target architecture: schematic globe with Cloudflare global edge routing to four regional Kubernetes applications: AWS EKS Oceania ap-southeast-2 Sydney; Azure AKS Europe westeurope; GCP GKE Asia asia-northeast1-a; DigitalOcean DOKS North America nyc1 New York. One external Cloudflare D1 provides shared state. Positions are schematic, not geographic coordinates; no live deployment is implied.">
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -23,8 +23,8 @@
   </g>
   <g fill="currentColor" font-family="sans-serif" text-anchor="middle">
     <text x="145" y="54" font-size="24">AWS EKS</text>
-    <text x="145" y="91" font-size="22">North America</text>
-    <text x="145" y="121" font-size="18">us-east-1</text>
+    <text x="145" y="91" font-size="22">Oceania</text>
+    <text x="145" y="121" font-size="18">ap-southeast-2 · Sydney</text>
     <text x="145" y="155" font-size="20">Application</text>
     <text x="755" y="54" font-size="24">Azure AKS</text>
     <text x="755" y="91" font-size="22">Europe</text>
@@ -35,8 +35,8 @@
     <text x="145" y="351" font-size="18">asia-northeast1-a</text>
     <text x="145" y="385" font-size="20">Application</text>
     <text x="755" y="284" font-size="24">DigitalOcean DOKS</text>
-    <text x="755" y="321" font-size="22">Oceania</text>
-    <text x="755" y="351" font-size="18">syd1</text>
+    <text x="755" y="321" font-size="22">North America</text>
+    <text x="755" y="351" font-size="18">nyc1 · New York</text>
     <text x="755" y="385" font-size="20">Application</text>
     <text x="450" y="248" font-size="24">Cloudflare</text>
     <text x="450" y="277" font-size="22">Global edge</text>

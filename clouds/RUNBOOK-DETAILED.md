@@ -4,20 +4,20 @@ Use [RUNBOOK.md](RUNBOOK.md) for the human execution sequence. This document hol
 
 ## Ownership and constraints
 
-| Owner / root | Resources / location | Current worker / version |
+| Owner / root | Resources / location | Configured worker / version |
 |---|---|---|
-| [AWS](infra/aws/README.md), `infra/aws` | EKS `clouds-eks`, `us-east-1`, North America; VPC, IAM, addons | One `t3.medium`; Kubernetes `1.36` |
+| [AWS](infra/aws/README.md), `infra/aws` | EKS `clouds-eks`, `ap-southeast-2`, Sydney, Oceania; VPC, IAM, addons | One `t3.medium`; Kubernetes `1.36` |
 | [Azure](infra/azure/README.md), `infra/azure` | AKS `clouds-aks`, `westeurope`, Europe; lab resource group | One `Standard_B2s`; `1.36.4` |
 | [GCP](infra/gcp/README.md), `infra/gcp` | GKE `clouds-gke`, `asia-northeast1-a`, Asia; dedicated VPC/subnet/pool | One `e2-medium`; `1.36.4-gke.2326000` |
-| [DigitalOcean](infra/digitalocean/README.md), `infra/digitalocean` | DOKS `clouds-doks`, `syd1`, Oceania | One `s-2vcpu-4gb`; `1.36.5-do.1`; existing approved HA |
+| [DigitalOcean](infra/digitalocean/README.md), `infra/digitalocean` | DOKS `clouds-doks`, `nyc1`, New York, North America | One `s-4vcpu-8gb` (4 vCPU / 8 GiB); `1.36.5-do.1`; non-HA |
 | [Cloudflare](infra/cloudflare/README.md), `infra/cloudflare` | Worker `clouds-global-router`, D1, `guestbook.rael.dev`, origin DNS aliases | Existing `rael.dev` zone; no paid-plan upgrade |
 | [Docker Hub](infra/dockerhub/README.md), `infra/dockerhub` | Public `raelga/clouds-guestbook` repository | Shared preparation resource, retained across sessions |
 
 Terraform owns infrastructure, with independent local state in each root. Never create the same resources manually through cloud CLIs, eksctl, CloudFormation or Wrangler deploy. Provider CLIs authenticate, retrieve kubeconfigs and inspect resources. Kubernetes YAML/Kustomize owns app Deployments, Services, generated ConfigMaps and Secrets; cloud controllers own the resulting application load balancers.
 
-This repository-only cutover defines one `guestbook` Deployment and LoadBalancer Service per cluster with `app=guestbook` selectors. It does not change running `guestbook-local` / `guestbook-shared` resources or older `guestbook-stateless` / `guestbook-stateful` installations. Applying the new manifests does not rename those resources: it can create a parallel load balancer. Migration requires separate approval for [legacy cleanup](#legacy-names-from-the-running-installation), release verification, new Service addresses and a one-time Cloudflare update. Fresh clusters have no legacy cleanup gate. No deployment, teardown, token change, additional capacity or paid-plan change is authorized here. Retain approved DigitalOcean HA and existing provider prerequisites.
+All demo infrastructure is currently destroyed; retain historical state/backups and private inputs. The table describes future approved creation, not live resources. Both variants define one `guestbook` Deployment and LoadBalancer Service per cluster with `app=guestbook` selectors. Fresh clusters have no legacy app cleanup gate. No deployment, teardown, token change, additional capacity or paid-plan change is authorized here. The new Sydney AWS / New York DigitalOcean topology has not been provisioned or exercised.
 
-Both modes use the same UI and public `docker.io/raelga/clouds-guestbook:demo-v2` image, pinned by tag and OCI-index digest in `k8s/base/kustomization.yaml`. The base defines the common Deployment, Service and image; variants add storage configuration and provider overlays add location and replica counts. Local datastore shares one ephemeral Redis within each cluster. Shared datastore uses the existing Cloudflare Worker/D1; no data is migrated between modes. ConfigMaps remain `guestbook-local-location` / `guestbook-shared-location`, the shared Secret remains `guestbook-shared-state`, and Redis remains `guestbook-local-redis` with a ClusterIP Service. Switching variants rolls the same app Deployment; old and new modes may coexist briefly behind its stable Service. Wait for rollout completion, all desired replicas Ready and old Pods gone before demonstrating. Configure Cloudflare once; mode changes do not change origins. Use demo data only: origin HTTP and cluster-internal Redis are unencrypted.
+Both modes use the same UI and public `docker.io/raelga/clouds-guestbook:demo-v3` image, pinned by tag and OCI-index digest in `k8s/base/kustomization.yaml`. It includes the AWS Sydney map marker. Variants add storage configuration; provider overlays supply location and replica counts. Local datastore uses per-cluster Redis; Shared datastore uses Cloudflare Worker/D1 after approved recreation, without data migration. ConfigMaps remain `guestbook-local-location` / `guestbook-shared-location`, the Secret remains `guestbook-shared-state`, and Redis remains `guestbook-local-redis` with a ClusterIP Service. Both modes roll the same Deployment behind one stable Service. Wait for rollout completion before demonstrating; configure Cloudflare once. Use demo data only: origin HTTP and cluster-internal Redis are unencrypted.
 
 ## Preparation
 
@@ -30,14 +30,14 @@ Use a private terminal, not a recorded presentation, for credential entry. Value
 | Input | Consumer | Source / rule |
 |---|---|---|
 | `AWS_PROFILE` if used | AWS CLI and Terraform AWS provider | Intended authorized AWS deployment profile |
-| Azure CLI login/subscription | AzureRM provider and kubeconfig retrieval | `k8s-talk`, `c825038c-1551-4ccf-8ddd-24b49f8e14b4` |
+| Azure CLI login/subscription | AzureRM provider and kubeconfig retrieval | Intended personal `k8s-talk` subscription; keep its ID private |
 | `GOOGLE_OAUTH_ACCESS_TOKEN` | Terraform Google provider | Explicit personal `me@rael.io` CLI token only |
 | `DIGITALOCEAN_TOKEN` | Terraform DigitalOcean provider | Existing private API token |
 | `DIGITALOCEAN_ACCESS_TOKEN` | doctl | Same DigitalOcean credential |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare provider | One token with both account runtime and zone DNS edit permissions |
 | `TF_VAR_account_id` | Cloudflare Terraform root | Intended existing account ID |
 | `STATE_API_TOKEN` | Kustomize Secret input / Worker secret | Reuse ignored `k8s/shared/credentials.env` for existing lab |
-| `TF_VAR_control_plane_ha` | DigitalOcean Terraform root | **`true` for current cluster**, `false` only for a fresh approved non-HA lab |
+| `TF_VAR_control_plane_ha` | DigitalOcean Terraform root | `false` for fresh non-HA clusters; clear stale historical `true` overrides |
 | `cluster_api_allowed_cidrs` (optional override) | AWS, Azure and GCP cluster roots | Defaults to `["0.0.0.0/0"]`; clear stale `TF_VAR_cluster_api_allowed_cidrs` |
 | `control_plane_allowed_cidrs` (optional override) | DigitalOcean Terraform root | Independent input; defaults to `["0.0.0.0/0"]` |
 | `origin_addresses` | Cloudflare Terraform root | Four real app Service endpoints in ignored `origins.auto.tfvars` |
@@ -65,10 +65,10 @@ Azure requires interactive MFA. Wait for login and its subscription-selection pr
 az login --use-device-code
 ```
 
-Select and confirm the required subscription explicitly. Terraform's subscription default is also this ID; selecting another CLI subscription does not override it.
+Select and confirm the required subscription explicitly. Terraform's subscription input must match the intended private subscription ID; selecting another CLI subscription does not override it.
 
 ```bash
-az account set --subscription c825038c-1551-4ccf-8ddd-24b49f8e14b4
+az account set --subscription k8s-talk
 az account show --query '{name:name,id:id,state:state}' --output table
 ```
 
@@ -127,25 +127,17 @@ export DIGITALOCEAN_TOKEN
 export DIGITALOCEAN_ACCESS_TOKEN="$DIGITALOCEAN_TOKEN"
 ```
 
-For the **current existing cluster**, preserve approved HA explicitly before every plan, including destruction planning:
-
-```bash
-export TF_VAR_control_plane_ha=true
-```
-
-**Fresh creation only:** the Terraform default is non-HA. Only in a separately approved fresh lab with no existing HA cluster, choose this instead:
+For a future approved fresh cluster, use the explicit non-HA default and remove any stale historical HA override:
 
 ```bash
 export TF_VAR_control_plane_ha=false
 ```
 
-Kubernetes 1.36+ enables separately billed HA when `ha` is omitted; Terraform explicitly supplies this setting. The running cluster's approved HA price was $40/month, prorated hourly, additional to workers/load balancers; its worker catalog price was $24/month. Do not toggle the live cluster to test fresh-create behavior. Review replacements/tier changes and ask before any billing change.
-
-HA is not required for this single-worker demonstration. Keep fresh clusters non-HA. [DigitalOcean does not allow disabling HA once enabled](https://docs.digitalocean.com/products/kubernetes/how-to/enable-high-availability/), so a non-HA replacement of the current cluster requires separate approval. A read-only downgrade plan showed an in-place update, but that does not override the API lifecycle restriction; do not apply it.
+Kubernetes 1.36+ enables separately billed HA when `ha` is omitted; Terraform explicitly supplies `false`. HA is unnecessary for this single-worker demo. [DigitalOcean does not allow disabling HA once enabled](https://docs.digitalocean.com/products/kubernetes/how-to/enable-high-availability/); a plan that appears to downgrade HA in-place does not override that API lifecycle restriction. The destroyed historical Sydney cluster used an approved $40/month HA control plane and a $24/month worker. The new `nyc1` configuration retains the user-selected `s-4vcpu-8gb` worker (4 vCPU / 8 GiB; catalog $48/month), not the historical smaller size. Review actual plans and ask before billing changes.
 
 DigitalOcean uses independent optional `control_plane_allowed_cidrs`, defaulting to `["0.0.0.0/0"]`, like the other three demo APIs. The shared AWS/Azure/GCP CIDR environment variable cannot override it. Authentication and Kubernetes RBAC remain required.
 
-Check account quota, Sydney versions and worker catalog. A catalog listing is not a reservation of live capacity. The inspected account had a three-Droplet limit; upgrades may require spare quota.
+Check account quota, New York versions and worker catalog. Read-only inspection confirmed `nyc1` support for `s-4vcpu-8gb`; a catalog listing is not a reservation of live capacity. The historically inspected account had a three-Droplet limit; recheck quotas because upgrades may require spare capacity.
 
 ```bash
 doctl account get
@@ -238,10 +230,10 @@ docker login --username raelga
 
 The Terraform Docker provider can instead use private `DOCKER_USERNAME` / `DOCKER_PASSWORD` environment variables. Do not mix a work login with the personal namespace. Review the [registry root](infra/dockerhub/README.md) before publication; the current repository is already tracked, so do not import it again. Retain the repository and its state when tearing down clusters.
 
-For changed code, publish a new readable tag for both architectures, then record the published OCI-index digest in the base. `demo-v2` introduced `local` / `shared` mode names. The following commands document that publication; an already-pinned demo needs no rebuild.
+For changed code, publish a new readable tag for both architectures and record its actual OCI-index digest in the base. `demo-v3` adds the Sydney map marker; `demo-v2` introduced `local` / `shared` mode names. The published release is already pinned; do not rebuild it to run the demo. The commands below document publication; future code changes need a new tag.
 
 ```bash
-export GUESTBOOK_IMAGE=docker.io/raelga/clouds-guestbook:demo-v2
+export GUESTBOOK_IMAGE=docker.io/raelga/clouds-guestbook:demo-v3
 docker buildx build --platform linux/amd64,linux/arm64 --tag "$GUESTBOOK_IMAGE" --push app/guestbook
 docker buildx imagetools inspect "$GUESTBOOK_IMAGE"
 ```
@@ -320,11 +312,11 @@ The [execution guide](RUNBOOK.md) shows the live message demonstration. Require 
 - **API timeout:** inspect endpoint/network connectivity, cluster health and credentials. All four demo APIs default to all IPv4; review private Terraform overrides if a restriction remains. A successful cloud CLI request or kubeconfig download does not prove Kubernetes reachability/authorization.
 - **Pending Pods:** inspect scheduling events and requests. GKE has 940m allocatable CPU; retain one app replica in the single Deployment. The historical baseline requested 828m before the 25m Redis; EKS had 17 Pod slots while the retired example coexisted. The base uses zero surge and one unavailable replica: GKE may briefly lose app availability; three-replica providers retain two replicas but may serve mixed modes until rollout completion. Wait for completion before demonstrating. Do not resize or add workers.
 - **Pending Service:** inspect its events and cloud-controller permissions/capacity. Wait for real public endpoints; port-forwarding does not satisfy public-routing acceptance.
-- **DigitalOcean 422:** catalog/live capacity is not an authentication problem. The older Intel size no longer listed Sydney; the current `s-2vcpu-4gb` succeeded historically. Do not move continents or delete unrelated Droplets to bypass quota.
+- **DigitalOcean 422:** catalog/live capacity is not an authentication problem. The historical Sydney run changed an unavailable Intel size to `s-2vcpu-4gb`; that is not the new configuration. Keep `nyc1` and the user-selected `s-4vcpu-8gb`; do not silently resize, move continents or delete unrelated Droplets to bypass capacity/quota limits.
 - **Worker raw-IP 1003:** use Terraform-managed DNS-only aliases. Direct-origin curl is not proof of Worker compatibility. Inspect `terraform -chdir=infra/cloudflare output origin_hostnames` if needed.
 - **Worker 1010:** the zone rejected Python's default User-Agent historically; the explicit `clouds-lab-rehearsal/1.0` User-Agent, Go backends and browsers worked without weakening zone security.
 - **TLS/DNS convergence:** inspect custom-domain/certificate status and public DNS. A local resolver briefly missed new ELB names during rehearsal. Do not disable certificate validation or fabricate endpoints.
-- **Wrong provider:** a valid `clouds_origin` cookie wins over visitor geography. Require exact `X-Lab-Origin` and `/api/deployment` provider/storage; fallback success is not the selected route. Clear the cookie to test trusted visitor continent: Americas → AWS, Europe/Africa → Azure, Asia → GCP, Oceania → DigitalOcean; unknown geography is random. GET/HEAD alone may fail over; POST is sent once. Local read failover can expose another cluster's dataset.
+- **Wrong provider:** a valid `clouds_origin` cookie wins over visitor geography. Require exact `X-Lab-Origin` and `/api/deployment` provider/storage; fallback success is not the selected route. Clear the cookie to test trusted visitor continent: Americas (`NA`/`SA`) → DigitalOcean, Europe/Africa (`EU`/`AF`) → Azure, Asia (`AS`) → GCP, Oceania (`OC`) → AWS; unknown geography is random. GET/HEAD alone may fail over; POST is sent once. Local read failover can expose another cluster's dataset.
 - **D1 authorization:** the app token must match the Worker secret; management/OAuth tokens are different. Browser calls stay on the application's `/api/messages`; app servers authenticate to `/state/messages`. `/state/*` is handled before origin routing, avoiding recursion.
 - **D1 refresh-only changes:** provider 5.28 has planned computed `file_size`, `num_tables`, `version` refreshes. In historical evidence these did not change database UUID/data or price. Inspect the actual plan; do not suppress differences with ignore-all rules.
 
@@ -384,7 +376,7 @@ kubectl --context doks delete deployment,service guestbook guestbook-local-redis
 
 ### Legacy names from the running installation
 
-**Separate explicit deletion approval required.** These commands target running `guestbook-local` / `guestbook-shared` app Deployments/Services and any older `guestbook-stateless` / `guestbook-stateful` installations; the new overlays cannot delete them. Stop traffic to these origins before deletion. For an approved migration, perform only approved legacy removal while retaining required Redis/Worker/D1 resources; full teardown also uses stable resource deletion above. Fresh clusters have no legacy cleanup gate. The canonical `guestbook` name is NOT a legacy cleanup target: old evidence of deleting an original upstream `guestbook` applies only to that historical rehearsal. Do not execute cleanup for repository review.
+**Historical names; no currently running installation. Separate explicit deletion approval required if encountered in a future run.** These commands target former `guestbook-local` / `guestbook-shared` app Deployments/Services and older `guestbook-stateless` / `guestbook-stateful` installations; the new overlays cannot delete them. Stop traffic to any such origins before deletion. Fresh clusters have no legacy cleanup gate. The canonical `guestbook` name is NOT a legacy cleanup target: old evidence of deleting an original upstream `guestbook` applies only to that historical rehearsal. Do not execute cleanup for repository review.
 
 #### AWS EKS
 
@@ -480,7 +472,7 @@ A vanished Service does not prove its cloud load balancer is released. Confirm l
 
 ### Destroy infrastructure with reviewed plans
 
-Refresh the personal GCP access token with the preparation command and inspect/refresh current CIDR inputs. Preserve DO HA `true` while planning the existing cluster. Review each independent destroy plan:
+For future approved teardown, refresh the personal GCP access token with the preparation command and inspect current CIDR inputs. Match HA inputs to the actual future cluster configuration (fresh default `false`), not historical `true` overrides. Review each independent destroy plan:
 
 ```bash
 terraform -chdir=infra/aws plan -destroy -out=destroy.tfplan
@@ -516,6 +508,8 @@ DigitalOcean previously accepted cluster deletion but left its worker active. Ve
 
 ## Two-example cutover — 2026-10-21
 
+Both dated evidence sections below used AWS `us-east-1` (Virginia, North America) and DigitalOcean `syd1` (Sydney, Oceania), with the former Americas → AWS / Oceania → DigitalOcean mapping. They do not validate the new regional mapping. All demo infrastructure was subsequently destroyed; state/backups remain historical.
+
 This is historical evidence from before the `local` / `shared` naming and common-base refactor, not verification of `demo-v2`, a new operation or a promised duration. The existing four clusters ran only the two branded Global Guestbook examples. All eight app Deployments were verified Ready on the same immutable multi-architecture image declared in the shared component. Existing branded public endpoints were retained. The original upstream frontend and leader/follower Redis Deployments/Services were deleted; provider APIs confirmed retired original frontends released while both branded endpoints remained.
 
 Passed in that cutover:
@@ -532,7 +526,7 @@ Scheduling limits were corrected without worker-size increases: GKE had 940m all
 
 The subsequent provider-neutral registry cutover published the same OCI index to public Docker Hub, verified anonymous `amd64`/`arm64` manifest access and anonymous image pull, then rolled all eight Deployments onto `docker.io/raelga/clouds-guestbook` without pull credentials. Local/shared messages, all four exact HTTPS routes and both message APIs passed again. The repository was imported into `infra/dockerhub` and a description-only plan applied. After explicit approval, 21 obsolete ECR image digests and the old repository were deleted; AWS Terraform planned only that repository deletion and the provider confirmed absence. No clusters or paid plans changed.
 
-The hostname was left on shared D1 storage, now labeled **Shared datastore**. Independent Local datastore Services remain available for the first demonstration phase. Clusters remain running and billable; full teardown requires separate approval.
+At the end of that historical cutover, the hostname was left on shared D1 storage, now labeled **Shared datastore**, and independent Local datastore Services remained available. Those clusters were running and billable at that time; all demo infrastructure has since been destroyed.
 
 ## Live rehearsal — 2026-10-21
 
@@ -555,7 +549,7 @@ Passed in that earlier rehearsal:
 
 Corrections included Sydney worker catalog selection, Redis leader/follower DNS, GCP replica capacity, IP-origin DNS aliases, explicit future non-HA default and a digest-pinned multi-architecture image. Python's default User-Agent was blocked by zone policy; explicit lab User-Agent requests worked without weakened security. A local resolver briefly missed new AWS ELB names while public DNS and real Cloudflare routing succeeded. Cloudflare provider 5.28 computed D1 statistics changed without database identity/data or pricing-tier changes.
 
-The running DO cluster retained its approved **$40/month HA control plane**, prorated hourly; future fresh configurations request non-HA explicitly. The former ECR repository was later retired only after verified Docker Hub cutover and explicit deletion approval.
+The historical DO cluster retained its approved **$40/month HA control plane**, prorated hourly; it has since been destroyed. Future fresh configurations explicitly request non-HA. The former ECR repository was retired only after verified Docker Hub cutover and explicit deletion approval.
 
 Private evidence includes `timings.json`, provider runtime/API logs, `global-checks.json`, `browser-checks.json`, saved plans and independent kubeconfigs in the private run directory. None belong in Git. Keep original state and matching application Secret input. Historical evidence does not waive new acceptance checks or cleanup approval.
 

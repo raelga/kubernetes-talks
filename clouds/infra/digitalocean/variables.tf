@@ -1,7 +1,7 @@
 variable "region" {
   description = "DigitalOcean region for DOKS."
   type        = string
-  default     = "syd1"
+  default     = "nyc1"
 }
 
 variable "cluster_name" {

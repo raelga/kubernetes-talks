@@ -12,7 +12,7 @@ shared/             # Worker/D1 configuration
 overlays/           # provider location and replica settings
 ```
 
-Existing `guestbook-local` / `guestbook-shared` resources and older `guestbook-stateless` / `guestbook-stateful` installations are not renamed by this repository change. Migration requires [separate approval and legacy cleanup](../RUNBOOK-DETAILED.md#legacy-names-from-the-running-installation), new Service addresses and a one-time Cloudflare update. No live deployment is authorized here.
+All demo infrastructure is currently destroyed; preserve historical state/backups and private inputs. Fresh approved clusters deploy the stable `guestbook` resources directly and have no legacy migration gate. The [legacy cleanup reference](../RUNBOOK-DETAILED.md#legacy-names-from-the-running-installation) documents former app names only; no live deployment or deletion is authorized here.
 
 ## Local datastore
 
@@ -27,7 +27,7 @@ Wait for `guestbook-local-redis` and `guestbook` to be ready. Configure Cloudfla
 
 ## Shared datastore
 
-Reuse `k8s/shared/credentials.env` with the existing Worker’s `STATE_API_TOKEN`; see [token setup](../RUNBOOK-DETAILED.md#existing-application-token-reuse-never-regenerate). Do not print rendered Shared datastore YAML: it contains credentials.
+Reuse the retained private `k8s/shared/credentials.env` application token when recreating Worker/D1; see [token setup](../RUNBOOK-DETAILED.md#existing-application-token-reuse-never-regenerate). Do not print rendered Shared datastore YAML: it contains credentials.
 
 ```bash
 kubectl --context eks apply -k k8s/overlays/aws/shared

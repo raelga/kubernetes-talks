@@ -8,5 +8,5 @@ configMapGenerator:
   behavior: merge
   literals:
   - LAB_PROVIDER=aws
-  - LAB_REGION=us-east-1
-  - LAB_CONTINENT=North America
+  - LAB_REGION=ap-southeast-2
+  - LAB_CONTINENT=Oceania

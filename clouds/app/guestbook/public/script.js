@@ -7,6 +7,7 @@
   const regions = {
     "us-east-1": [105, 75], "us-east-2": [100, 70], "us-west-2": [65, 66], "us-west-1": [63, 78],
     "eu-west-1": [192, 56], "eu-central-1": [210, 59], "eu-west-2": [198, 58],
+    "ap-southeast-2": [380, 177],
     "westeurope": [206, 55], "northeurope": [196, 52], "eastus": [105, 75], "westus2": [65, 66],
     "asia-northeast1-a": [365, 83], "asia-northeast1": [365, 83], "us-central1": [91, 74], "us-central1-a": [91, 74],
     "europe-west1": [204, 58], "europe-west1-b": [204, 58], "syd1": [380, 177], "nyc1": [108, 70],

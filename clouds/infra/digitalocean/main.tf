@@ -25,7 +25,7 @@ resource "digitalocean_kubernetes_cluster" "lab" {
 
   node_pool {
     name       = "lab-workers"
-    size       = "s-2vcpu-4gb"
+    size       = "s-4vcpu-8gb"
     node_count = 1
     tags       = ["kubernetes-clouds-lab", "terraform"]
   }

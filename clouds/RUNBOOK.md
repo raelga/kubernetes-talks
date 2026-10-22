@@ -6,9 +6,9 @@ Terraform manages infrastructure and routing; Kubernetes YAML/Kustomize manages 
 
 ## 1. Prepare
 
-This guide assumes fresh clusters. After a previous run, follow the [approved cleanup procedure](RUNBOOK-DETAILED.md#cleanup) first; keep Terraform state intact.
+All demo infrastructure is currently destroyed; this guide describes a future approved fresh run, not an authorized apply. Retain historical Terraform state and backups. After any future run, follow the [approved cleanup procedure](RUNBOOK-DETAILED.md#cleanup).
 
-Complete [preparation](RUNBOOK-DETAILED.md#preparation): credentials, tools and Terraform state. The `demo-v2` image is pinned in `k8s/base/kustomization.yaml`; no rebuild is needed. The `local` and `shared` variants inherit this base.
+Complete [preparation](RUNBOOK-DETAILED.md#preparation): credentials, tools and Terraform state. The `demo-v3` image is pinned in `k8s/base/kustomization.yaml`; no rebuild is needed. The `local` and `shared` variants inherit this base.
 
 Terraform and Kustomize both read `STATE_API_TOKEN` directly from ignored `k8s/shared/credentials.env`. Keep the existing file; no application-token export or Terraform variable is needed.
 
@@ -22,7 +22,7 @@ gcloud config get-value project
 doctl account get
 ```
 
-Confirm the intended AWS and DigitalOcean accounts, Azure subscription `k8s-talk` / `c825038c-1551-4ccf-8ddd-24b49f8e14b4`, and GCP account `me@rael.io` with project `bcncloud-gke`. Use personal GCP credentials only, not work identities or ADC. Refresh Terraform's access token:
+Confirm the intended AWS and DigitalOcean accounts, Azure subscription `k8s-talk`, and GCP account `me@rael.io` with project `bcncloud-gke`. Use personal GCP credentials only, not work identities or ADC. Refresh Terraform's access token:
 
 ```bash
 export GOOGLE_OAUTH_ACCESS_TOKEN="$(gcloud auth print-access-token --account=me@rael.io)"
@@ -36,9 +36,9 @@ All four Kubernetes APIs default to public IPv4 access (`0.0.0.0/0`). This is de
 
 For each Terraform directory, run `init` and `plan`, review changes and costs, then obtain approval before `apply`. Interactive `terraform apply` replans: review the actual changes at the `yes` prompt before approving. Run `cd ../..` only after success. Keep state intact.
 
-### AWS — North America
+### AWS — Oceania
 
-Use `us-east-1`.
+Use `ap-southeast-2` (Sydney).
 
 ```bash
 cd infra/aws
@@ -87,9 +87,9 @@ terraform apply
 cd ../..
 ```
 
-### DigitalOcean — Oceania
+### DigitalOcean — North America
 
-Use `syd1`, one worker and the default non-HA control plane.
+Use `nyc1` (New York), one `s-4vcpu-8gb` worker and the default non-HA control plane.
 
 ```bash
 cd infra/digitalocean
@@ -97,7 +97,7 @@ terraform init
 terraform plan
 ```
 
-Confirm `clouds-doks`, one worker, public API access and the intended HA setting, then apply:
+Confirm `clouds-doks`, `nyc1`, one `s-4vcpu-8gb` worker, public API access and `control_plane_ha=false`, then apply:
 
 ```bash
 terraform apply
@@ -111,7 +111,7 @@ Fetch current credentials every run, even if these local aliases already exist: 
 ### AWS / EKS
 
 ```bash
-aws eks update-kubeconfig --region us-east-1 --name clouds-eks --alias eks
+aws eks update-kubeconfig --region ap-southeast-2 --name clouds-eks --alias eks
 kubectl --context eks wait --for=condition=Ready nodes --all --timeout=5m
 kubectl --context eks -n kube-system rollout status daemonset/aws-node --timeout=5m
 kubectl --context eks -n kube-system rollout status deployment/coredns --timeout=5m
@@ -120,7 +120,7 @@ kubectl --context eks -n kube-system rollout status deployment/coredns --timeout
 ### Azure / AKS
 
 ```bash
-az aks get-credentials --resource-group clouds-aks-rg --name clouds-aks --subscription c825038c-1551-4ccf-8ddd-24b49f8e14b4 --context aks --overwrite-existing
+az aks get-credentials --resource-group clouds-aks-rg --name clouds-aks --subscription k8s-talk --context aks --overwrite-existing
 kubectl --context aks wait --for=condition=Ready nodes --all --timeout=5m
 kubectl --context aks -n kube-system rollout status deployment/coredns --timeout=5m
 ```

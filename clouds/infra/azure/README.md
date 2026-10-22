@@ -7,7 +7,7 @@ Follow [RUNBOOK.md](../../RUNBOOK.md) for execution and the [detailed reference]
 | Setting | Current configuration |
 |---|---|
 | Terraform root | `infra/azure` |
-| Subscription | `k8s-talk`, `c825038c-1551-4ccf-8ddd-24b49f8e14b4` |
+| Subscription | Intended personal `k8s-talk` subscription; keep its ID private |
 | Region | `westeurope`, Europe |
 | Resource group / cluster | `clouds-aks-rg` / `clouds-aks` |
 | Kubernetes | `1.36.4` |
@@ -35,7 +35,7 @@ az login --use-device-code
 Select and confirm the exact enabled subscription:
 
 ```bash
-az account set --subscription c825038c-1551-4ccf-8ddd-24b49f8e14b4
+az account set --subscription k8s-talk
 az account show --query '{name:name,id:id,state:state}' --output table
 ```
 
@@ -65,7 +65,7 @@ Interactive `terraform apply` displays a fresh plan and asks for confirmation. R
 The command updates local kubeconfig and may change its current context; use explicit contexts afterward.
 
 ```bash
-az aks get-credentials --resource-group clouds-aks-rg --name clouds-aks --subscription c825038c-1551-4ccf-8ddd-24b49f8e14b4 --context aks --overwrite-existing
+az aks get-credentials --resource-group clouds-aks-rg --name clouds-aks --subscription k8s-talk --context aks --overwrite-existing
 kubectl --context aks cluster-info
 kubectl --context aks wait --for=condition=Ready nodes --all --timeout=10m
 kubectl --context aks -n kube-system rollout status deployment/coredns --timeout=10m

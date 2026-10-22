@@ -1,38 +1,35 @@
-# DigitalOcean: Terraform-managed DOKS in Oceania
+# DigitalOcean: Terraform-managed DOKS in North America
 
 Follow [RUNBOOK.md](../../RUNBOOK.md) for execution and [detailed preparation](../../RUNBOOK-DETAILED.md#preparation) for credentials/inputs. Run commands from the project root. Terraform owns the cluster and worker pool; doctl authenticates, retrieves kubeconfig and inspects resources, not a second creation/deletion workflow.
 
-## Configuration and approved HA
+## Configuration and non-HA default
 
-| Setting | Current value |
+| Setting | Configured value |
 |---|---|
 | Terraform root | `infra/digitalocean` |
-| Region | `syd1`, Sydney, Oceania |
+| Region | `nyc1`, New York, North America |
 | Cluster | `clouds-doks` |
 | Kubernetes | `1.36.5-do.1` |
-| Worker | One `s-2vcpu-4gb`, 2 vCPU / 4 GiB / 80 GiB disk |
+| Worker | One `s-4vcpu-8gb`, 4 vCPU / 8 GiB; catalog $48/month |
 | API | Enabled control-plane firewall allowing `0.0.0.0/0`; Kubernetes authentication still required |
 | kubectl context | `doks` |
-| Existing control plane | Approved HA, preserve `TF_VAR_control_plane_ha=true` |
-| Fresh-lab default | Explicit non-HA `control_plane_ha=false`, not for the current cluster |
+| Control plane | Explicit non-HA `control_plane_ha=false` |
 
-**Preserve the running cluster's approved HA:** set this before every plan, including destruction plans, rather than applying the fresh default to existing infrastructure.
+All demo infrastructure is currently destroyed; preserve historical state/backups and private inputs. For a future approved fresh run, clear stale historical HA overrides and use:
 
 ```bash
-export TF_VAR_control_plane_ha=true
+export TF_VAR_control_plane_ha=false
 ```
 
-Only for a separately approved **fresh** non-HA installation, use `TF_VAR_control_plane_ha=false` instead. Kubernetes 1.36+ [defaults omitted HA requests to billable HA](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-a-cluster-using-automation); Terraform now sends an explicit value. The current cluster was not toggled to test fresh creation. Its approved HA control plane was $40/month prorated hourly, additional to workers/load balancers; worker catalog price was $24/month. Check [current pricing](https://docs.digitalocean.com/products/kubernetes/details/pricing/); ask before tier changes, replacements or billing increases.
+Kubernetes 1.36+ [defaults omitted HA requests to billable HA](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-a-cluster-using-automation); Terraform sends explicit `false`. The former Sydney cluster used an approved $40/month HA control plane and a $24/month smaller worker; those are historical costs, not this new configuration. [DigitalOcean cannot disable HA on an existing cluster](https://docs.digitalocean.com/products/kubernetes/how-to/enable-high-availability/), even if Terraform shows an in-place update. Check [current pricing](https://docs.digitalocean.com/products/kubernetes/details/pricing/); ask before tier changes, replacements or billing increases.
 
-HA is unnecessary for this demo, but [DigitalOcean cannot disable it on an existing cluster](https://docs.digitalocean.com/products/kubernetes/how-to/enable-high-availability/). To remove the running HA tier, separately approve replacing it with a new non-HA cluster. Terraform may show `ha=false` as an in-place update; do not mistake that plan for supported downgrade behavior.
-
-Keep sizing unchanged until approved teardown. Both modes use one stable `guestbook` Deployment/LoadBalancer Service (`app=guestbook`) and the same anonymously pulled digest-pinned public Docker Hub image. Configure Cloudflare once; mode rollouts do not change origins. Existing differently named apps are not renamed here: migration requires separate approval, new Service addresses and a one-time origin update. No live deployment is authorized. Local datastore uses ephemeral per-cluster Redis; Shared datastore uses D1 without data migration. This single-worker demo is not production HA.
+Preserve the user-selected `s-4vcpu-8gb` size. Both modes use one stable `guestbook` Deployment/LoadBalancer Service (`app=guestbook`) and the same anonymously pulled digest-pinned public Docker Hub image. Configure Cloudflare once; mode rollouts do not change origins. Fresh clusters require no legacy app migration. No live provisioning or billing change is authorized. Local datastore uses ephemeral per-cluster Redis; Shared datastore uses D1 without data migration. This single-worker demo is not production HA.
 
 ## Credentials and preflight
 
 Install Terraform `>= 1.9, < 2.0`, compatible kubectl and [doctl](https://docs.digitalocean.com/reference/doctl/how-to/install/). Load the existing API token privately into `DIGITALOCEAN_TOKEN` for Terraform and export it as `DIGITALOCEAN_ACCESS_TOKEN` for doctl using the detailed preparation steps. Never print/commit tokens, state, plans or kubeconfig.
 
-Inspect account quota and Sydney catalog support:
+Inspect account quota and New York catalog support:
 
 ```bash
 doctl account get
@@ -43,13 +40,13 @@ doctl compute size list
 doctl kubernetes cluster list
 ```
 
-A catalog entry does not guarantee live capacity. The inspected account had a three-Droplet limit; one worker consumes one Droplet and surge upgrades may need spare quota. Do not delete unrelated resources to make room. Keep the pinned region/version and preserve lockfiles; no `init -upgrade` during execution.
+Read-only catalog inspection confirmed `nyc1` supports `s-4vcpu-8gb`; this does not guarantee live capacity. The historically inspected account had a three-Droplet limit; recheck quotas because surge upgrades may need spare capacity. Do not delete unrelated resources to make room. Keep the pinned region/version/size and preserve lockfiles; no `init -upgrade` during execution.
 
 ## Review a plan
 
-DigitalOcean uses independent optional `control_plane_allowed_cidrs`, defaulting to `["0.0.0.0/0"]` for this temporary demo, like the other three APIs. It does not consume `TF_VAR_cluster_api_allowed_cidrs`. This deliberate internet exposure still requires authentication and Kubernetes RBAC. Private tfvars or command-line inputs can override the default; see [input precedence](../../RUNBOOK-DETAILED.md#demo-api-access). Preserve HA `true` for the existing cluster and use original state. Plans and state can contain secrets.
+DigitalOcean uses independent optional `control_plane_allowed_cidrs`, defaulting to `["0.0.0.0/0"]` for this temporary demo, like the other three APIs. It does not consume `TF_VAR_cluster_api_allowed_cidrs`. This deliberate internet exposure still requires authentication and Kubernetes RBAC. Private tfvars or command-line inputs can override the default; see [input precedence](../../RUNBOOK-DETAILED.md#demo-api-access). Use original state and review effective non-HA `false`; plans/state can contain secrets.
 
-Historical live verification of the DigitalOcean firewall change: Terraform applied only an in-place update. Authenticated `kubectl` reported the worker Ready; unauthenticated API node listing was rejected with HTTP 403. The existing cluster ID, HA tier and worker configuration were preserved.
+Historical live verification of the former Sydney cluster's firewall change applied only an in-place update. Authenticated `kubectl` reported the worker Ready; unauthenticated node listing was rejected with HTTP 403. Its then-existing cluster ID, HA tier and worker configuration were preserved. This does not verify the unprovisioned New York topology.
 
 ```bash
 cd infra/digitalocean
@@ -57,7 +54,7 @@ terraform init -lockfile=readonly
 terraform plan
 ```
 
-Review Sydney, worker count/size, HA, firewall CIDRs and every action. Only apply intended changes after required approval:
+Review `nyc1`, one `s-4vcpu-8gb` worker, non-HA `false`, firewall CIDRs and every action. Only apply intended changes after required approval:
 
 ```bash
 terraform apply
@@ -83,7 +80,7 @@ Require a Ready worker and healthy system workloads; a visible control plane is 
 
 ## Troubleshooting and historical evidence
 
-The old `s-2vcpu-4gb-120gb-intel` size no longer listed Sydney; the current `s-2vcpu-4gb` historically succeeded. A 422 capacity error is not fixed by changing credentials. Do not silently move continents or resize. The demo deliberately permits all IPv4 addresses to its API; for a restricted deployment, use the DigitalOcean-specific `control_plane_allowed_cidrs` input. Fresh clusters default to non-HA; preserve the existing cluster's HA `true`. DigitalOcean does not allow disabling HA once enabled; a non-HA replacement requires separate approval.
+In the historical Sydney run, the old `s-2vcpu-4gb-120gb-intel` size was unavailable and `s-2vcpu-4gb` succeeded. Neither is the new user-selected `s-4vcpu-8gb` configuration. A 422 capacity error is not fixed by changing credentials. Do not silently move continents or resize. The demo deliberately permits all IPv4 addresses to its API; for a restricted deployment, use `control_plane_allowed_cidrs`. Fresh clusters explicitly default to non-HA.
 
 In the historical 2026-10-21 rehearsal, accepted creation completed after 11m03s. Terraform was gracefully interrupted and later reported `execution halted`, but original state tracked the untainted cluster; the API reported running, the worker became Ready, and a fresh plan proposed only missing outputs. Replaying the original creation plan was not necessary. Retain state and reconcile after interruption.
 
@@ -93,7 +90,7 @@ Earlier three-example direct/global routing, Redis and D1 checks passed. Those a
 
 Obtain explicit approval, then follow [full cleanup](../../RUNBOOK-DETAILED.md#cleanup). Remove routing, delete stable app resources once, remove scoped generated configuration and separately approved legacy names while controllers run; do not blindly delete both overlapping overlays. Verify provider-side load-balancer/volume release before Terraform destruction. Mode switching retains the single app Service and local Redis; it is not teardown.
 
-With original state/credentials and HA `true` prepared for the existing cluster:
+For future approved teardown, use original state/credentials and match inputs to the actual cluster configuration (fresh HA default `false`), not historical HA overrides:
 
 ```bash
 terraform -chdir=infra/digitalocean plan -destroy -out=destroy.tfplan

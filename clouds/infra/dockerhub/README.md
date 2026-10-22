@@ -34,7 +34,7 @@ cd ../..
 
 ## Shared image contract
 
-Both modes and all providers use `docker.io/raelga/clouds-guestbook:demo-v2`, pinned in `k8s/base/kustomization.yaml`. Do not rebuild it to run the demo. For changed code, publish a new tag for `linux/amd64` and `linux/arm64`, then update the base's `newTag` and `digest`. No provider-specific image is needed.
+Both modes and all providers use `docker.io/raelga/clouds-guestbook:demo-v3`, pinned in `k8s/base/kustomization.yaml`. This release includes the AWS Sydney map marker. Do not rebuild it to run the demo. For changed code, publish a new tag for `linux/amd64` and `linux/arm64`, then update the base's `newTag` and `digest`. No provider-specific image is needed.
 
 Anonymous Docker Hub [pull limits](https://docs.docker.com/docker-hub/usage/pulls/) apply; an image-pull failure does not authorize a paid upgrade. The [historical registry cutover](../../RUNBOOK-DETAILED.md#two-example-cutover--2026-10-21) verified anonymous manifest access/pull and retained Local/Shared messages across all eight application rollouts. The obsolete ECR repository was subsequently removed after explicit approval. Do not recreate it.
 

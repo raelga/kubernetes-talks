@@ -211,7 +211,7 @@ export default {
     const start = Math.floor(Math.random() * origins.length);
     const ordered = origins.slice(start).concat(origins.slice(0, start));
     const geographicOrigin = {
-      NA: "aws", SA: "aws", EU: "azure", AF: "azure", AS: "gcp", OC: "digitalocean",
+      NA: "digitalocean", SA: "digitalocean", EU: "azure", AF: "azure", AS: "gcp", OC: "aws",
     }[request.cf?.continent];
     // Existing affinity wins; missing/unknown geolocation retains random selection.
     const preferredOrigin = origins.some(([name]) => name === pinnedOrigin) ? pinnedOrigin : geographicOrigin;

@@ -6,5 +6,5 @@ resources:
 images:
 - name: guestbook
   newName: docker.io/raelga/clouds-guestbook
-  newTag: demo-v2
-  digest: sha256:fb96cc027985b70b137e51d27ffc299f90fb7bf0e93b9a2205d3ff4040802817
+  newTag: demo-v3
+  digest: sha256:0ec3ed9735f1caf1f5550f639b3500bd27ef044f83f9cd3014ed657c60df539c

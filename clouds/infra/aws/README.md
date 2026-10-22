@@ -1,4 +1,4 @@
-# AWS: Terraform-managed EKS in North America
+# AWS: Terraform-managed EKS in Oceania
 
 Use the [execution guide](../../RUNBOOK.md) for the demonstration and the [detailed preparation reference](../../RUNBOOK-DETAILED.md#preparation) for credentials and shared inputs. This guide explains the AWS leg, not a separate provisioning workflow. Run commands from the project root.
 
@@ -7,7 +7,7 @@ Use the [execution guide](../../RUNBOOK.md) for the demonstration and the [detai
 | Setting | Current configuration |
 |---|---|
 | Terraform root | `infra/aws` |
-| Cluster / region | `clouds-eks` / `us-east-1`, North America |
+| Cluster / region | `clouds-eks` / `ap-southeast-2`, Sydney, Oceania |
 | Kubernetes | `1.36` |
 | Worker | One managed `t3.medium`; minimum/desired/maximum all `1` |
 | Network | VPC `10.20.0.0/16`; three public `/20` subnets across three available AZs; public node IPs; no NAT gateway |
@@ -16,7 +16,7 @@ Use the [execution guide](../../RUNBOOK.md) for the demonstration and the [detai
 | Dependencies | Terraform `>= 1.9, < 2.0`; AWS provider `~> 6.0`, lock `6.69.1`; EKS module `21.29.0`, VPC module `6.7.2` |
 | kubectl context | `eks` |
 
-Terraform alone owns infrastructure; do not mix manual AWS, CloudFormation, kops or eksctl resources into it. Legacy templates are historical. Preserve this billable single-worker lab's sizing. Both storage modes use one stable `guestbook` Deployment/LoadBalancer Service (`app=guestbook`) and the same anonymously pulled digest-pinned Docker Hub image; this root no longer creates ECR. Configure Cloudflare once, not at mode changes. Existing differently named apps are not renamed here: migration requires separate approval, new Service addresses and a one-time origin update. No live deployment is authorized.
+Terraform alone owns infrastructure; do not mix manual AWS, CloudFormation, kops or eksctl resources into it. Legacy templates in the repository-root [archive](../../../archive/) are historical. All demo infrastructure is currently destroyed; preserve historical state/backups. Future approved creation uses the configured single worker. Both storage modes use one stable `guestbook` Deployment/LoadBalancer Service (`app=guestbook`) and the same anonymously pulled digest-pinned Docker Hub image; this root no longer creates ECR. Configure Cloudflare once, not at mode changes. Fresh clusters require no legacy app migration. No live provisioning or billing change is authorized.
 
 ## Authentication and prerequisites
 
@@ -28,7 +28,7 @@ aws sts get-caller-identity
 
 The deployment identity needs authorization for declared EKS clusters/node groups/addons/access entries, EC2 network/node resources, IAM roles/policies/pass-role, KMS keys/grants and CloudWatch logging. This is a capability summary, not a least-privilege policy. Organization policy, service-linked roles and quotas also apply. Have the administrator review the plan/module requirements rather than treating a successful identity check as create permission.
 
-Check regional EKS 1.36, addon/AMI compatibility, `t3.medium` capacity and quotas using current [EKS documentation](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html). AMI/addon choices can be resolved dynamically; the lockfile does not freeze cloud-side catalogs. Preserve the lockfile; no `init -upgrade` during execution.
+Read-only catalog inspection confirmed three Sydney AZs, `t3.medium` offerings and EKS 1.36 support; this is not a live-capacity reservation or proof of deployment. Check regional addon/AMI compatibility, capacity and quotas using current [EKS documentation](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html). AMI/addon choices can be resolved dynamically; the lockfile does not freeze cloud-side catalogs. Preserve the lockfile; no `init -upgrade` during execution.
 
 ## Review a plan
 
@@ -54,7 +54,7 @@ Interactive `terraform apply` displays a fresh plan and asks for confirmation. R
 AWS CLI's native EKS token command supplies authentication; no separate Heptio authenticator is required. Credentials must remain valid for later kubectl calls.
 
 ```bash
-aws eks update-kubeconfig --region us-east-1 --name clouds-eks --alias eks
+aws eks update-kubeconfig --region ap-southeast-2 --name clouds-eks --alias eks
 kubectl --context eks wait --for=condition=Ready nodes --all --timeout=10m
 kubectl --context eks -n kube-system rollout status deployment/coredns --timeout=10m
 kubectl --context eks -n kube-system rollout status daemonset/aws-node --timeout=10m
@@ -66,6 +66,8 @@ kubectl --context eks -n kube-system get pods
 Expect one Ready worker and healthy system workloads. Terraform completion alone does not prove app/public-load-balancer readiness. Continue with the execution guide's direct Kustomize app commands, not a second provisioning owner.
 
 ## Recovery and historical evidence
+
+The observations below concern the former `us-east-1` (Virginia) deployment, not the unprovisioned Sydney topology.
 
 Keep `vpc-cni.before_compute = true`: the initial worker failed after about 33 minutes without CNI-before-compute ordering. Historical recovery took 6m27s, **not clean creation**. In the later interrupted rehearsal the worker was Ready at 08:36:16 UTC, 15m06s after initial apply, including pause/recovery. These are observations, not guarantees. See [dated evidence](../../RUNBOOK-DETAILED.md#live-rehearsal--2026-10-21) and the separate [two-example cutover](../../RUNBOOK-DETAILED.md#two-example-cutover--2026-10-21).
 

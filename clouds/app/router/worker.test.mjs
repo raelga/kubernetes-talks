@@ -5,6 +5,7 @@ import { once } from "node:events";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { unstable_dev } from "wrangler";
+import router from "./worker.js";
 
 process.env.WRANGLER_SEND_METRICS = "false";
 
@@ -115,6 +116,53 @@ test("authenticated state uses real local D1 during empty-origin bootstrap", asy
       a.created_at === b.created_at ? (a.id < b.id ? 1 : a.id > b.id ? -1 : 0) : (a.created_at < b.created_at ? 1 : -1));
     assert.deepEqual(messages, ordered);
   });
+});
+
+test("router uses continent geography unless a valid affinity cookie takes precedence", async (t) => {
+  const providers = ["aws", "azure", "gcp", "digitalocean"];
+  const origins = Object.fromEntries(providers.map((provider) => [provider, `${provider}.test:8080`]));
+  const geography = { NA: "digitalocean", SA: "digitalocean", EU: "azure", AF: "azure", AS: "gcp", OC: "aws" };
+  const hits = [];
+  let randomStart = 0;
+  t.mock.method(Math, "random", () => randomStart);
+  t.mock.method(globalThis, "fetch", async (request) => {
+    hits.push(new URL(request.url).host);
+    return new Response("Healthy origin");
+  });
+
+  async function route(continent, cookie) {
+    hits.length = 0;
+    const request = new Request("https://guestbook.test/api/deployment", {
+      headers: cookie ? { Cookie: cookie } : {},
+    });
+    // Node's Request has no Cloudflare metadata; inject it without changing the Worker API.
+    Object.defineProperty(request, "cf", { value: { continent } });
+    return router.fetch(request, { ORIGINS: origins });
+  }
+
+  async function assertOrigin(continent, cookie, expected) {
+    // Ensure random fallback cannot accidentally satisfy the expected preference.
+    randomStart = ((providers.indexOf(expected) + 1) % providers.length) / providers.length;
+    const response = await route(continent, cookie);
+    assert.equal(response.status, 200);
+    assert.deepEqual(hits, [origins[expected]]);
+    assert.equal(response.headers.get("X-Lab-Origin"), expected);
+    assert.match(response.headers.get("Set-Cookie"), new RegExp(`clouds_origin=${expected};`));
+    await response.text();
+  }
+
+  for (const [continent, provider] of Object.entries(geography)) {
+    await t.test(`${continent} prefers ${provider} without valid affinity`, async () => {
+      for (const cookie of [undefined, "clouds_origin=unknown", "clouds_origin=%ZZ"]) {
+        await assertOrigin(continent, cookie, provider);
+      }
+    });
+    await t.test(`${continent} preserves every valid provider cookie`, async () => {
+      for (const pinned of providers) {
+        await assertOrigin(continent, `clouds_origin=${pinned}`, pinned);
+      }
+    });
+  }
 });
 
 test("router keeps stickiness and never replays mutations across origins", async (t) => {

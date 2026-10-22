@@ -2,7 +2,7 @@
 
 Compare managed Kubernetes across AWS EKS, Azure AKS, Google Cloud GKE, and DigitalOcean Kubernetes.
 
-The lab provides **two storage modes with the same Global Guestbook message UI**: **Local datastore** (`local`) in cluster-local Redis and **Shared datastore** (`shared`) in Cloudflare D1. Both keep messages outside application Pods. Both variants use one stable `guestbook` Deployment and LoadBalancer Service per cluster, with `app=guestbook` selectors. Applying the other variant rolls that Deployment without changing its Service address; configure Cloudflare once. Switching storage does not migrate messages. This repository-only change does not alter running `guestbook-local` / `guestbook-shared` resources or older `guestbook-stateless` / `guestbook-stateful` installations. Migrating those requires separate approval, legacy cleanup, collection of the new Service addresses and a one-time Cloudflare update; no live changes are authorized here.
+The lab provides **two storage modes with the same Global Guestbook message UI**: **Local datastore** (`local`) in cluster-local Redis and **Shared datastore** (`shared`) in Cloudflare D1. Both keep messages outside application Pods. Both variants use one stable `guestbook` Deployment and LoadBalancer Service per cluster, with `app=guestbook` selectors. Applying the other variant rolls that Deployment without changing its Service address; configure Cloudflare once. Switching storage does not migrate messages. All demo infrastructure is currently destroyed; retained state and backups are historical records, not running deployments. No live provisioning or billing change is authorized by this repository update.
 
 Application resources are deployed as declarative YAML through Kustomize provider overlays. `k8s/base` defines the common Deployment, Service and image pin; `k8s/local` adds Redis and `k8s/shared` adds Worker/D1 configuration and generated Secrets. Terraform manages cloud infrastructure.
 
@@ -43,11 +43,11 @@ The main workflow is interactive: `cd` into the provider root, run `terraform in
 
 | Provider guide | Cluster | Region / continent |
 |---|---|---|
-| [AWS EKS](infra/aws/README.md) | `clouds-eks` | `us-east-1` / North America |
+| [AWS EKS](infra/aws/README.md) | `clouds-eks` | `ap-southeast-2`, Sydney / Oceania |
 | [Azure AKS](infra/azure/README.md) | `clouds-aks` | `westeurope` / Europe |
 | [Google Cloud GKE](infra/gcp/README.md) | `clouds-gke` | `asia-northeast1-a` / Asia |
-| [DigitalOcean DOKS](infra/digitalocean/README.md) | `clouds-doks` | `syd1` / Oceania |
+| [DigitalOcean DOKS](infra/digitalocean/README.md) | `clouds-doks` | `nyc1`, New York / North America |
 
 Use only the personal `me@rael.io` identity and `bcncloud-gke` project for GCP; do not use work/Red Hat credentials or quotas. Each Terraform root has separate local state, which must be retained until its resources are destroyed. Apply creates billable resources.
 
-The [detailed reference](RUNBOOK-DETAILED.md#two-example-cutover--2026-10-21) records historical two-example cutover evidence, not acceptance of this stable-identity change. The earlier three-example fresh-provisioning rehearsal took an observed 59m03s including recovery, not a target or guarantee; the current workflow has not been timed again. The [application guide](k8s/README.md) specifies Local datastore isolation followed by Shared datastore D1. Resources remain billable until approved cleanup; no paid Cloudflare upgrade is included. The [Cloudflare guide](infra/cloudflare/README.md) documents origin aliases, credentials and routing limitations. Preserve approved DigitalOcean HA and existing load balancers until separately approved migration or cleanup.
+The [detailed reference](RUNBOOK-DETAILED.md#two-example-cutover--2026-10-21) records historical two-example cutover evidence, not acceptance of this stable-identity or regional change. The earlier three-example fresh-provisioning rehearsal used AWS Virginia and DigitalOcean Sydney and took an observed 59m03s including recovery, not a target or guarantee; the new topology has not been provisioned or timed. The [application guide](k8s/README.md) specifies Local datastore isolation followed by Shared datastore D1. Future resources are billable until approved cleanup; no paid Cloudflare upgrade is included. The [Cloudflare guide](infra/cloudflare/README.md) documents origin aliases, credentials and routing limitations. Fresh DigitalOcean clusters explicitly default to non-HA with one `s-4vcpu-8gb` worker.

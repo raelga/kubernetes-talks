@@ -8,5 +8,5 @@ configMapGenerator:
   behavior: merge
   literals:
   - LAB_PROVIDER=digitalocean
-  - LAB_REGION=syd1
-  - LAB_CONTINENT=Oceania
+  - LAB_REGION=nyc1
+  - LAB_CONTINENT=North America
