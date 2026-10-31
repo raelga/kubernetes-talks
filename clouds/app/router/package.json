@@ -10,6 +10,6 @@
     "test": "node --test worker.test.mjs"
   },
   "devDependencies": {
-    "wrangler": "4.151.3"
+    "wrangler": "4.156.0"
   }
 }
