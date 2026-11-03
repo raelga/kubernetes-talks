@@ -1,0 +1,18 @@
+{
+  "_notice": "DATOS SINTÉTICOS: no corresponden a una cuenta, despliegue ni verificación cloud reales.",
+  "lab_id": {"sensitive": false, "type": "string", "value": "demo-aws"},
+  "region": {"sensitive": false, "type": "string", "value": "us-east-1"},
+  "account_id": {"sensitive": false, "type": "string", "value": "000000000000"},
+  "client_cidr": {"sensitive": false, "type": "string", "value": "198.51.100.10/32"},
+  "message": {"sensitive": false, "type": "string", "value": "Hola desde AWS y UPC"},
+  "instance_id": {"sensitive": false, "type": "string", "value": "i-00000000000000001"},
+  "vpc_id": {"sensitive": false, "type": "string", "value": "vpc-00000000000000001"},
+  "subnet_id": {"sensitive": false, "type": "string", "value": "subnet-00000000000000001"},
+  "internet_gateway_id": {"sensitive": false, "type": "string", "value": "igw-00000000000000001"},
+  "route_table_id": {"sensitive": false, "type": "string", "value": "rtb-00000000000000001"},
+  "security_group_id": {"sensitive": false, "type": "string", "value": "sg-00000000000000001"},
+  "root_volume_id": {"sensitive": false, "type": "string", "value": "vol-00000000000000001"},
+  "bucket_name": {"sensitive": false, "type": "string", "value": "upc-2026-cloud-02-demo-aws-000000000000"},
+  "public_ip": {"sensitive": false, "type": "string", "value": "203.0.113.20"},
+  "http_url": {"sensitive": false, "type": "string", "value": "http://203.0.113.20/"}
+}

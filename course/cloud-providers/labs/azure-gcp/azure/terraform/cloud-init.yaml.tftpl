@@ -1,0 +1,32 @@
+#cloud-config
+package_update: true
+packages:
+  - python3
+write_files:
+  - path: /opt/upc/app.py
+    permissions: '0644'
+    content: |
+      ${indent(6, app_source)}
+  - path: /etc/systemd/system/upc-http.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=UPC HTTP Python
+      After=network-online.target
+      Wants=network-online.target
+      [Service]
+      User=nobody
+      Group=nogroup
+      Environment=LAB_PROVIDER=azure
+      Environment=LAB_ID=${lab_id}
+      ExecStart=/usr/bin/python3 /opt/upc/app.py
+      Restart=on-failure
+      NoNewPrivileges=true
+      ProtectSystem=strict
+      ProtectHome=true
+      PrivateTmp=true
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - [systemctl, daemon-reload]
+  - [systemctl, enable, --now, upc-http.service]

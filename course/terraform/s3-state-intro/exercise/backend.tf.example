@@ -1,0 +1,4 @@
+# Copiar a backend.tf SOLO al llegar a la migración del estado del ejercicio.
+terraform {
+  backend "s3" {}
+}

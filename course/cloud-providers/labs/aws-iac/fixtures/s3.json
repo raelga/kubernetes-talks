@@ -1,0 +1,21 @@
+{
+  "synthetic": true,
+  "notice": "DATOS SINTÉTICOS: ejemplo de respuestas S3, sin llamadas ni verificación cloud.",
+  "bucket_name": "upc-2026-cloud-02-demo-aws-000000000000",
+  "exists": true,
+  "tagging": {"TagSet": [
+    {"Key": "course", "Value": "upc-2026"},
+    {"Key": "lab", "Value": "cloud-02"},
+    {"Key": "lab_id", "Value": "demo-aws"}
+  ]},
+  "public_access_block": {"PublicAccessBlockConfiguration": {
+    "BlockPublicAcls": true, "IgnorePublicAcls": true,
+    "BlockPublicPolicy": true, "RestrictPublicBuckets": true
+  }},
+  "encryption": {"ServerSideEncryptionConfiguration": {"Rules": [
+    {"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}
+  ]}},
+  "ownership": {"OwnershipControls": {"Rules": [
+    {"ObjectOwnership": "BucketOwnerEnforced"}
+  ]}}
+}

@@ -1,0 +1,17 @@
+**/.terraform/
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
+**/*.plan
+**/crash.log
+**/crash.*.log
+**/*.tfvars
+**/*.tfvars.json
+**/backend.hcl
+**/backend.tf
+**/private-*
+!**/*.tfvars.example
+!**/backend.hcl.example
+!**/backend.tf.example
