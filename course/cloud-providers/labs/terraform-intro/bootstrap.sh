@@ -64,5 +64,4 @@ fi
 "${bin_dir}/terraform" version
 printf '\nRepository: %s\n' "$repo_dir"
 printf 'Lab: %s/course/cloud-providers/labs/terraform-intro\n' "$repo_dir"
-printf 'To use Terraform in this shell, run: export PATH="$HOME/.local/bin:$PATH"\n'
 printf 'No directory change, Terraform initialization or cloud deployment was performed.\n'

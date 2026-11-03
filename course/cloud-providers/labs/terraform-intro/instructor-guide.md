@@ -27,6 +27,8 @@ By the end, learners should explain and demonstrate:
 
 ### Controlled-scope API preflight
 
+Run these preflight commands from `course/cloud-providers/labs/terraform-intro`, not from either Terraform subdirectory. The learner README explicitly changes directories as the exercise progresses.
+
 Before allowing migration, check `aws sts get-caller-identity`, `get-bucket-versioning` and `list-objects-v2` on the actual backend. The versioning query must show `Enabled`; run it after `apply`, rather than relying only on a variable or Terraform state.
 
 To rehearse `PutObject`/`GetObject`/`ListBucket` without introducing a fake state file, use a **nonsensitive test object** in an authorized temporary prefix, such as `exercise/preflight.txt`. Permissions for this prefix must be explicitly available; do not broaden policies to perform the trial. Permissions on this key alone do not establish permissions on `exercise/terraform.tfstate`: also check the exact authorized scope and complete an instructor rehearsal of real migration/reading using that same key in the instructor's test backend. Do not write a test file to the `.tfstate` key.
@@ -101,6 +103,59 @@ Use the [learner README](README.md) as the command sequence. If a wait, expired 
 
 Without publishing state or sensitive identity, compare during the session: tool versions, correct account/region, actual `Enabled` versioning, unchanged bucket/object IDs before/after, state `head-object` with encryption and version, temporary real lock, final no-change plan and exercise-only destroy plan. Private captures are not committed to Git.
 
-**Exceptional full retirement** is detailed in the README: first migrate all consumers or destroy them and remove their backend dependency (including empty state); then secure backups, review names and every key/version/marker, perform exact manual deletions and, only at the end, deliberately remove `prevent_destroy` while preserving the identity precondition and reviewing bootstrap's destroy plan. Cloud Control only deletes an empty bucket. Do not automate emptying, delete configuration to bypass protection or retire the backend during normal class completion.
+Full backend retirement is outside normal class completion. Follow the separate authorized procedure below; do not retire it just because the exercise state is empty.
 
 Optional extensions, not requirements: recover a state version only in an isolated, planned instructor environment, or compare other backends. Do not add EC2, IAM, deployments from other labs or mass migrations to this introduction.
+
+## Complete and exceptional backend retirement
+
+Only a responsible operator may retire the backend, in an exclusive window with authorization. First inventory **all consumers**: migrate them elsewhere, or destroy their resources and remove their S3 backend dependency. Empty exercise state is still a consumer; do not assume it is the only one.
+
+1. Preserve secure copies of every state and configuration. For the exercise:
+
+   ```bash
+   cd "$HOME/kubernetes-talks/course/cloud-providers/labs/terraform-intro/exercise"
+   terraform state pull > private-before-retirement.tfstate
+   ```
+
+   Replace the backend declaration in `backend.tf` with:
+
+   ```hcl
+   terraform {
+     backend "local" {}
+   }
+   ```
+
+   Run `terraform init -migrate-state` **without** `-backend-config`. Confirm the move from S3 to local and compare any nonempty state. For already empty state, Terraform may neither prompt nor write a local file, and `state pull` may emit no JSON. Retain the prior private copy; verify that no resources or consumers still depend on S3. Another approved backend is also acceptable.
+
+2. Select the authorized region in `AWS_REGION`, confirm the account and exact backend name, and stop concurrent operations:
+
+   ```bash
+   cd ../bootstrap
+   aws sts get-caller-identity
+   export STATE_BUCKET="$(terraform output -raw state_bucket_name)"
+   aws s3api get-bucket-versioning --bucket "$STATE_BUCKET" --region "$AWS_REGION"
+   aws s3api list-object-versions --bucket "$STATE_BUCKET" --region "$AWS_REGION"
+   aws s3api list-objects-v2 --bucket "$STATE_BUCKET" --region "$AWS_REGION"
+   ```
+
+   Review **all pages, keys, versions and delete markers**, not only the exercise prefix. Never delete an active lock.
+
+3. After preserving required state and authorizing each deletion, manually delete each reviewed version or marker by its exact key and `VersionId`. This is placeholder syntax, **not a ready-to-run command**:
+
+   ```bash
+   aws s3api delete-object --bucket REVIEWED_EXACT_NAME --key REVIEWED_EXACT_KEY --version-id REVIEWED_EXACT_VERSION_ID --region REVIEWED_REGION
+   ```
+
+   Explicitly use `--version-id null` for a null version. A deletion without a version ID can create another marker instead of emptying the bucket. Repeat the inventory until no objects, versions or markers remain. Do not use recursive deletion, `aws s3 rb --force`, emptying scripts or lifecycle purge rules. AWSCC has no forced-emptying option.
+
+4. Only as the last configuration change, deliberately remove just `prevent_destroy = true` from the bucket's `lifecycle` block in `bootstrap/main.tf`. Preserve the identity precondition and the rest of the configuration. From `bootstrap/`:
+
+   ```bash
+   terraform plan -destroy -out=private-retire.tfplan
+   terraform show private-retire.tfplan
+   ```
+
+   Apply with `terraform apply private-retire.tfplan` only after confirming the exact authorized bucket, secure backups and an empty bucket. Cloud Control refuses deletion when content remains. Never delete configuration to bypass `prevent_destroy`.
+
+5. Retain final local states and evidence according to lab policy, outside Git and the retired bucket.
