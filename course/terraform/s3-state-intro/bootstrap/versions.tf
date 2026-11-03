@@ -1,7 +1,7 @@
 terraform {
   required_version = ">= 1.10, < 2.0"
 
-  # Este estado permanece local: nunca usa el bucket que administra.
+  # This state remains local: it never uses the bucket it manages.
   backend "local" {}
 
   required_providers {

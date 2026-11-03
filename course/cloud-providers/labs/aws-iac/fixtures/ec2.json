@@ -1,6 +1,6 @@
 {
   "synthetic": true,
-  "notice": "DATOS SINTÉTICOS reducidos a los campos consumidos. No son una captura cloud ni prueban un despliegue.",
+  "notice": "SYNTHETIC DATA reduced to consumed fields. Not a cloud capture or proof of a deployment.",
   "instances": {
     "Reservations": [{"Instances": [{
       "InstanceId": "i-00000000000000001",
@@ -35,7 +35,7 @@
   "security_groups": {"SecurityGroups": [{
     "GroupId": "sg-00000000000000001", "VpcId": "vpc-00000000000000001",
     "IpPermissions": [{"IpProtocol": "tcp", "FromPort": 80, "ToPort": 80,
-      "IpRanges": [{"CidrIp": "198.51.100.10/32", "Description": "Cliente del laboratorio"}],
+      "IpRanges": [{"CidrIp": "198.51.100.10/32", "Description": "Lab client"}],
       "Ipv6Ranges": [], "UserIdGroupPairs": [], "PrefixListIds": []}],
     "Tags": [{"Key": "course", "Value": "upc-2026"}, {"Key": "lab", "Value": "cloud-02"}, {"Key": "lab_id", "Value": "demo-aws"}]
   }]},

@@ -1,10 +1,10 @@
 {
-  "_notice": "DATOS SINTÉTICOS: no corresponden a una cuenta, despliegue ni verificación cloud reales.",
+  "_notice": "SYNTHETIC DATA: does not represent a real account, deployment or cloud verification.",
   "lab_id": {"sensitive": false, "type": "string", "value": "demo-aws"},
   "region": {"sensitive": false, "type": "string", "value": "us-east-1"},
   "account_id": {"sensitive": false, "type": "string", "value": "000000000000"},
   "client_cidr": {"sensitive": false, "type": "string", "value": "198.51.100.10/32"},
-  "message": {"sensitive": false, "type": "string", "value": "Hola desde AWS y UPC"},
+  "message": {"sensitive": false, "type": "string", "value": "Hello from AWS and UPC"},
   "instance_id": {"sensitive": false, "type": "string", "value": "i-00000000000000001"},
   "vpc_id": {"sensitive": false, "type": "string", "value": "vpc-00000000000000001"},
   "subnet_id": {"sensitive": false, "type": "string", "value": "subnet-00000000000000001"},

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Servicio docente sin dependencias, credenciales ni acceso a almacenamiento."""
+"""Teaching service without dependencies, credentials or storage access."""
 import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer

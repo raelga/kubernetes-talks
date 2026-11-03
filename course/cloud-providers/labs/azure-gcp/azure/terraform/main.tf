@@ -43,7 +43,7 @@ resource "azurerm_network_security_group" "lab" {
   resource_group_name = azurerm_resource_group.lab.name
   tags                = local.tags
   security_rule {
-    name                       = "HTTP-docente"
+    name                       = "HTTP-instructor"
     priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"

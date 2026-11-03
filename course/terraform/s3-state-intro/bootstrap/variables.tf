@@ -1,36 +1,36 @@
 variable "region" {
-  description = "Región autorizada por el laboratorio de AWS Academy."
+  description = "Region authorized by the AWS Academy lab."
   type        = string
   default     = "us-east-1"
 
   validation {
     condition     = can(regex("^[a-z]{2}(-[a-z]+)+-[0-9]+$", var.region))
-    error_message = "Indica una región AWS válida y autorizada por tu laboratorio."
+    error_message = "Specify a valid AWS region authorized by your lab."
   }
 }
 
 variable "account_id" {
-  description = "ID de 12 cifras de la cuenta esperada; proveedor AWS y precondición del bucket rechazan otra cuenta."
+  description = "Expected 12-digit account ID; the AWS provider and bucket precondition reject other accounts."
   type        = string
 
   validation {
     condition     = can(regex("^[0-9]{12}$", var.account_id))
-    error_message = "account_id debe contener exactamente 12 cifras."
+    error_message = "account_id must contain exactly 12 digits."
   }
 }
 
 variable "lab_id" {
-  description = "Identificador pedagógico de 3 a 20 caracteres; el sufijo aleatorio aporta unicidad por ejecución."
+  description = "Teaching identifier of 3 to 20 characters; the random suffix provides uniqueness per run."
   type        = string
 
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9-]{1,18}[a-z0-9]$", var.lab_id))
-    error_message = "Usa 3–20 letras minúsculas, cifras o guiones; empieza y termina con letra o cifra."
+    error_message = "Use 3–20 lowercase letters, digits or hyphens; start and end with a letter or digit."
   }
 }
 
 variable "bucket_name" {
-  description = "Nombre exacto opcional; null genera un nombre con cuenta, lab_id y sufijo aleatorio persistente."
+  description = "Optional exact name; null generates a name with account, lab_id and a persistent random suffix."
   type        = string
   default     = null
   nullable    = true
@@ -41,18 +41,18 @@ variable "bucket_name" {
       !can(regex("\\.\\.|\\.-|-\\.", var.bucket_name)) &&
       !can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.bucket_name))
     )
-    error_message = "Usa null o un nombre S3 de 3–63 caracteres, minúsculas/cifras/puntos/guiones, sin puntos consecutivos, puntos junto a guiones ni formato IPv4; empieza y termina con letra o cifra."
+    error_message = "Use null or an S3 name of 3–63 lowercase letters/digits/dots/hyphens, without consecutive dots, dots next to hyphens or IPv4 format; start and end with a letter or digit."
   }
 }
 
 variable "enable_versioning" {
-  description = "false durante los fundamentos; activar antes de almacenar cualquier estado remoto."
+  description = "false during the basics; enable before storing any remote state."
   type        = bool
   default     = false
 }
 
 variable "stage" {
-  description = "Etiqueta pedagógica que se cambia al preparar el backend."
+  description = "Teaching tag changed when preparing the backend."
   type        = string
   default     = "basics"
 }

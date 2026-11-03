@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Servicio didáctico sin dependencias; configuración pública, sin acceso a AWS."""
+"""Dependency-free teaching service; public configuration, no AWS access."""
 
 import argparse
 import json
@@ -13,16 +13,16 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--config", type=Path)
     args = parser.parse_args()
-    config = {"provider": "aws", "lab_id": "local", "message": "Hola desde AWS y UPC"}
+    config = {"provider": "aws", "lab_id": "local", "message": "Hello from AWS and UPC"}
     if args.config:
         config = json.loads(args.config.read_text(encoding="utf-8"))
     if not isinstance(config, dict) or any(
         not isinstance(config.get(key), str) or not config[key]
         for key in ("provider", "lab_id", "message")
     ):
-        parser.error("La configuración requiere provider, lab_id y message como textos no vacíos")
+        parser.error("Configuration requires provider, lab_id and message as nonempty strings")
     if not 1 <= args.port <= 65535:
-        parser.error("El puerto debe estar entre 1 y 65535")
+        parser.error("Port must be between 1 and 65535")
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
@@ -40,7 +40,7 @@ def main() -> None:
 
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     try:
-        print(f"Escuchando en http://{args.host}:{args.port}/", flush=True)
+        print(f"Listening on http://{args.host}:{args.port}/", flush=True)
         server.serve_forever()
     except KeyboardInterrupt:
         pass

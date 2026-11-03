@@ -10,7 +10,7 @@ printf '%s' '${config_base64}' | base64 --decode > /opt/upc-http/config.json
 chmod 0644 /opt/upc-http/app.py /opt/upc-http/config.json
 cat > /etc/systemd/system/upc-http.service <<'SERVICE'
 [Unit]
-Description=UPC HTTP Python sin contenedores
+Description=UPC HTTP Python without containers
 Wants=network-online.target
 After=network-online.target
 

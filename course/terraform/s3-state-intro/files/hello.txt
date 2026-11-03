@@ -1,1 +1,1 @@
-Hola desde Terraform y Amazon S3.
+Hello from Terraform and Amazon S3.

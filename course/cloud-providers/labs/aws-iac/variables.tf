@@ -1,65 +1,65 @@
 variable "aws_region" {
-  description = "Región permitida por el laboratorio Academy asignado."
+  description = "Region allowed by the assigned Academy lab."
   type        = string
   validation {
     condition     = can(regex("^[a-z]{2}(-[a-z]+)+-[0-9]+$", var.aws_region))
-    error_message = "Indica una región AWS válida y autorizada por el docente."
+    error_message = "Specify a valid AWS region authorized by the instructor."
   }
 }
 
 variable "lab_id" {
-  description = "Identificador propio y único; no reutilizar el de otro alumno."
+  description = "Your own unique identifier; do not reuse another learner's."
   type        = string
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{2,19}$", var.lab_id))
-    error_message = "Usa 3–20 caracteres: letra inicial, minúsculas, números o guiones."
+    error_message = "Use 3–20 characters: initial letter, lowercase letters, digits or hyphens."
   }
 }
 
 variable "client_cidr" {
-  description = "IPv4 pública del cliente /32; único origen autorizado para HTTP."
+  description = "Client public IPv4 /32; the only authorized HTTP source."
   type        = string
   validation {
     condition = can(cidrnetmask(var.client_cidr)) && can(regex("/32$", var.client_cidr)) && !contains(
       ["0.0.0.0/32", "255.255.255.255/32"], var.client_cidr
     )
-    error_message = "Introduce tu IPv4 pública como x.x.x.x/32; no se admiten redes amplias ni 0.0.0.0."
+    error_message = "Enter your public IPv4 as x.x.x.x/32; broad networks and 0.0.0.0 are not allowed."
   }
 }
 
 variable "instance_type" {
-  description = "Tipo x86_64 permitido por Academy; confirmar permiso y cuota antes de apply."
+  description = "Academy-permitted x86_64 type; confirm permission and quota before apply."
   type        = string
   default     = "t3.micro"
   validation {
     condition     = contains(["t2.micro", "t3.micro", "t3.small", "t3a.micro", "t3a.small"], var.instance_type)
-    error_message = "Selecciona un tipo pequeño x86_64 de la lista y confirma que Academy lo permite."
+    error_message = "Select a small x86_64 type from the list and confirm Academy permits it."
   }
 }
 
 variable "ami_id" {
-  description = "AMI Ubuntu 24.04 x86_64 permitida en la región; null busca la oficial de Canonical."
+  description = "Ubuntu 24.04 x86_64 AMI permitted in the region; null looks up Canonical's official image."
   type        = string
   default     = null
   nullable    = true
   validation {
     condition     = var.ami_id == null ? true : can(regex("^ami-[0-9a-f]{8,17}$", var.ami_id))
-    error_message = "ami_id debe ser null o un identificador AMI; no una clave ni un nombre."
+    error_message = "ami_id must be null or an AMI identifier, not a key or name."
   }
 }
 
 variable "message" {
-  description = "Mensaje público de demostración; nunca introducir secretos."
+  description = "Public demonstration message; never enter secrets."
   type        = string
-  default     = "Hola desde AWS y UPC"
+  default     = "Hello from AWS and UPC"
   validation {
     condition     = length(var.message) >= 1 && length(var.message) <= 120
-    error_message = "El mensaje público debe tener entre 1 y 120 caracteres."
+    error_message = "The public message must contain between 1 and 120 characters."
   }
 }
 
 variable "bucket_name" {
-  description = "Nombre S3 nuevo y globalmente disponible; null genera un nombre con sufijo aleatorio persistido en estado."
+  description = "New, globally available S3 name; null generates a name with a random suffix persisted in state."
   type        = string
   default     = null
   validation {
@@ -67,6 +67,6 @@ variable "bucket_name" {
       can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$", var.bucket_name)) &&
       !can(regex("^(xn--|sthree-|amzn-s3-demo-)|(-s3alias|--ol-s3|\\.mrap|--x-s3|--table-s3)$", var.bucket_name))
     )
-    error_message = "Usa null o un nombre S3 de 3–63 minúsculas/dígitos/guiones, con extremos alfanuméricos y sin prefijos/sufijos reservados."
+    error_message = "Use null or an S3 name of 3–63 lowercase letters/digits/hyphens, with alphanumeric ends and no reserved prefixes/suffixes."
   }
 }

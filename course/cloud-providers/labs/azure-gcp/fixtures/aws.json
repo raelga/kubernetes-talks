@@ -1,7 +1,7 @@
 {
   "source": "synthetic",
   "provider": "aws",
-  "description": "Inventado para contraste con sesión 2, NO capturado ni verificado en AWS. Subconjunto de aws ec2 describe-instances.",
+  "description": "Invented for comparison with session 2, NOT captured or verified in AWS. Subset of aws ec2 describe-instances.",
   "data": {"Reservations": [{"Instances": [
     {"InstanceId": "i-00000000000000001", "Tags": [{"Key": "Name", "Value": "aws-demo-running"}], "Placement": {"AvailabilityZone": "eu-west-1a"}, "State": {"Name": "running"}},
     {"InstanceId": "i-00000000000000002", "Tags": [{"Key": "Name", "Value": "aws-demo-stopped"}], "Placement": {"AvailabilityZone": "eu-west-1b"}, "State": {"Name": "stopped"}}

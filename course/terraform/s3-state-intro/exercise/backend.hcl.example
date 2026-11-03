@@ -1,6 +1,6 @@
-# Copiar a backend.hcl y sustituir por la salida real de bootstrap.
-# No introducir claves de acceso, tokens ni ningún otro secreto.
-bucket              = "tfstate-123456789012-alumna01-a1b2c3d4e5f6"
+# Copy to backend.hcl and replace with the actual bootstrap output.
+# Do not enter access keys, tokens or any other secrets.
+bucket              = "tfstate-123456789012-learner01-a1b2c3d4e5f6"
 key                 = "exercise/terraform.tfstate"
 region              = "us-east-1"
 encrypt             = true

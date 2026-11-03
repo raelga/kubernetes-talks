@@ -1,3 +1,6 @@
+# Presentation deliverables stay local and are not repository teaching assets.
+/slides/
+
 # Local Terraform data, saved plans, credentials and instructor configuration
 **/.terraform/
 **/*.tfstate
@@ -24,6 +27,8 @@
 **/id_ed25519*
 **/__pycache__/
 **/.pytest_cache/
+# Keep both current and legacy private-capture directories out of Git.
+**/real-captures/
 **/capturas-reales/
 **/outputs.json
 !**/fixtures/outputs.json

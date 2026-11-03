@@ -1,35 +1,35 @@
-# 03 · Azure y GCP: transferencia multicloud e IaC
+# 03 · Azure and GCP: multicloud and IaC transfer
 
-**10/11/2026 · Rael Garcia · 18:00–21:00 Europe/Madrid · M2, con 60 min de M1 integrados.**
+**10/11/2026 · Rael Garcia · 18:00–21:00 Europe/Madrid · M2, with 60 integrated minutes of M1.**
 
-El alumnado **no necesita cuentas Azure/GCP ni despliega recursos**. Analiza dos demostraciones docentes preparadas y adapta Python sobre respuestas **sintéticas** locales. No se ha realizado un despliegue cloud para preparar estos archivos. Las cuentas, permisos, cuota, imágenes, región y precios reales deben comprobarse antes de clase: [guía docente](guia-docente.md).
+Students **do not need Azure/GCP accounts and do not deploy resources**. They analyze two prepared instructor demonstrations and adapt Python using local **synthetic** responses. No cloud deployment was performed to prepare these files. Real accounts, permissions, quotas, images, regions and prices must be checked before class: [instructor guide](instructor-guide.md).
 
-## Objetivo y alcance obligatorio
+## Required objective and scope
 
-Transferir el caso de AWS: red propia + VM pequeña que ofrece JSON HTTP con Python estándar en el puerto 8080 + almacenamiento de objetos **privado**, vacío y separado de la aplicación. No hay Docker, Kubernetes, acceso de la VM al bucket, claves en startup ni cambios de IAM. La misma intención no significa recursos intercambiables. Terraform comparte lenguaje y flujo, no estado ni APIs entre proveedores.
+Transfer the AWS use case: a dedicated network + a small VM serving HTTP JSON using standard-library Python on port 8080 + empty, **private** object storage, separate from the application. No Docker, Kubernetes, VM access to the bucket, startup keys or IAM changes. The same intent does not make resources interchangeable. Terraform shares a language and workflow, not state or APIs across providers.
 
-El almacenamiento global recibe por defecto un sufijo aleatorio persistido en estado: 8 hexadecimales para Azure (`upc3` + lab_id sin guiones + sufijo, máximo 24 caracteres) y 12 para GCP (proyecto + `-c03-` + lab_id + sufijo, máximo 60). El mismo estado conserva el nombre; estados independientes generan sufijos distintos. Red, grupo de recursos y VM siguen requiriendo un `lab_id` único. `storage_account_name` (Azure) y `bucket_name` (GCP), ambos `null` por defecto, aceptan un nombre exacto globalmente disponible y omiten la generación del sufijo; no adoptan recursos existentes. Cambiar estos valores puede reemplazar almacenamiento: revisar el plan y consultar siempre los nombres reales en outputs, nunca reconstruirlos.
+Global storage names receive a random suffix persisted in state by default: 8 hexadecimal characters for Azure (`upc3` + lab_id without hyphens + suffix, at most 24 characters) and 12 for GCP (project + `-c03-` + lab_id + suffix, at most 60). The same state preserves the name; independent states generate different suffixes. Networks, resource groups and VMs still require a unique `lab_id`. `storage_account_name` (Azure) and `bucket_name` (GCP), both defaulting to `null`, accept an exact globally available name and skip suffix generation; they do not adopt existing resources. Changing these values can replace storage: review the plan and always read actual names from outputs, never reconstruct them.
 
-Al finalizar se entrega una tabla razonada de equivalencias, una adaptación Python revisada con IA y evidencia local del filtrado de recursos encendidos. Las demostraciones cloud son del docente; no son dos laboratorios de alta de cuentas. No se añaden requisitos al Proyecto Final ni porcentajes de evaluación.
+Deliver a reasoned equivalence table, an AI-reviewed Python adaptation and local evidence of filtering running resources. Cloud demonstrations belong to the instructor; these are not two account-registration labs. No Final Project requirements or grading percentages are added.
 
-### Agenda exacta de 180 minutos
+### Exact 180-minute agenda
 
-| Hora | Min | Actividad |
+| Time | Minutes | Activity |
 |---|---:|---|
-| 18:00–18:10 | 10 | Recuperar AWS; identidad, red, VM, almacenamiento y alcance docente/alumno |
-| 18:10–18:35 | 25 | Demostración Azure: plan preparado, recursos, salida HTTP, Blob privado |
-| 18:35–18:53 | 18 | Azure Cost Management: filtros, presupuesto, alertas y limpieza |
-| 18:53–19:18 | 25 | Demostración GCP: proyecto, VPC regional/zonal, VM y bucket privado |
-| 19:18–19:36 | 18 | GCP Cloud Billing: filtros, presupuesto, alertas y limpieza |
-| 19:36–20:36 | 60 | **M1: Python, configuración, comparación y revisión con IA**, sin credenciales |
-| 20:36–20:51 | 15 | Variables, módulos, outputs, estado remoto y locking en ambos backends |
-| 20:51–21:00 | 9 | Destroy preparado docente, verificación de residuos y conclusiones |
+| 18:00–18:10 | 10 | Recall AWS; identity, network, VM, storage and instructor/student scope |
+| 18:10–18:35 | 25 | Azure demonstration: prepared plan, resources, HTTP response, private Blob storage |
+| 18:35–18:53 | 18 | Azure Cost Management: filters, budget, alerts and cleanup |
+| 18:53–19:18 | 25 | GCP demonstration: project, regional/zonal VPC resources, VM and private bucket |
+| 19:18–19:36 | 18 | GCP Cloud Billing: filters, budget, alerts and cleanup |
+| 19:36–20:36 | 60 | **M1: Python, configuration, comparison and AI-assisted review**, without credentials |
+| 20:36–20:51 | 15 | Variables, modules, outputs, remote state and locking in both backends |
+| 20:51–21:00 | 9 | Prepared instructor destroy, residual-resource verification and conclusions |
 
-El docente puede tener las VMs levantadas antes del inicio y planes/evidencias preparados para evitar esperar al aprovisionamiento. El destroy se realiza y comprueba aunque la clase use evidencias preparadas; si no hubo despliegue, se explica explícitamente que no había recursos que destruir. No ejecutar despliegues para “probar el material”.
+The instructor may start VMs before class and prepare plans/evidence to avoid provisioning delays. Perform and verify destroy even when using prepared evidence; if nothing was deployed, explicitly explain that there were no resources to destroy. Do not deploy to “test the materials”.
 
-## Preparación local del alumnado
+## Student local preparation
 
-Python **3.11+** y editor; ninguna dependencia Python externa, Terraform ni CLI cloud necesarios para la actividad local. El docente necesita además Terraform **>=1.6,<2**, Azure CLI y Google Cloud CLI. Desde la raíz del repositorio:
+Python **3.11+** and an editor; no external Python dependencies, Terraform or cloud CLI are required for the local activity. The instructor also needs Terraform **>=1.6,<2**, Azure CLI and Google Cloud CLI. From the repository root:
 
 ```sh
 cd course/cloud-providers/labs/azure-gcp
@@ -39,62 +39,62 @@ python3 scripts/normalize.py fixture --provider gcp --running-only
 python3 scripts/normalize.py fixture --provider aws --running-only
 ```
 
-`fixture` jamás consulta APIs ni necesita credenciales. Imprime origen en stderr y JSON en stdout. La app se puede observar localmente, sin nube: `HTTP_HOST=127.0.0.1 python3 app.py`; en otro terminal, `curl --fail http://127.0.0.1:8080/health`; Ctrl-C la detiene. No abrir el puerto local a otras redes. Los templates de ambas VMs insertan este mismo `app.py`, no una implementación distinta.
+`fixture` never calls APIs or needs credentials. It prints provenance to stderr and JSON to stdout. Observe the app locally without cloud access: `HTTP_HOST=127.0.0.1 python3 app.py`; in another terminal, `curl --fail http://127.0.0.1:8080/health`; stop it with Ctrl-C. Do not expose the local port to other networks. Both VM templates insert this same `app.py`, not a separate implementation.
 
-## Mapa de transferencia
+## Transfer map
 
-| Intención | AWS (sesión 2) | Azure | GCP |
+| Intent | AWS (session 2) | Azure | GCP |
 |---|---|---|---|
-| Identidad y ámbito | Cuenta, principal temporal Academy, IAM | Tenant Microsoft Entra, suscripción, grupo de recursos, RBAC | Organización/carpeta/proyecto, principal, IAM |
-| Red | VPC regional, subnet zonal, SG de instancia | VNet regional, subnet, NSG asociado a NIC | VPC global, subnet regional, firewall dirigido por network tag |
-| VM | EC2 + AMI + tipo + AZ | Linux VM + imagen + SKU + región | Compute Engine + imagen + machine type + zona |
-| Objetos privados | S3 + bloqueo acceso público | Storage Account LRS + container privado, sin claves compartidas | Cloud Storage, acceso uniforme y prevención pública |
-| Registro de imágenes (solo equivalencia) | ECR | ACR | Artifact Registry |
-| Servicios gestionados (sin desplegar) | RDS / EKS | Azure Database / AKS | Cloud SQL / GKE |
-| Frontera de gestión | Recursos etiquetados | Grupo dedicado y tags | Proyecto explícito y labels; no crear/eliminar el proyecto |
+| Identity and scope | Account, temporary Academy principal, IAM | Microsoft Entra tenant, subscription, resource group, RBAC | Organization/folder/project, principal, IAM |
+| Network | Regional VPC, zonal subnet, instance SG | Regional VNet, subnet, NIC-associated NSG | Global VPC, regional subnet, network-tag-targeted firewall |
+| VM | EC2 + AMI + type + AZ | Linux VM + image + SKU + region | Compute Engine + image + machine type + zone |
+| Private objects | S3 + public access blocking | LRS Storage Account + private container, no shared keys | Cloud Storage, uniform access and public access prevention |
+| Image registry (equivalence only) | ECR | ACR | Artifact Registry |
+| Managed services (not deployed) | RDS / EKS | Azure Database / AKS | Cloud SQL / GKE |
+| Management boundary | Tagged resources | Dedicated group and tags | Explicit project and labels; do not create/delete the project |
 
-Una Azure VM no se considera encendida porque `provisioningState` sea `Succeeded`. El estado de alimentación viene de `powerState` (`VM running`, `VM deallocated`) o del código `PowerState/...` en `instanceView.statuses`. En GCP `status=RUNNING` es encendida y `TERMINATED` es apagada, no un recurso eliminado. Azure `location` es región, GCP `zone` es zona, AWS `AvailabilityZone` es zona: **location conserva el valor del proveedor, no inventa una equivalencia regional**.
+An Azure VM is not running just because `provisioningState` is `Succeeded`. Power state comes from `powerState` (`VM running`, `VM deallocated`) or the `PowerState/...` code in `instanceView.statuses`. In GCP, `status=RUNNING` means running and `TERMINATED` means stopped, not a deleted resource. Azure `location` is a region, GCP `zone` is a zone, AWS `AvailabilityZone` is a zone: **location preserves the provider's value rather than inventing regional equivalence**.
 
-## Práctica M1 · 60 minutos
+## M1 practice · 60 minutes
 
-1. **0–10 min: inspeccionar contratos.** Leer `fixtures/*.json` y `scripts/normalize.py`. Identificar rutas de nombre, ubicación y alimentación. Cada fixture es una envoltura `{source, provider, description, data}`: `source=synthetic` identifica datos inventados; `data` es un subconjunto de la respuesta CLI, no una captura real. Azure representa `az vm list --show-details`, GCP `gcloud compute instances list --format=json`, AWS `aws ec2 describe-instances` (contraste, sin nuevo despliegue AWS).
-2. **10–25 min: adaptar.** Escribir una copia local fuera del repositorio o una función propia que reciba un proveedor y su respuesta y devuelva registros con **solo** `provider`, `name`, `location`, `state`. Conservar el origen separado de los cuatro campos; ordenar de forma determinista. Inspeccionar el adaptador resuelto después de intentar la adaptación. El esquema admite `running`, `stopped`, `pending`, `stopping`, `suspended`, `terminated`, `unknown`; un valor desconocido no se convierte en `running`.
-3. **25–40 min: filtrar y contrastar.** Implementar `running-only` sobre el esquema común, no sobre campos diferentes para cada proveedor. Ejecutar los tres fixtures y contrastar con la tabla de resultados de abajo. Incluir el caso Azure `Succeeded` sin `powerState`: debe dar `unknown` y **no** pasar el filtro. Comprobar que una lista válida vacía produce `[]`, mientras JSON inválido falla con código distinto de cero.
-4. **40–50 min: IA bajo revisión.** Pedir al asistente: «Propón una función Python estándar que adapte estos tres esquemas, sin ejecutar comandos cloud ni solicitar credenciales. No confundas estado de aprovisionamiento con alimentación; justifica cada campo y el tratamiento de desconocidos». Compartir únicamente fixtures sintéticos y código, nunca capturas privadas, tokens, estado Terraform ni identificadores de la cuenta docente. Revisar propuesta, citar un error/riesgo concreto y corregirlo; el modelo no es una fuente de verdad del API.
-5. **50–60 min: transferir configuración y explicar.** Localizar variables equivalentes y no equivalentes en los dos roots Terraform; explicar por qué GCP exige proyecto/región/zona y Azure una clave **pública** aunque SSH no esté abierto. Entregar salidas normalizadas, resultado del filtro, tabla de equivalencias y breve decisión de revisión de IA. No copiar `description` ni respuestas originales como si fueran resultados esperados.
+1. **0–10 min: inspect contracts.** Read `fixtures/*.json` and `scripts/normalize.py`. Identify name, location and power-state paths. Each fixture is an envelope `{source, provider, description, data}`: `source=synthetic` identifies invented data; `data` is a subset of the CLI response, not a real capture. Azure represents `az vm list --show-details`, GCP `gcloud compute instances list --format=json`, AWS `aws ec2 describe-instances` (comparison, no new AWS deployment).
+2. **10–25 min: adapt.** Write a local copy outside the repository or your own function taking a provider and its response and returning records with **only** `provider`, `name`, `location`, `state`. Keep provenance separate from these four fields; sort deterministically. Inspect the solved adapter after attempting your adaptation. The schema accepts `running`, `stopped`, `pending`, `stopping`, `suspended`, `terminated`, `unknown`; an unknown value must not become `running`.
+3. **25–40 min: filter and compare.** Implement `running-only` against the common schema, not different provider fields. Run all three fixtures and compare with the results below. Include Azure `Succeeded` without `powerState`: it must yield `unknown` and **not** pass the filter. Check that a valid empty list produces `[]`, whereas invalid JSON fails with a nonzero exit code.
+4. **40–50 min: AI under review.** Ask the assistant: “Propose a standard-library Python function adapting these three schemas, without running cloud commands or requesting credentials. Do not confuse provisioning state with power state; justify every field and the handling of unknowns.” Share only synthetic fixtures and code, never private captures, tokens, Terraform state or instructor account identifiers. Review the proposal, identify a specific error/risk and correct it; the model is not an API source of truth.
+5. **50–60 min: transfer configuration and explain.** Locate equivalent and non-equivalent variables in both Terraform roots; explain why GCP requires project/region/zone and Azure a **public** key even though SSH is not open. Submit normalized outputs, filter results, an equivalence table and a brief AI-review decision. Do not copy `description` or original responses as expected results.
 
-### Resultados semánticos esperados (no pruebas de copia del origen)
+### Expected semantic results (not source-copy tests)
 
-| provider | name | location | state | Pasa `running-only` |
+| provider | name | location | state | Passes `running-only` |
 |---|---|---|---|---|
-| aws | aws-demo-running | eu-west-1a | running | sí |
+| aws | aws-demo-running | eu-west-1a | running | yes |
 | aws | aws-demo-stopped | eu-west-1b | stopped | no |
-| azure | azure-demo-running | westeurope | running | sí |
+| azure | azure-demo-running | westeurope | running | yes |
 | azure | azure-demo-stopped | westeurope | stopped | no |
 | azure | azure-demo-unknown | westeurope | unknown | no |
-| gcp | gcp-demo-running | europe-west1-b | running | sí |
+| gcp | gcp-demo-running | europe-west1-b | running | yes |
 | gcp | gcp-demo-stopped | europe-west1-b | stopped | no |
 
-## Lo que observar durante las demostraciones
+## What to observe during demonstrations
 
-- Leer el plan antes de `apply`: exclusivamente recursos de este caso; no IAM, APIs habilitadas, cuentas/proyectos, Kubernetes ni backends nuevos. Nombres `upc-2026-cloud-03-<lab_id>`; tags/labels `course=upc-2026`, `lab=cloud-03`, `lab_id` elegido por el docente. Algunos recursos GCP no admiten labels y se identifican por nombre/prefijo exacto.
-- CIDR HTTP explícito /24–/32, preferiblemente IP docente /32; jamás `0.0.0.0/0`. Solo TCP 8080. Azure deniega otra entrada, incluido SSH; GCP no crea regla SSH y usa una VPC nueva sin reglas por defecto. La clave Azure es pública, nunca la privada. No son aplicaciones públicas de producción ni tráfico cifrado.
-- Leer `terraform output -json`: es una envoltura de outputs con `value`, `type`, `sensitive`, no el esquema de inventario. Ejemplo: `json.load(...)["http_url"]["value"]`. No normalizarla como si fuera una respuesta de VM.
-- Las VMs usan Python del sistema, usuario `nobody` y systemd; descarga inicial de paquetes requiere salida a Internet. No usan SDK cloud ni acceden al almacenamiento. Una VM encendida puede no tener HTTP listo: comprobar `/health` separadamente, sin afirmar que estado implica salud.
-- Los dos directorios `azure/terraform` y `gcp/terraform` son **root modules independientes**, con sus propios providers, inputs, outputs y estados. Dibujar una posible frontera de módulo hijo (red o aplicación), sus entradas/salidas y límites por proveedor. No hay un módulo universal que oculte diferencias; no es obligatorio crear un módulo hijo artificial. Localizar el uso de `templatefile` y distinguirlo de `module`.
-- El estado remoto vive en **backends docentes existentes**, nunca en los buckets de la demo: Blob con lease para locking y GCS con locking de Terraform. La clave/prefijo incluye lab_id y proveedor. Revisar dos planes que compiten por **el mismo** estado solo mediante explicación/evidencia preparada; nunca quitar un lock activo ni simularlo en un estado compartido. Setup concreto: [guía docente](guia-docente.md#estado-remoto-y-autenticación-docente).
+- Read the plan before `apply`: only this use case's resources; no IAM, enabled APIs, accounts/projects, Kubernetes or new backends. Names use `upc-2026-cloud-03-<lab_id>`; tags/labels are `course=upc-2026`, `lab=cloud-03`, with an instructor-selected `lab_id`. Some GCP resources do not support labels and are identified by exact name/prefix.
+- Explicit HTTP CIDR /24–/32, preferably instructor IP /32; never `0.0.0.0/0`. TCP 8080 only. Azure denies other inbound traffic, including SSH; GCP creates no SSH rule and uses a new VPC without default rules. The Azure key is public, never private. These are not public production applications or encrypted traffic.
+- Read `terraform output -json`: an output envelope with `value`, `type`, `sensitive`, not the inventory schema. Example: `json.load(...)["http_url"]["value"]`. Do not normalize it as a VM response.
+- VMs use system Python, user `nobody` and systemd; initial package downloads require outbound Internet access. They use no cloud SDKs or storage access. A running VM may not have HTTP ready: check `/health` separately rather than claiming state implies health.
+- `azure/terraform` and `gcp/terraform` are **independent root modules**, each with providers, inputs, outputs and state. Draw a possible child-module boundary (network or application), its inputs/outputs and provider-specific limits. There is no universal module hiding differences; creating an artificial child module is not required. Locate `templatefile` and distinguish it from `module`.
+- Remote state lives in **existing instructor backends**, never demonstration buckets: Blob with lease locking and GCS with Terraform locking. The key/prefix includes lab_id and provider. Discuss two plans competing for **the same** state only through explanation/prepared evidence; never remove an active lock or simulate contention on shared state. Setup: [instructor guide](instructor-guide.md#remote-state-and-instructor-authentication).
 
-## Costes: dos actividades separadas
+## Costs: two separate activities
 
-**Azure, 18 min.** El docente abre *Cost Management + Billing → Cost analysis* al ámbito de la suscripción docente, elige mes actual y coste real, filtra grupo dedicado y luego servicio/región/tag `lab_id` cuando estén disponibles. Comparar VM, disco del SO, IP pública Standard, almacenamiento LRS, operaciones y tráfico saliente. Cambiar agrupación por servicio y fecha; el desglose puede tardar en incorporar nuevos cargos y tags. En *Budgets*, revisar un presupuesto docente existente (o explicar el formulario sin guardarlo): importe y periodo, ámbito/filtros, umbrales de gasto real y previsto, canal y destinatario verificado. No enviar alertas ni crear presupuestos como efecto del script. Relacionar el umbral con cuánto gasto podría acumularse antes de recibir una alerta. Parar/desasignar VM no elimina disco/IP/storage; revisar destroy y residuos.
+**Azure, 18 min.** The instructor opens *Cost Management + Billing → Cost analysis* at the instructor subscription scope, selects the current month and actual cost, filters the dedicated group and then service/region/tag `lab_id` where available. Compare VM, OS disk, Standard public IP, LRS storage, operations and outbound traffic. Change grouping by service and date; new charges and tags may take time to appear. In *Budgets*, review an existing instructor budget (or explain the form without saving): amount and period, scope/filters, actual and forecast spending thresholds, channel and verified recipient. Do not send alerts or create budgets as a script side effect. Relate the threshold to spending that could accumulate before the alert arrives; record which resources remain after stopping the VM and which require destroy.
 
-**GCP, 18 min.** Abrir cuenta de *Cloud Billing → Reports*, filtrar proyecto docente y periodo, agrupar por servicio/SKU; revisar Compute Engine, Persistent Disk, IPv4 externa, Cloud Storage y egress. Añadir filtros de labels cuando existan en el informe; no asumir que todo cargo o recurso tiene labels. En *Budgets & alerts*, revisar presupuesto docente existente o formulario sin guardarlo: proyecto, periodo, importe, umbrales real/previsto y destinatarios autorizados de la cuenta de facturación, verificando quién recibiría el correo y sin enviar notificaciones. Explicar crédito frente a coste bruto y que región/tipo/uso cambian el precio. Destruir VM no basta si quedan discos, IPs o buckets.
+**GCP, 18 min.** Open the *Cloud Billing → Reports* account view, filter instructor project and period, group by service/SKU; review Compute Engine, Persistent Disk, external IPv4, Cloud Storage and egress. Add label filters where available in the report; do not assume every charge or resource has labels. In *Budgets & alerts*, review an existing instructor budget or the unsaved form: project, period, amount, actual/forecast thresholds and authorized billing-account recipients, checking who would receive the email without sending notifications. Explain credits versus gross cost and that region/type/usage affect price. Destroying a VM is insufficient if disks, IPs or buckets remain.
 
-En ambos: **facturación con retraso; presupuesto/alerta NO detienen automáticamente el gasto**. No prometer free tier. Si el docente no tiene acceso a Billing o aún no aparecen cargos, usar las fichas sintéticas de la guía docente, indicando que no son una factura ni precios actuales. Academy es AWS: sus indicadores y límites no se extrapolan a Azure/GCP ni garantizan una parada universal.
+For both: **billing is delayed; budgets/alerts do NOT automatically stop spending**. Do not promise a free tier. If the instructor lacks Billing access or charges have not appeared, use the guide's synthetic worksheets, explicitly stating they are neither invoices nor current prices. Academy belongs to AWS: its indicators and limits do not transfer to Azure/GCP or guarantee a universal shutdown.
 
-## Capturas reales, claramente separadas
+## Clearly separated real captures
 
-Solo el docente, con autorización y desde este directorio, puede ejecutar `scripts/capture.py live`. Las instrucciones completas de autenticación, variables y backend están en la guía. La captura ejecuta **solo lectura** con proyecto o suscripción/grupo explícitos y selección exacta de propiedad; no modifica recursos ni usa fallback sintético:
+Only the instructor, with authorization and from this directory, may run `scripts/capture.py live`. Full authentication, variable and backend instructions are in the guide. Capture performs **read-only** queries with explicit project or subscription/group and exact ownership selection; it neither modifies resources nor uses synthetic fallback:
 
 ```sh
 python3 scripts/capture.py live --provider azure --lab-id "$LAB_ID" \
@@ -106,8 +106,8 @@ python3 scripts/normalize.py live --provider azure --input "$EVIDENCE_DIR/azure-
 python3 scripts/normalize.py live --provider gcp --input "$EVIDENCE_DIR/gcp-live.json" --running-only
 ```
 
-La envoltura capturada contiene `source=live`, `provider`, `scope`, `ownership`, `data`. `normalize.py live` procesa el fichero **no llama a la API**: el único paso que consulta es `capture.py live`. Ningún modo convierte errores de autenticación/API en `[]`; los errores son explícitos. Una captura de cero VMs no prueba que no queden otros recursos: para limpieza usar `scripts/cleanup.py live` y revisión de estado, explicados en la guía. Capturas/outputs pueden contener datos de cuenta: fuera de Git y sin compartir con servicios de IA.
+The captured envelope contains `source=live`, `provider`, `scope`, `ownership`, `data`. `normalize.py live` processes the file and **does not call the API**: only `capture.py live` queries it. Neither mode converts authentication/API errors to `[]`; errors are explicit. A capture of zero VMs does not prove that no other resources remain: use `scripts/cleanup.py live` and state review for cleanup, as explained in the guide. Captures/outputs may contain account data: keep them out of Git and do not share them with AI services.
 
-## Evidencias y límites
+## Evidence and limits
 
-Conservar únicamente entregables locales sin credenciales; no subir `.terraform`, `*.tfstate*`, planes, capturas reales, outputs, `.tfvars`, archivos backend ni claves. No hay despliegue real ni comprobación cloud afirmados en este material. El backend/imagen/SKU/cuota/precio dependen del entorno docente. Extensiones opcionales, fuera de los 180 min: debatir un módulo hijo o contrastar brevemente Pulumi/OpenTofu. No son requisitos ni sustituyen esta práctica.
+Keep only local credential-free deliverables; do not commit `.terraform`, `*.tfstate*`, plans, real captures, outputs, `.tfvars`, backend files or keys. These materials claim no real deployment or cloud verification. Backend/image/SKU/quota/price depend on the instructor environment. Optional extensions outside the 180 minutes: discuss a child module or briefly compare Pulumi/OpenTofu. They are not requirements or substitutes for this practice.

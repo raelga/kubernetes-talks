@@ -1,7 +1,7 @@
 {
   "source": "synthetic",
   "provider": "azure",
-  "description": "Inventado para docencia, NO capturado ni verificado en Azure. Subconjunto de az vm list --show-details.",
+  "description": "Invented for teaching, NOT captured or verified in Azure. Subset of az vm list --show-details.",
   "data": [
     {"name": "azure-demo-running", "location": "westeurope", "provisioningState": "Succeeded", "powerState": "VM running", "tags": {"course": "upc-2026", "lab": "cloud-03", "lab_id": "demo01"}},
     {"name": "azure-demo-stopped", "location": "westeurope", "provisioningState": "Succeeded", "powerState": "VM deallocated", "tags": {"course": "upc-2026", "lab": "cloud-03", "lab_id": "demo01"}},

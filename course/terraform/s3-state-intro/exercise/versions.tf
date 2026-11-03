@@ -1,8 +1,8 @@
 terraform {
   required_version = ">= 1.10, < 2.0"
 
-  # Al principio se usa el backend local implícito.
-  # El backend S3 se activa más adelante copiando backend.tf.example.
+  # Initially uses the implicit local backend.
+  # The S3 backend is enabled later by copying backend.tf.example.
   required_providers {
     aws = {
       source  = "hashicorp/aws"

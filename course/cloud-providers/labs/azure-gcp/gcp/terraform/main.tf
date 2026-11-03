@@ -48,7 +48,7 @@ resource "google_compute_instance" "lab" {
   lifecycle {
     precondition {
       condition     = startswith(var.zone, "${var.region}-")
-      error_message = "La zona debe pertenecer a la región indicada."
+      error_message = "The zone must belong to the specified region."
     }
   }
   boot_disk {
@@ -70,7 +70,7 @@ resource "google_compute_instance" "lab" {
     lab_id     = var.lab_id
     app_source = file("${path.module}/../../app.py")
   })
-  # Sin service_account: la VM no recibe identidad ni claves cloud.
+  # No service_account: the VM receives no cloud identity or keys.
   depends_on = [google_compute_firewall.http]
 }
 

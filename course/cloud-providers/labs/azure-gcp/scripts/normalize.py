@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Adapta respuestas sintéticas o capturadas al contrato provider/name/location/state."""
+"""Adapt synthetic or captured responses to the provider/name/location/state contract."""
 import argparse
 import json
 from pathlib import Path
@@ -23,27 +23,27 @@ AWS_STATES = {"running": "running", "stopped": "stopped", "pending": "pending",
 
 def required_text(value, field):
     if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"campo {field} ausente/no textual")
+        raise ValueError(f"field {field} missing/not text")
     return value
 
 
 def normalize(provider, data):
     if provider == "aws":
         if not isinstance(data, dict) or not isinstance(data.get("Reservations"), list):
-            raise ValueError("AWS debe contener Reservations de describe-instances")
+            raise ValueError("AWS must contain Reservations from describe-instances")
         rows = [instance for reservation in data["Reservations"] for instance in reservation["Instances"]]
     else:
         rows = data
     if not isinstance(rows, list):
-        raise ValueError("se esperaba una lista de VMs")
+        raise ValueError("expected a list of VMs")
     result = []
     for row in rows:
         if not isinstance(row, dict):
-            raise ValueError("cada VM debe ser un objeto")
+            raise ValueError("each VM must be an object")
         name = row.get("name")
         if provider == "azure":
             location = row.get("location")
-            # provisioningState=Succeeded NO indica encendido. Solo PowerState.
+            # provisioningState=Succeeded does NOT indicate running. Use only PowerState.
             power = row.get("powerState")
             if power is None:
                 statuses = (row.get("instanceView") or {}).get("statuses", [])
@@ -66,23 +66,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=["fixture", "live"])
     parser.add_argument("--provider", choices=["aws", "azure", "gcp"], required=True)
-    parser.add_argument("--input", type=Path, help="JSON envelope; requerido en live")
+    parser.add_argument("--input", type=Path, help="JSON envelope; required in live mode")
     parser.add_argument("--running-only", action="store_true")
     args = parser.parse_args()
     if args.mode == "live" and args.input is None:
-        parser.error("live requiere --input de capture.py, nunca sustituye una API fallida")
+        parser.error("live requires --input from capture.py; it never substitutes for a failed API")
     path = args.input or Path(__file__).resolve().parents[1] / "fixtures" / f"{args.provider}.json"
     try:
         envelope = json.loads(path.read_text(encoding="utf-8"))
         expected_source = "synthetic" if args.mode == "fixture" else "live"
         if envelope["source"] != expected_source or envelope["provider"] != args.provider:
-            raise ValueError("source/provider no coinciden con el modo solicitado")
+            raise ValueError("source/provider do not match the requested mode")
         result = normalize(args.provider, envelope["data"])
         if args.running_only:
             result = [row for row in result if row["state"] == "running"]
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
-        raise SystemExit(f"No se pudo normalizar: {exc}")
-    print(f"Origen: {expected_source}; proveedor: {args.provider}", file=sys.stderr)
+        raise SystemExit(f"Could not normalize: {exc}")
+    print(f"Source: {expected_source}; provider: {args.provider}", file=sys.stderr)
     print(json.dumps(result, indent=2, sort_keys=True))
 
 

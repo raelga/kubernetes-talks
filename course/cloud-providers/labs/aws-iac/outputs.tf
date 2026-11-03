@@ -55,6 +55,6 @@ output "public_ip" {
 }
 
 output "http_url" {
-  description = "HTTP sin TLS, solo para el laboratorio y desde client_cidr. Esperar al bootstrap."
+  description = "HTTP without TLS, only for the lab and from client_cidr. Wait for bootstrap."
   value       = "http://${aws_instance.web.public_ip}/"
 }

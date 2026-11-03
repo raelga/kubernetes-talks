@@ -1,32 +1,32 @@
-# 02 · AWS: infraestructura pequeña, verificable y eliminable
+# 02 · AWS: small, verifiable infrastructure that can be removed
 
-**5 de noviembre de 2026 · 18:00–21:00 · Rael Garcia · M2, con 60 min de M1 integrados.**
+**5 November 2026 · 18:00–21:00 · Rael Garcia · M2, with 60 integrated minutes of M1.**
 
-Laboratorio principal del alumnado en **el entorno AWS Academy asignado**, no en una cuenta personal. El objetivo es leer y cambiar IaC preparada, consultar recursos con Python y destruir únicamente lo creado por este ejercicio. **Este laboratorio completo de red/EC2/HTTP no se ha probado contra AWS.** En un ensayo S3 aislado con el mismo rol Academy se comprobó crear un bucket privado/cifrado con ownership enforced, refrescar con un plan sin cambios y destruirlo mediante `hashicorp/awscc` 1.108.0; esa prueba no acredita EC2, bootstrap, HTTP ni Billing. Las fixtures son **sintéticas**, no evidencias de una ejecución cloud.
+The main student hands-on lab runs in **the assigned AWS Academy environment**, not a personal account. The goal is to read and modify prepared IaC, query resources with Python and destroy only what this exercise created. **This complete network/EC2/HTTP lab has not been tested against AWS.** An isolated S3 trial using the same Academy role verified creation of a private/encrypted bucket with enforced ownership, refresh with a no-change plan and destruction using `hashicorp/awscc` 1.108.0; that trial does not validate EC2, bootstrap, HTTP or Billing. Fixtures are **synthetic**, not evidence of a cloud execution.
 
-## Caso y límites
+## Scenario and boundaries
 
 ```text
-Tu IPv4 /32 ── HTTP:80 ── Internet Gateway ── subred ── EC2 Ubuntu/Python
-                                                        sin SSH ni rol IAM
-Credenciales temporales del cliente ── API AWS ── S3 privado y cifrado
+Your IPv4 /32 ── HTTP:80 ── Internet Gateway ── subnet ── EC2 Ubuntu/Python
+                                                        no SSH or IAM role
+Temporary client credentials ── AWS API ── private, encrypted S3
 ```
 
-Terraform crea una VPC y subred propias, Internet Gateway, tabla/ruta/asociación, grupo de seguridad, EC2 con disco cifrado y un bucket S3 vacío con bloqueo público completo, AES256 y ACL deshabilitadas. El servidor usa la biblioteca estándar de Python y systemd, **sin Docker**. S3 no aloja la web y EC2 no accede a S3: son dos recursos distintos consultados desde tu cliente autorizado. No se crea ni modifica IAM, una key pair ni un instance profile.
+Terraform creates a dedicated VPC and subnet, Internet Gateway, route table/route/association, security group, EC2 with an encrypted disk and an empty S3 bucket with complete public access blocking, AES256 and disabled ACLs. The server uses the Python standard library and systemd, **without Docker**. S3 does not host the website and EC2 does not access S3: they are separate resources queried from your authorized client. No IAM resources, key pair or instance profile are created or modified.
 
-HTTP es texto claro: no introducir datos personales, tokens ni contraseñas. Solo se admite el puerto 80 desde tu IPv4 pública `/32`; no se abre SSH. La salida TCP 80/443 permite instalar Python desde Ubuntu y la salida DNS está declarada. No hay NAT Gateway, balanceador, Elastic IP ni Kubernetes. La IP pública efímera, el disco, la instancia y el tráfico pueden generar costes; detener EC2 **no** elimina sus discos ni equivale a limpiar el ejercicio.
+HTTP is plaintext: do not enter personal data, tokens or passwords. Only port 80 from your public IPv4 `/32` is allowed; SSH is not opened. Outbound TCP 80/443 allows Python installation from Ubuntu repositories, and outbound DNS is declared. There is no NAT Gateway, load balancer, Elastic IP or Kubernetes. The ephemeral public IP, disk, instance and traffic may incur costs; stopping EC2 does **not** remove its disks or clean up the exercise.
 
-Cada recurso lleva `course=upc-2026`, `lab=cloud-02`, `lab_id=<tu-identificador>`. Usa un `lab_id` único en la cuenta, también entre regiones. Por defecto el bucket incluye cuenta, identificador y un sufijo aleatorio de 12 hexadecimales, guardado en estado: los planes del mismo estado mantienen el nombre y un estado independiente genera otro sufijo. Solo el almacenamiento global recibe este sufijo; no sustituye el aislamiento de redes/VM por `lab_id`. `bucket_name = "nombre-global-disponible"` permite indicar un nombre exacto sin generar sufijo; `null` es el valor predeterminado. El nombre personalizado debe estar disponible globalmente: no adopta un bucket existente. Cambiar esta variable puede reemplazar el bucket; revisar el plan y usar siempre `bucket_name` de los outputs para inventario/limpieza. La coincidencia de etiquetas no autoriza a borrar recursos de otra persona.
+Every resource has `course=upc-2026`, `lab=cloud-02`, `lab_id=<your-identifier>`. Use a `lab_id` unique within the account, including across regions. By default the bucket name includes the account, identifier and a random 12-hexadecimal-character suffix stored in state: plans using the same state retain the name, while independent state generates another suffix. Only global storage receives this suffix; it does not replace network/VM isolation through `lab_id`. `bucket_name = "globally-available-name"` specifies an exact name without generating a suffix; `null` is the default. The custom name must be globally available: it does not adopt an existing bucket. Changing this variable may replace the bucket; review the plan and always use `bucket_name` from outputs for inventory/cleanup. Matching tags do not authorize deleting someone else's resources.
 
-## Antes de clase
+## Before class
 
-- Acceso Academy verificado desde sesión 1. El docente confirma el tipo real de laboratorio, región, AMI Ubuntu 24.04 x86_64, tipos EC2 y cuotas permitidos; **no hay una lista universal válida para todos los Academy**.
-- El docente verifica permisos para AWS Cloud Control API y las operaciones S3 subyacentes de `awscc_s3_bucket`, además de EC2/red y del inventario. El proveedor oficial `hashicorp/awscc` gestiona el bucket por esa API soportada. `hashicorp/aws` 5.100.0 intentó leer `s3:GetBucketObjectLockConfiguration` para `aws_s3_bucket` sin habilitar Object Lock y encontró un deny de SCP; el ensayo aislado de Cloud Control sí completó el ciclo con el mismo rol, sin cambios IAM ni de SCP. No se necesita relajar esa protección, pero el resultado no garantiza permisos en todos los Academy ni sustituye el preflight completo.
-- Terraform `>=1.6,<2`, Python `>=3.11`, AWS CLI v2, editor y conexión con salida a AWS y a repositorios Ubuntu. Python no necesita paquetes externos.
-- Copia de trabajo y estado locales exclusivamente tuyos. No ejecutes desde una carpeta de estado compartida ni desde el entorno de contenedores que se conservará para sesiones 4–5.
-- Credenciales temporales suministradas por el laboratorio: configura el mecanismo indicado en Academy, incluido `AWS_SESSION_TOKEN` cuando corresponda. No las pongas en HCL, user-data, Git, capturas, prompts de IA ni ficheros del ejercicio. No es necesario un perfil AWS nombrado. No uses `aws configure` para persistir secretos si el entorno indica variables temporales.
+- Academy access verified in session 1. The instructor confirms the actual lab type, region, Ubuntu 24.04 x86_64 AMI, allowed EC2 types and quotas; **there is no universal list valid for every Academy environment**.
+- The instructor verifies AWS Cloud Control API permissions and the underlying S3 operations for `awscc_s3_bucket`, as well as EC2/network and inventory permissions. The official `hashicorp/awscc` provider manages the bucket through this supported API. `hashicorp/aws` 5.100.0 attempted to read `s3:GetBucketObjectLockConfiguration` for `aws_s3_bucket` without enabling Object Lock and encountered an SCP deny; the isolated Cloud Control trial completed the lifecycle with the same role, without IAM or SCP changes. There is no need to weaken that protection, but the result does not guarantee permissions in every Academy environment or replace the complete preflight.
+- Terraform `>=1.6,<2`, Python `>=3.11`, AWS CLI v2, an editor and outbound connectivity to AWS and Ubuntu repositories. Python requires no external packages.
+- Your own local working copy and state. Do not run from a shared state directory or the container environment retained for sessions 4–5.
+- Temporary credentials supplied by the lab: configure the mechanism specified by Academy, including `AWS_SESSION_TOKEN` where applicable. Do not put credentials in HCL, user-data, Git, screenshots, AI prompts or exercise files. A named AWS profile is not required. Do not use `aws configure` to persist secrets when the environment specifies temporary variables.
 
-Todos los comandos siguientes parten de `course/cloud-providers/labs/aws-iac`, desde la raíz de este repositorio. Antes de usar `python3`, comprueba que apunta a Python 3.11 o posterior (en algunos macOS el Python del sistema es anterior).
+All commands below run from `course/cloud-providers/labs/aws-iac`, relative to the repository root. Before using `python3`, check that it resolves to Python 3.11 or newer (some macOS system Python versions are older).
 
 ```sh
 terraform version
@@ -35,23 +35,23 @@ aws --version
 aws sts get-caller-identity --region us-east-1
 ```
 
-La última llamada es **real y de solo lectura**. Sustituye la región por la autorizada. Contrasta la cuenta/identidad con el laboratorio. Ante credenciales caducadas o `AccessDenied`, detente y consulta las instrucciones reales: no pruebes cuentas ajenas ni relajes políticas. El modo offline de abajo es una actividad distinta, no un reemplazo silencioso del resultado cloud.
+The last call is **live and read-only**. Substitute the authorized region. Compare the account/identity with the assigned lab. If credentials have expired or you receive `AccessDenied`, stop and consult the actual instructions: do not try other people's accounts or relax policies. Offline mode below is a separate activity, not a silent replacement for the cloud result.
 
-## 0–65 min · Leer, planificar, desplegar
+## 0–65 min · Read, plan, deploy
 
-### 1. Leer y configurar
+### 1. Read and configure
 
-Identifica en `main.tf` y `versions.tf`: referencias entre recursos, `default_tags` para los recursos del proveedor AWS y etiquetas explícitas equivalentes en `awscc_s3_bucket.private`, AMI oficial de Canonical, ausencia de IAM, `/32`, disco cifrado y protecciones S3. El bucket y sus tres configuraciones de seguridad se declaran juntos mediante AWS Cloud Control API; EC2/red e identidad siguen usando `hashicorp/aws`. `user-data.sh.tftpl` instala `python3` con apt y ejecuta `app.py` con un usuario sin privilegios y capacidad limitada para abrir el puerto 80. La configuración pública se entrega como JSON codificado en base64, **no cifrado ni secreto**.
+Identify in `main.tf` and `versions.tf`: resource references, `default_tags` for AWS-provider resources and equivalent explicit tags on `awscc_s3_bucket.private`, the official Canonical AMI, absence of IAM, `/32`, encrypted disk and S3 protections. The bucket and its three security configurations are declared together through AWS Cloud Control API; EC2/network and identity still use `hashicorp/aws`. `user-data.sh.tftpl` installs `python3` with apt and runs `app.py` as an unprivileged user with a limited capability to bind port 80. Public configuration is delivered as base64-encoded JSON, **not encrypted or secret**.
 
-Copia `terraform.tfvars.example` como `terraform.tfvars` con el editor y cambia:
+Copy `terraform.tfvars.example` to `terraform.tfvars` using your editor and change:
 
-- `aws_region`: exactamente la región permitida.
-- `lab_id`: 3–20 caracteres en minúsculas, empezando por letra; p. ej. `ana-red-01`. No uses el ejemplo de otra persona.
-- `client_cidr`: tu IPv4 pública de salida seguida de `/32`, obtenida desde el método autorizado por el docente. `203.0.113.10/32` es **documental**, no una dirección para desplegar. Si usas VPN/NAT o cambias de red, esa dirección puede variar. Una IP privada de tu portátil no sirve.
-- `instance_type`: tipo pequeño permitido, de la lista validada en `variables.tf`. `t3.micro` es un valor de partida, **no una promesa de disponibilidad ni gratuidad**.
-- `ami_id`: déjalo sin definir para buscar Ubuntu 24.04 x86_64 de Canonical. Si Academy restringe la búsqueda, el docente suministra una AMI Ubuntu compatible, de la región y autorizada. Otra distribución no sirve para este bootstrap apt/systemd. No sustituyas una AMI para esquivar restricciones.
+- `aws_region`: exactly the allowed region.
+- `lab_id`: 3–20 lowercase characters, starting with a letter; e.g. `ana-red-01`. Do not use someone else's example.
+- `client_cidr`: your public outbound IPv4 followed by `/32`, obtained through the instructor-authorized method. `203.0.113.10/32` is a **documentation address**, not a deployment address. VPN/NAT or changing networks may change this address. Your laptop's private IP is not suitable.
+- `instance_type`: an allowed small type from the list validated in `variables.tf`. `t3.micro` is a starting value, **not a promise of availability or free usage**.
+- `ami_id`: leave unset to find Canonical Ubuntu 24.04 x86_64. If Academy restricts the lookup, the instructor provides an authorized, compatible Ubuntu AMI in the region. Another distribution will not work with this apt/systemd bootstrap. Do not substitute an AMI to bypass restrictions.
 
-### 2. Inicializar y revisar sin crear todavía
+### 2. Initialize and review without creating anything yet
 
 ```sh
 terraform init
@@ -61,11 +61,11 @@ terraform plan -out=apply.tfplan
 terraform show apply.tfplan
 ```
 
-`init` descarga `hashicorp/aws` `>=5.80,<6` para identidad/EC2/red, `hashicorp/awscc` `>=1.108,<2` para S3 y `hashicorp/random` `>=3.6,<4` para el sufijo, y actualiza `.terraform.lock.hcl`; conserva el lockfile de tu trabajo para reproducibilidad. Ambos proveedores AWS usan `var.aws_region` y las credenciales temporales autorizadas. Este ejemplo usa **estado local**, sin backend remoto. Confirma que es tu carpeta/estado y el workspace `default` previsto para este ejercicio. No selecciones otro workspace porque contenga recursos compartidos.
+`init` downloads `hashicorp/aws` `>=5.80,<6` for identity/EC2/network, `hashicorp/awscc` `>=1.108,<2` for S3 and `hashicorp/random` `>=3.6,<4` for the suffix, and updates `.terraform.lock.hcl`; keep your working lockfile for reproducibility. Both AWS providers use `var.aws_region` and the authorized temporary credentials. This example uses **local state**, without a remote backend. Confirm that this is your directory/state and the `default` workspace intended for this exercise. Do not select another workspace because it contains shared resources.
 
-`validate` comprueba configuración, **no permisos ni presupuesto**. `plan` sí consulta APIs; revisa región, etiquetas, tipo, origen `/32` y que no importa/destruye infraestructura ajena. Es normal ver la ruta de salida `0.0.0.0/0`: no es una entrada abierta del SG. Explica esa diferencia antes de continuar. El plan guardado contiene datos de configuración: no lo subas.
+`validate` checks configuration, **not permissions or budget**. `plan` does query APIs; review region, tags, type, `/32` source and that it does not import/destroy unrelated infrastructure. The outbound route `0.0.0.0/0` is expected: it is not an open SG ingress rule. Explain this difference before continuing. The saved plan contains configuration data: do not upload it.
 
-### 3. Aplicar únicamente el plan revisado
+### 3. Apply only the reviewed plan
 
 ```sh
 terraform apply apply.tfplan
@@ -73,88 +73,88 @@ terraform output
 terraform output -json > outputs.local.json
 ```
 
-`apply` crea recursos facturables y no debe ejecutarse en una cuenta sin autorización. Si cambia una variable, el plan anterior **no** recoge ese cambio: genera y revisa uno nuevo. Terraform termina antes de que apt/systemd estén necesariamente listos. Espera unos minutos y comprueba el HTTP durante el bloque Python; no añadas reintentos que oculten un servicio roto. No se necesita SSH.
+`apply` creates billable resources and must not run in an unauthorized account. If a variable changes, the previous plan does **not** include that change: generate and review a new one. Terraform finishes before apt/systemd are necessarily ready. Wait a few minutes and check HTTP during the Python block; do not add retries that conceal a broken service. SSH is not needed.
 
-El estado contiene identidades y metadatos necesarios para gestionar recursos: guárdalo hasta completar la limpieza. No publiques `terraform.tfvars`, `outputs.local.json`, `.terraform/`, estados, logs con credenciales ni planes. Los outputs `http_url`, `instance_id`, `bucket_name`, IDs de red, cuenta y disco permiten verificar exactamente este despliegue.
+State contains identities and metadata needed to manage resources: retain it until cleanup completes. Do not publish `terraform.tfvars`, `outputs.local.json`, `.terraform/`, state, logs containing credentials or plans. Outputs `http_url`, `instance_id`, `bucket_name`, network IDs, account and disk let you verify this exact deployment.
 
-## 65–125 min · M1: Python y revisión con IA (60 minutos)
+## 65–125 min · M1: Python and AI-assisted review (60 minutes)
 
-### A. Leer datos sin credenciales (15 min)
+### A. Read data without credentials (15 min)
 
 ```sh
 python3 inventory.py --fixture-dir fixtures --lab-id demo-aws --region us-east-1
 ```
 
-No usa AWS CLI ni hace peticiones HTTP. `fixtures/ec2.json` agrupa las respuestas EC2 por operación y `fixtures/s3.json` agrupa tagging, bloqueo, cifrado y ownership. Ambos declaran `synthetic=true`; `fixtures/outputs.json` conserva el formato `{nombre: {value, type, sensitive}}` de Terraform con IDs inventados y direcciones reservadas para documentación. La salida dice `offline-synthetic-NO-CLOUD-VERIFICATION`, **nunca éxito en una cuenta AWS**.
+This does not use AWS CLI or make HTTP requests. `fixtures/ec2.json` groups EC2 responses by operation and `fixtures/s3.json` groups tagging, blocking, encryption and ownership. Both declare `synthetic=true`; `fixtures/outputs.json` retains Terraform's `{name: {value, type, sensitive}}` format with invented IDs and documentation-reserved addresses. Output says `offline-synthetic-NO-CLOUD-VERIFICATION`, **never success in an AWS account**.
 
-Lee en `inventory.py` la llamada `subprocess.run` sin shell, la lista de filtros de etiquetas, el desempaquetado de `Reservations → Instances` y la diferencia entre error de API y ausencia de bucket. Identifica por qué `AccessDenied` no puede significar «no queda nada».
+Read the shell-free `subprocess.run` call, tag filter list, `Reservations → Instances` unpacking and the distinction between an API error and an absent bucket in `inventory.py`. Identify why `AccessDenied` cannot mean “nothing remains”.
 
-### B. Fallo de datos y revisión asistida (25 min)
+### B. Data failures and assisted review (25 min)
 
-Haz una copia local de la carpeta `fixtures` llamada `fixtures-local` y edita **esa copia**, no los originales:
+Make a local copy of `fixtures` named `fixtures-local` and edit **that copy**, not the originals:
 
-1. Cambia `instances.Reservations[0].Instances[0].State.Name` de `running` a `stopped` en `ec2.json`.
-2. Ejecuta el comando anterior con `--fixture-dir fixtures-local`; debe terminar distinto de cero. En un shell puedes consultar el código con `echo $?` inmediatamente después.
-3. Restaura `running`; vacía `instances.Reservations`. Repite: faltar la instancia también debe fallar.
-4. Restaura los datos y cambia `BlockPublicPolicy` a `false` en `s3.json`. Repite: seguridad incorrecta no puede ser éxito.
-5. Restaura todo; explica qué cambia si el JSON no es válido.
+1. Change `instances.Reservations[0].Instances[0].State.Name` from `running` to `stopped` in `ec2.json`.
+2. Run the previous command with `--fixture-dir fixtures-local`; it must exit nonzero. In a shell, inspect the code with `echo $?` immediately afterward.
+3. Restore `running`; empty `instances.Reservations`. Repeat: a missing instance must also fail.
+4. Restore the data and change `BlockPublicPolicy` to `false` in `s3.json`. Repeat: incorrect security cannot count as success.
+5. Restore everything; explain what changes if the JSON is invalid.
 
-Pide a la IA, **solo con fixtures sintéticas**, que explique o proponga una mejora pequeña de presentación (por ejemplo, mostrar el número de recursos por tipo). Revisa el diff: conserva filtros, modo offline explícito, fallo no cero, ausencia de mutaciones y validación del JSON/HTTP. Contrasta manualmente con las tres entradas defectuosas antes de aceptar su propuesta. No pidas credenciales ni un `except: pass`; no conviertas «API inaccesible» en lista vacía. Entrega el fragmento revisado y el razonamiento, no una conversación con secretos. La modificación es del alumno; el script base ya es funcional.
+Ask AI, **using synthetic fixtures only**, to explain or propose a small presentation improvement (for example, displaying resource counts by type). Review the diff: preserve filters, explicit offline mode, nonzero failure, absence of mutations and JSON/HTTP validation. Manually compare against the three defective inputs before accepting its proposal. Do not request credentials or `except: pass`; do not turn “API inaccessible” into an empty list. Submit the reviewed snippet and reasoning, not a conversation containing secrets. This is a student modification; the base script is already functional.
 
-### C. Contrastar con AWS real y la aplicación (20 min)
+### C. Compare with live AWS and the application (20 min)
 
-Con credenciales vigentes y los outputs de **tu** `apply`:
+With valid credentials and outputs from **your** `apply`:
 
 ```sh
-python3 inventory.py --live --outputs outputs.local.json --lab-id TU-LAB-ID --region TU-REGION
-python3 inventory.py --live --outputs outputs.local.json --lab-id TU-LAB-ID --region TU-REGION --probe-http
+python3 inventory.py --live --outputs outputs.local.json --lab-id YOUR-LAB-ID --region YOUR-REGION
+python3 inventory.py --live --outputs outputs.local.json --lab-id YOUR-LAB-ID --region YOUR-REGION --probe-http
 ```
 
-Sustituye los dos valores en mayúsculas, sin copiarlos literalmente. El script comprueba cuenta de STS, región, `lab_id`, filtros `course/lab/lab_id`, IDs exactos de instancia/red/disco, estado `running`, asociación/ruta, IMDSv2, SG `/32`, disco cifrado y protecciones S3. Una instancia detenida, recurso esperado ausente, recurso extra con tus etiquetas, API denegada o JSON malformado produce código no cero. `--probe-http` añade una petición explícita de 5 s a la IP de EC2 sin proxy ni redirecciones y compara proveedor, mensaje, lab_id y estado. Sin esa opción, el inventario **no demuestra que la aplicación responda**. No comprueba todos los recursos de la cuenta: revisa las etiquetas del ejercicio y el bucket exacto guardado en outputs.
+Replace both uppercase placeholders rather than copying them literally. The script checks the STS account, region, `lab_id`, `course/lab/lab_id` filters, exact instance/network/disk IDs, `running` state, association/route, IMDSv2, `/32` SG, encrypted disk and S3 protections. A stopped instance, missing expected resource, extra resource with your tags, denied API or malformed JSON produces a nonzero exit code. `--probe-http` adds an explicit 5-second request to the EC2 IP without proxies or redirects, comparing provider, message, lab_id and status. Without that option, inventory **does not prove the application responds**. It does not check every resource in the account: it examines exercise tags and the exact bucket saved in outputs.
 
-EC2 `running` no demuestra que apt haya terminado. Si falla HTTP, distingue bootstrap pendiente, IP pública del cliente cambiada, ruta/SG y servicio muerto. El docente puede consultar el registro de sistema de **esa EC2** en consola (Actions → Monitor and troubleshoot → Get system log); su disponibilidad depende del laboratorio. No abras SSH ni otorgues un rol para «arreglarlo». Si el bootstrap falla, corrige la causa permitida y revisa el reemplazo antes de aplicar.
+EC2 `running` does not prove apt has finished. If HTTP fails, distinguish pending bootstrap, changed client public IP, route/SG and a dead service. The instructor can inspect **that EC2 instance's** system log in the console (Actions → Monitor and troubleshoot → Get system log); availability depends on the lab. Do not open SSH or grant a role to “fix it”. If bootstrap fails, correct the permitted cause and review replacement before applying.
 
-También puedes leer y lanzar la misma app **localmente**, sin cloud ni credenciales:
+You can also read and run the same app **locally**, without cloud or credentials:
 
 ```sh
 python3 app.py --host 127.0.0.1 --port 8080
 ```
 
-Visita `http://127.0.0.1:8080/` y `/health`; termina con Ctrl-C. El modo local usa `lab_id=local`; no es evidencia de EC2.
+Visit `http://127.0.0.1:8080/` and `/health`; stop with Ctrl-C. Local mode uses `lab_id=local`; it is not EC2 evidence.
 
-## 125–145 min · Cambio, reconciliación y fallo de red controlado
+## 125–145 min · Change, reconciliation and controlled network failure
 
-1. Cambia `message` por otro texto público en `terraform.tfvars`.
-2. Ejecuta `terraform plan -out=change.tfplan` y `terraform show change.tfplan`. La configuración de arranque cambia y `user_data_replace_on_change=true` solicita **reemplazar EC2**: no es un despliegue en caliente. Predice cambio de IP e impacto en el disco.
-3. Aplica solo el plan revisado: `terraform apply change.tfplan`. Regenera `outputs.local.json` con `terraform output -json > outputs.local.json`, espera el bootstrap y repite el inventario real con HTTP. Verifica el nuevo mensaje. Un plan posterior sin cambios debe mostrar convergencia, no «reaplicar por si acaso».
-4. Inyecta un fallo **solo de tu SG**: cambia temporalmente `client_cidr` al documental `192.0.2.10/32`, revisa un plan `network.tfplan` y aplícalo. Guarda de nuevo los outputs. El inventario sin HTTP puede ser correcto respecto a la nueva configuración; `--probe-http` desde tu cliente debe fallar. Es un fallo de conectividad intencionado, no un servicio arreglado.
-5. Restaura tu `/32` real, genera/revisa/aplica un plan nuevo y vuelve a guardar los outputs. Repite la sonda. Nunca uses `0.0.0.0/0` para resolver el fallo.
+1. Change `message` to another public text in `terraform.tfvars`.
+2. Run `terraform plan -out=change.tfplan` and `terraform show change.tfplan`. Bootstrap configuration changes and `user_data_replace_on_change=true` requests **EC2 replacement**: this is not a hot deployment. Predict the IP change and disk impact.
+3. Apply only the reviewed plan: `terraform apply change.tfplan`. Regenerate `outputs.local.json` with `terraform output -json > outputs.local.json`, wait for bootstrap and repeat live inventory with HTTP. Verify the new message. A subsequent no-change plan should demonstrate convergence, not “reapply just in case”.
+4. Inject a failure **only in your SG**: temporarily change `client_cidr` to documentation address `192.0.2.10/32`, review a `network.tfplan` plan and apply it. Save outputs again. Inventory without HTTP may be correct against the new configuration; `--probe-http` from your client must fail. This is an intentional connectivity failure, not a repaired service.
+5. Restore your actual `/32`, generate/review/apply a new plan and save outputs again. Repeat the probe. Never use `0.0.0.0/0` to solve the failure.
 
-Si quedan pocos minutos, el docente prioriza el cambio de mensaje y realiza el fallo `/32` como demostración; la lectura de su causa y recuperación forma parte del cierre, no una exigencia de ampliar el caso.
+If time is short, the instructor prioritizes the message change and demonstrates the `/32` failure; interpreting its cause and recovery is part of the wrap-up, not a requirement to expand the scenario.
 
-## 145–165 min · AWS Billing, Cost Explorer y Budgets (20 min)
+## 145–165 min · AWS Billing, Cost Explorer and Budgets (20 min)
 
-No esperes que una sesión recién creada aparezca al instante en facturación. Sigue la consola habilitada por el docente:
+Do not expect a newly created session to appear instantly in billing. Follow the instructor-enabled console:
 
-1. **Billing and Cost Management → Bills**: selecciona mes y cuenta; localiza EC2, EC2-Other/EBS, S3, dirección IPv4 pública y transferencia según la clasificación disponible. Distingue uso horario de instancia, GiB-mes de disco, horas de IPv4, peticiones/almacenamiento S3 y tráfico. El bucket vacío no implica coste total cero del caso.
-2. **Cost Explorer → Cost and usage**: intervalo de esta semana/mes, granularidad diaria, coste no amortizado si está disponible; agrupa por servicio y filtra región. Añade etiquetas `course`, `lab`, `lab_id` cuando estén habilitadas como etiquetas de asignación de costes. Su activación y aparición pueden requerir permisos/tiempo: no son retroactivas universalmente ni un inventario de recursos en tiempo real.
-3. **Budgets → Create budget → Cost budget**: el docente muestra la configuración de un presupuesto mensual de ejemplo (p. ej. 5 USD, importe didáctico, **no garantía**), alcance cuenta/etiquetas admitidas y alertas de gasto real al 50/80/100 % y previsto al 100 %. Revisa el correo destinatario con el propietario y, si se crea una suscripción que requiere confirmación, su confirmación. No introduzcas direcciones ajenas. El alumnado no crea presupuestos ni envía avisos sin permiso; si el rol lo impide, sigue la demostración docente. No se configura ninguna acción automática de presupuesto.
-4. Relaciona un filtro de coste con el inventario, explica qué seguiría cobrando una EC2 detenida y localiza el `destroy` posterior. Una alerta **no detiene automáticamente el gasto**. Tampoco el indicador de Academy garantiza una política universal de parada: aplica las reglas reales del laboratorio.
+1. **Billing and Cost Management → Bills**: select month and account; locate EC2, EC2-Other/EBS, S3, public IPv4 and transfer according to the available classification. Distinguish instance hours, disk GiB-months, IPv4 hours, S3 requests/storage and traffic. An empty bucket does not imply zero total scenario cost.
+2. **Cost Explorer → Cost and usage**: this week/month, daily granularity, unblended cost if available; group by service and filter by region. Add `course`, `lab`, `lab_id` tags when enabled as cost allocation tags. Activation and visibility may require permissions/time: they are not universally retroactive or a real-time resource inventory.
+3. **Budgets → Create budget → Cost budget**: the instructor demonstrates an example monthly budget (e.g. USD 5, a teaching amount, **not a guarantee**), supported account/tag scope and actual-spend alerts at 50/80/100% and forecast alerts at 100%. Review the recipient email with its owner and, if a subscription requiring confirmation is created, its confirmation. Do not enter other people's addresses. Students do not create budgets or send notifications without permission; if the role prevents this, follow the instructor demonstration. No automatic budget action is configured.
+4. Relate a cost filter to inventory, explain what a stopped EC2 would keep charging for and locate the subsequent `destroy`. An alert **does not automatically stop spending**. The Academy indicator does not guarantee a universal stop policy either: apply the actual lab rules.
 
-Si Academy deniega Billing/Cost Explorer/Budgets, usa la pantalla autorizada del docente o esta **muestra completamente sintética** (no tarifa vigente ni factura):
+If Academy denies Billing/Cost Explorer/Budgets, use the instructor's authorized screen or this **entirely synthetic sample** (not a current rate or invoice):
 
-| Día ficticio | Servicio/concepto | Región | Etiquetas | Coste ficticio USD |
+| Fictional day | Service/item | Region | Tags | Fictional cost USD |
 |---|---|---|---|---:|
-| 05/11 | EC2, tiempo de cómputo | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0,04 |
-| 05/11 | EBS, almacenamiento | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0,01 |
-| 05/11 | IPv4 pública, horas | us-east-1 | sin asignar en esta muestra | 0,01 |
-| 05/11 | S3, peticiones | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0,00 |
+| 05/11 | EC2, compute time | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0.04 |
+| 05/11 | EBS, storage | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0.01 |
+| 05/11 | Public IPv4, hours | us-east-1 | unassigned in this sample | 0.01 |
+| 05/11 | S3, requests | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0.00 |
 
-Agrupa los 0,06 USD por concepto, prueba el filtro de región y explica por qué el filtro por etiquetas podría ocultar la fila sin asignar. Para estimar costes reales se consultan precios de región/tipo y duración previstos; esta tabla no permite afirmar gratuidad ni medir el gasto propio.
+Group USD 0.06 by item, try the region filter and explain why filtering by tags could hide the unassigned row. Real cost estimates require checking prices for the intended region/type and duration; this table cannot establish free usage or measure your spending.
 
-## 165–180 min · Destruir y comprobar lo que queda
+## 165–180 min · Destroy and check what remains
 
-No pulses **Reset**, no cierres un laboratorio compartido ni borres el entorno preparado para contenedores. Destruye solo el estado local de este ejercicio, desde la misma carpeta y workspace:
+Do not press **Reset**, close a shared lab or delete the environment prepared for containers. Destroy only this exercise's local state, from the same directory and workspace:
 
 ```sh
 terraform workspace show
@@ -163,20 +163,20 @@ terraform output -json > outputs.before-destroy.local.json
 terraform plan -destroy -out=destroy.tfplan
 terraform show destroy.tfplan
 terraform apply destroy.tfplan
-python3 inventory.py --live --outputs outputs.before-destroy.local.json --lab-id TU-LAB-ID --region TU-REGION --expect absent
+python3 inventory.py --live --outputs outputs.before-destroy.local.json --lab-id YOUR-LAB-ID --region YOUR-REGION --expect absent
 terraform state list
 ```
 
-El plan de destrucción debe contener **solo tus recursos cloud-02**. El fichero de outputs se guarda **antes**, porque después desaparecen los outputs del estado. No uses el de antes de un reemplazo de EC2: contiene IDs e IP antiguos. Conserva estado y outputs hasta que el borrado y su comprobación terminen correctamente.
+The destruction plan must contain **only your cloud-02 resources**. Save the outputs file **beforehand**, because outputs disappear from state afterward. Do not use outputs from before an EC2 replacement: they contain old IDs and IPs. Retain state and outputs until deletion and verification finish successfully.
 
-La comprobación consulta las siete familias EC2 por las tres etiquetas y el bucket exacto. Tolera que EC2 siga mostrando instancias `terminated`, no `stopped` ni `shutting-down`; exige ausencia de disco, VPC, subred, gateway, tabla y SG propios. `NoSuchBucket` significa ausencia S3; `AccessDenied`, token caducado o error de red **son fallo, no limpieza**. Si la consistencia de API demora el resultado, espera y vuelve a consultar explícitamente; no alteres el script para devolver éxito. El estado debe quedar sin recursos; una lista vacía local por sí sola no acredita limpieza cloud.
+Verification queries the seven EC2 resource families using all three tags and the exact bucket. It tolerates EC2 still showing `terminated` instances, not `stopped` or `shutting-down`; it requires absence of your disk, VPC, subnet, gateway, table and SG. `NoSuchBucket` means S3 absence; `AccessDenied`, an expired token or a network error **mean failure, not cleanup**. If API consistency delays the result, wait and explicitly query again; do not change the script to return success. State must contain no resources; a locally empty list alone does not establish cloud cleanup.
 
-El bucket nace vacío. [`awscc_s3_bucket`](https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/s3_bucket) solo puede eliminar un bucket vacío: no tiene un atributo `force_destroy` ni vacía objetos automáticamente. Si alguien añadió objetos, la eliminación falla; el docente debe revisar exclusivamente ese bucket y acordar la retirada explícita de esos objetos. No hay borrado masivo automático. No borres estado para ocultar recursos ni ejecutes `destroy` en otro directorio.
+The bucket starts empty. [`awscc_s3_bucket`](https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/s3_bucket) can only delete an empty bucket: it has no `force_destroy` attribute and does not automatically empty objects. If someone added objects, deletion fails; the instructor must review only that exact bucket and agree on explicit removal of those objects. There is no automatic bulk deletion. Do not delete state to hide resources or run `destroy` in another directory.
 
-### Evidencias mínimas
+### Minimum evidence
 
-- Breve mapa de red/cómputo/almacenamiento e identidad; explicación de `/32`, S3 privado y ausencia de IAM en EC2.
-- Extracto saneado del plan inicial y del reemplazo por cambio de mensaje; justificación de la reconciliación.
-- Resultado offline marcado sintético, fallo inyectado y revisión de la propuesta de IA; resultado real separado, sin secretos.
-- Filtros de costes y diseño de alerta con sus limitaciones, distinguiendo muestra de consulta real.
-- Destrucción y consulta posterior con expectativa `absent`; incidencias de permisos o recursos pendientes documentadas honestamente. No publiques planes/estado/credenciales para aportar evidencias.
+- A short network/compute/storage and identity map; explanation of `/32`, private S3 and the absence of IAM on EC2.
+- Sanitized excerpts from the initial plan and message-change replacement; justification of reconciliation.
+- Offline result marked synthetic, injected failure and review of the AI proposal; separately identified live result, without secrets.
+- Cost filters and alert design with limitations, distinguishing a sample from a live query.
+- Destruction and subsequent query expecting `absent`; honestly documented permission incidents or pending resources. Do not publish plans/state/credentials as evidence.

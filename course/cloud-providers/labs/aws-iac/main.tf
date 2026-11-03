@@ -57,39 +57,39 @@ resource "aws_route_table_association" "lab" {
 
 resource "aws_security_group" "http" {
   name        = local.name
-  description = "HTTP solo desde el cliente; sin SSH"
+  description = "HTTP from the client only; no SSH"
   vpc_id      = aws_vpc.lab.id
 
   ingress {
-    description = "Cliente del laboratorio"
+    description = "Lab client"
     protocol    = "tcp"
     from_port   = 80
     to_port     = 80
     cidr_blocks = [var.client_cidr]
   }
   egress {
-    description = "Salida DNS para repositorios Ubuntu"
+    description = "Outbound DNS for Ubuntu repositories"
     protocol    = "udp"
     from_port   = 53
     to_port     = 53
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
-    description = "DNS TCP"
+    description = "TCP DNS"
     protocol    = "tcp"
     from_port   = 53
     to_port     = 53
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
-    description = "Repositorios Ubuntu HTTP"
+    description = "Ubuntu HTTP repositories"
     protocol    = "tcp"
     from_port   = 80
     to_port     = 80
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
-    description = "Repositorios Ubuntu HTTPS"
+    description = "Ubuntu HTTPS repositories"
     protocol    = "tcp"
     from_port   = 443
     to_port     = 443

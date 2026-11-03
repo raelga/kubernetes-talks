@@ -1,4 +1,4 @@
-# Copiar a backend.tf SOLO al llegar a la migración del estado del ejercicio.
+# Copy to backend.tf ONLY when reaching the exercise state migration.
 terraform {
   backend "s3" {}
 }

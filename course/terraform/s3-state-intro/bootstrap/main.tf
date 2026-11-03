@@ -37,7 +37,7 @@ resource "awscc_s3_bucket" "state" {
     prevent_destroy = true
     precondition {
       condition     = data.aws_caller_identity.current.account_id == var.account_id
-      error_message = "La cuenta AWS activa no coincide con account_id."
+      error_message = "The active AWS account does not match account_id."
     }
   }
 }

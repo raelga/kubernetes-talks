@@ -1,7 +1,7 @@
 {
   "source": "synthetic",
   "provider": "gcp",
-  "description": "Inventado para docencia, NO capturado ni verificado en GCP. Subconjunto de gcloud compute instances list --format=json.",
+  "description": "Invented for teaching, NOT captured or verified in GCP. Subset of gcloud compute instances list --format=json.",
   "data": [
     {"name": "gcp-demo-running", "zone": "https://www.googleapis.com/compute/v1/projects/synthetic-demo/zones/europe-west1-b", "status": "RUNNING", "labels": {"course": "upc-2026", "lab": "cloud-03", "lab_id": "demo01"}},
     {"name": "gcp-demo-stopped", "zone": "https://www.googleapis.com/compute/v1/projects/synthetic-demo/zones/europe-west1-b", "status": "TERMINATED", "labels": {"course": "upc-2026", "lab": "cloud-03", "lab_id": "demo01"}}

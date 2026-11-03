@@ -1,5 +1,5 @@
 output "state_bucket_name" {
-  description = "Bucket exclusivo para el estado del ejercicio; no para el estado de bootstrap."
+  description = "Dedicated bucket for exercise state; not for bootstrap state."
   value       = awscc_s3_bucket.state.bucket_name
 }
 

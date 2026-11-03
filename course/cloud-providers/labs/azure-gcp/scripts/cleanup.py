@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Comprueba residuos por nombres de propiedad exacta; no borra ni modifica nada."""
+"""Check residual resources by exact ownership names; delete or modify nothing."""
 import argparse
 import json
 import re
@@ -11,7 +11,7 @@ def query(command):
     completed = subprocess.run(command, check=True, text=True, capture_output=True)
     rows = json.loads(completed.stdout)
     if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
-        raise ValueError("se esperaba una lista JSON de objetos")
+        raise ValueError("expected a JSON list of objects")
     return rows
 
 
@@ -22,16 +22,16 @@ def main():
     parser.add_argument("--lab-id", required=True)
     parser.add_argument("--subscription")
     parser.add_argument("--project")
-    parser.add_argument("--bucket", help="Nombre exacto de bucket_name en los outputs GCP conservados")
+    parser.add_argument("--bucket", help="Exact bucket_name from preserved GCP outputs")
     args = parser.parse_args()
     if not re.fullmatch(r"[a-z][a-z0-9-]{1,10}[a-z0-9]", args.lab_id):
-        parser.error("lab-id debe tener 3–12 caracteres minúsculos/dígitos/guiones")
+        parser.error("lab-id must have 3–12 lowercase letters/digits/hyphens")
     prefix = f"upc-2026-cloud-03-{args.lab_id}"
     found = {}
     try:
         if args.provider == "azure":
             if not args.subscription or not re.fullmatch(r"[0-9a-fA-F-]{36}", args.subscription):
-                parser.error("Azure requiere --subscription UUID")
+                parser.error("Azure requires --subscription UUID")
             groups = query(["az", "group", "list", "--subscription", args.subscription, "--output", "json"])
             found["resource_groups"] = [row["name"] for row in groups if row.get("name") == prefix]
             if found["resource_groups"]:
@@ -40,9 +40,9 @@ def main():
                 found["resources"] = [row["id"] for row in resources]
         else:
             if not args.project or not re.fullmatch(r"[a-z][a-z0-9-]{4,28}[a-z0-9]", args.project):
-                parser.error("GCP requiere --project ID")
+                parser.error("GCP requires --project ID")
             if not args.bucket or not re.fullmatch(r"[a-z0-9][a-z0-9_-]{1,61}[a-z0-9]", args.bucket):
-                parser.error("GCP requiere --bucket con el nombre exacto válido de los outputs")
+                parser.error("GCP requires --bucket with the exact valid name from outputs")
             for kind in ("instances", "disks", "addresses", "networks", "firewalls"):
                 rows = query(["gcloud", "compute", kind, "list", "--project", args.project, "--format=json"])
                 found[kind] = [row["name"] for row in rows if row.get("name") == prefix or row.get("name", "").startswith(prefix + "-")]
@@ -52,13 +52,13 @@ def main():
             found["buckets"] = [row["name"] for row in rows if row.get("name", "").removeprefix("gs://").rstrip("/") == args.bucket]
     except subprocess.CalledProcessError as exc:
         print(exc.stderr, file=sys.stderr)
-        raise SystemExit("VERIFICACIÓN INCOMPLETA: falló una API/CLI; no equivale a cero recursos")
+        raise SystemExit("VERIFICATION INCOMPLETE: an API/CLI failed; this does not mean zero resources")
     except (OSError, ValueError, KeyError, TypeError) as exc:
-        raise SystemExit(f"VERIFICACIÓN INCOMPLETA: {exc}")
+        raise SystemExit(f"VERIFICATION INCOMPLETE: {exc}")
     print(json.dumps(found, indent=2, sort_keys=True))
     if any(found.values()):
-        raise SystemExit("Quedan recursos o el grupo dedicado: revisar el estado exacto; este script no elimina nada")
-    print("Sin residuos del alcance consultado. No certifica facturas cerradas ni datos retenidos por el proveedor.")
+        raise SystemExit("Resources or the dedicated group remain: review the exact state; this script deletes nothing")
+    print("No residual resources in the queried scope. This does not certify closed bills or provider-retained data.")
 
 
 if __name__ == "__main__":

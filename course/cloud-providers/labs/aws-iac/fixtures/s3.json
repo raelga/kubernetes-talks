@@ -1,6 +1,6 @@
 {
   "synthetic": true,
-  "notice": "DATOS SINTÉTICOS: ejemplo de respuestas S3, sin llamadas ni verificación cloud.",
+  "notice": "SYNTHETIC DATA: example S3 responses, without cloud calls or verification.",
   "bucket_name": "upc-2026-cloud-02-demo-aws-000000000000",
   "exists": true,
   "tagging": {"TagSet": [

@@ -1,8 +1,8 @@
-# Copiar a terraform.tfvars (ignorado); usar los mismos valores que en bootstrap.
+# Copy to terraform.tfvars (ignored); use the same values as bootstrap.
 account_id = "123456789012"
 region     = "us-east-1"
-lab_id     = "alumna01"
+lab_id     = "learner01"
 bucket_name = null
-# Opcional: nombre exacto propio, distinto al backend y globalmente disponible.
-# bucket_name = "mi-ejercicio-exacto-disponible"
+# Optional: your own globally available exact name, different from the backend.
+# bucket_name = "my-available-exact-exercise"
 demo_tag   = "initial"
