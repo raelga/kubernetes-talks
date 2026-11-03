@@ -7,7 +7,7 @@ Reusable cloud infrastructure and analysis labs. The guides preserve the teachin
 | [AWS and IaC](labs/aws-iac/README.md) | Networking, VM, private storage, Terraform, Python inventory, diagnosis and cleanup | Students use the assigned AWS Academy lab, with permissions checked by the instructor |
 | [Azure and GCP](labs/azure-gcp/README.md) | Transfer the same pattern, interpret differences and adapt queries | Instructor cloud demonstrations; student Python exercises use explicitly synthetic data without requiring Azure/GCP accounts |
 
-Start with the standalone **[Terraform bucket and remote-state lab](../terraform/s3-state-intro/README.md)** before deploying networks and VMs. Two small buckets introduce the change workflow and migration to a dedicated state backend. This exercise does not automatically migrate the state of the cloud labs.
+Start with the standalone **[Terraform bucket and remote-state lab](labs/terraform-intro/README.md)** before deploying networks and VMs. Two small buckets introduce the change workflow and migration to a dedicated state backend. This exercise does not automatically migrate the state of the cloud labs.
 
 ## Introductory references
 
