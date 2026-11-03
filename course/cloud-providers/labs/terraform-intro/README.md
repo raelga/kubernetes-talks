@@ -22,6 +22,23 @@ The state bucket has `prevent_destroy = true`; the exercise bucket does not, all
 
 ## Requirements and AWS Academy preflight
 
+### Bootstrap the tools and repository
+
+In the assigned Academy terminal, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/main/course/cloud-providers/labs/terraform-intro/bootstrap.sh | bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+The script installs **Terraform 1.13.3** into `$HOME/.local/bin`, verifies the release archive's SHA-256 checksum, and clones the repository's `main` branch into `$HOME/kubernetes-talks`. It supports Linux/macOS on x86_64 and arm64 and requires `curl`, Git, `unzip`, standard installation utilities and `sha256sum` or `shasum` already available. It needs no `sudo` and does not install system packages.
+
+An existing Git checkout is preserved without pulling, resetting or moving it; update it yourself if needed. A non-Git path at the destination is rejected rather than overwritten. The script **does not change directory**, configure AWS credentials, run `terraform init` or create cloud resources. The separate `export` is necessary because a script piped into Bash cannot update the calling shell's `PATH`.
+
+When you are ready to start the lab—not as part of bootstrap—open `$HOME/kubernetes-talks/course/cloud-providers/labs/terraform-intro` and continue with the preflight below.
+
+### Tool versions and authorized access
+
 - Terraform **>= 1.10 and < 2.0**; providers `hashicorp/awscc` **>= 1.108 and < 2.0**, `hashicorp/aws` **>= 5.80 and < 6.0**, and `hashicorp/random` **>= 3.6 and < 4.0**. AWSCC manages buckets through AWS Cloud Control; AWS handles identity and S3 objects; Random preserves suffixes. Configure AWS CLI v2 with temporary lab credentials using the authorized mechanism, never in HCL files or Git.
 - Open a terminal in `course/cloud-providers/labs/terraform-intro` in `raelga/kubernetes-talks`. All commands below start there; `-chdir` always identifies the affected root.
 - Confirm with the instructor the lab type, permitted region, credential expiry/renewal, persistence between sessions, time/budget limits and cleanup procedure. Do not assume all Academy labs allow the same operations.
