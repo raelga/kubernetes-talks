@@ -48,10 +48,10 @@ Illustrative excerpt, not captured AWS output. Your random suffix will differ; o
 ❯ terraform state show aws_s3_bucket.state
 # aws_s3_bucket.state:
 resource "aws_s3_bucket" "state" {
-    arn           = "arn:aws:s3:::upc-k8s-terraform-state-a1b2c3d4"
-    bucket        = "upc-k8s-terraform-state-a1b2c3d4"
+    arn           = "arn:aws:s3:::upc-k8s-terraform-state-a1b2"
+    bucket        = "upc-k8s-terraform-state-a1b2"
     force_destroy = false
-    id            = "upc-k8s-terraform-state-a1b2c3d4"
+    id            = "upc-k8s-terraform-state-a1b2"
 }
 ```
 
