@@ -25,21 +25,23 @@ git -C "$repo_dir" checkout --detach "$repository_ref"
 
 # Trust the AWS RDS certificates for encrypted database connections.
 install -d -m 0750 -o root -g apache "$config_dir"
-curl -fsSL https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
+curl -fsSL --retry 3 --retry-max-time 180 --connect-timeout 10 --max-time 120 \
+  https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
   -o "$config_dir/global-bundle.pem"
 chmod 0644 "$config_dir/global-bundle.pem"
 cp "$config_dir/global-bundle.pem" /etc/pki/ca-trust/source/anchors/rds-global-bundle.pem
 update-ca-trust
 
 # Install the pinned WP-CLI release and verify its checksum.
-curl -fsSL https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar \
+curl -fsSL --retry 3 --retry-max-time 180 --connect-timeout 10 --max-time 120 \
+  https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar \
   -o /usr/local/bin/wp
 echo 'ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c  /usr/local/bin/wp' \
   | sha256sum --check
 chmod 0755 /usr/local/bin/wp
 
 # Use GNU tar to preserve long filenames in the official WordPress archive.
-curl --fail --silent --show-error --location \
+curl -fsSL --retry 3 --retry-max-time 180 --connect-timeout 10 --max-time 120 \
   "https://wordpress.org/wordpress-$wordpress_version.tar.gz" \
   --output "$lab_dir/wordpress.tar.gz"
 tar -xzf "$lab_dir/wordpress.tar.gz" --strip-components=1 -C "$app_dir/public"

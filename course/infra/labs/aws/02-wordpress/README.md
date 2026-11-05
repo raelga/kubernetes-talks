@@ -6,6 +6,8 @@ EC2 randomly selects one of the two private subnets. The choice persists across 
 
 Terraform renders `infra/install.sh` directly as user-data with `templatefile`; cloud-init runs it on first boot.
 
+Downloads retry transient network/server failures up to three times, with bounded connection and transfer timeouts. Checksum failures still stop installation.
+
 Use Terraform `>=1.10,<2`, AWS CLI v2, configured AWS Academy credentials in `us-east-1`, and the completed [state bucket lab](../00-terraform-state/README.md).
 
 The lab reuses Academy's `LabInstanceProfile`/`LabRole`; it creates no IAM roles or policies. EC2 needs SSM and Secrets Manager access.
