@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: hello-5-
+  generateName: hello-manual-
   labels:
     app: hello
 spec:
