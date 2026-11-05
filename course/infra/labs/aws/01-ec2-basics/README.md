@@ -2,6 +2,10 @@
 
 Deploy one EC2 in Academy's existing default VPC. User-data installs Apache and checks out the application automatically. No ALB, NAT Gateway or new IAM role.
 
+Terraform renders [`infra/install.sh`](infra/install.sh) directly as user-data with `templatefile`; cloud-init executes it on first boot.
+
+Terraform randomly selects a default subnet, choosing its Availability Zone. The selection stays in state across applies.
+
 You need Terraform `>=1.10,<2`, AWS CLI v2, curl, an SSH client, and the completed [state bucket lab](../00-terraform-state/README.md). Use your configured Academy credentials; the region defaults to `us-east-1`. Academy must provide a default VPC/public subnet and the `vockey` SSH key pair.
 
 ## 1. Deploy

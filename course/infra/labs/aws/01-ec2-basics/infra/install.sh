@@ -4,7 +4,7 @@ set -euo pipefail
 # Send installation output to the log file and EC2 system console.
 exec > >(tee -a /var/log/infra-lab-bootstrap.log /dev/console) 2>&1
 
-repository_ref="$1"
+repository_ref='${repository_ref}'
 lab_dir=/opt/infra-lab
 repo_dir="$lab_dir/repository"
 app_dir="$repo_dir/course/infra/labs/aws/01-ec2-basics/app"

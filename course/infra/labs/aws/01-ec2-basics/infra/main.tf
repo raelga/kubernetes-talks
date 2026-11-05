@@ -43,6 +43,11 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
+resource "random_shuffle" "subnet" {
+  input        = sort(data.aws_subnets.default.ids)
+  result_count = 1
+}
+
 locals {
   name = "infra-lab-ec2-${var.lab_id}-${random_id.suffix.hex}"
 }
@@ -89,19 +94,15 @@ resource "aws_vpc_security_group_egress_rule" "app" {
 resource "aws_instance" "app" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
-  subnet_id                   = sort(data.aws_subnets.default.ids)[0]
+  subnet_id                   = random_shuffle.subnet.result[0]
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.app.id]
   key_name                    = var.key_name
   user_data_replace_on_change = true
 
-  user_data = <<-USER_DATA
-    #!/bin/bash
-    set -euo pipefail
-    mkdir -p /opt/infra-lab
-    printf '%s' '${filebase64("${path.module}/install.sh")}' | base64 --decode > /opt/infra-lab/install.sh
-    bash /opt/infra-lab/install.sh ${jsonencode(var.repository_ref)}
-  USER_DATA
+  user_data = templatefile("${path.module}/install.sh", {
+    repository_ref = var.repository_ref
+  })
 
   metadata_options {
     http_endpoint               = "enabled"
