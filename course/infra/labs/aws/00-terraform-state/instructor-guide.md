@@ -2,18 +2,22 @@
 
 ## Demo flow
 
-Follow the [README](README.md): create and inspect the bucket locally, wait 15 minutes after enabling versioning, copy state and provider lockfile, then migrate. Compare outputs, the no-change plan and the S3 object.
+Follow the [README](README.md): deploy locally, inspect state, copy state and the provider lockfile, then migrate from `remote/`.
+
+The remote plan enables versioning in place. Apply it, compare bucket IDs, show the state object in S3, and finish with a no-change plan.
 
 ## Key points
 
-- Providers call AWS APIs; resources describe infrastructure; state records resource identities. Migration moves state, not the bucket.
-- Keep the same account, region and inputs. Copying the lockfile preserves provider selection; never copy `.terraform/`.
-- Use only `remote/` afterward. The original local state is a stale backup, not a second working stack. Keep state private and out of Git.
-- Each lab has a fixed state key: one deployment per lab per bucket. Encryption, versioning and native locking protect state.
-- Keep the bucket for later labs. To retire it, stop consumers, privately back up all states and migrate them elsewhere, including this bucket's own state, before deliberately removing deletion protection. Account for old object versions; do not force-empty it.
+- `local/`: private/encrypted bucket, no versioning, `prevent_destroy = false`.
+- `remote/`: same bucket and resource address, S3 backend, versioning enabled, `prevent_destroy = true`.
+- Migration moves state, not resources. Only use `remote/` afterward.
+- The tested UPC Academy role uses `us-east-1`. `awscc_s3_bucket` avoids the standard provider's denied Object Lock metadata call; no IAM changes are needed.
+- No timed wait precedes migration. AWS versioning propagation remains asynchronous after the remote apply.
+- Keep state private, commit provider lockfiles, and retain this bucket for later labs.
 
 ## Troubleshooting
 
-- Unexpected creates or replacements: stop and check copied state, account, inputs and backend key.
-- Access denied: correct credentials or permissions; do not weaken bucket protections.
-- Interrupted migration: inspect source and destination before retrying; never discard state or force-copy blindly.
+- New bucket or replacement proposed: stop and check the copied state, naming inputs and account.
+- Access denied: check credentials and the permitted region; do not weaken bucket settings.
+- Interrupted migration: inspect both states before retrying; do not force-copy blindly.
+- Retiring the backend requires migrating every consumer elsewhere first, including its own state. Only then deliberately remove deletion protection and account for old object versions.

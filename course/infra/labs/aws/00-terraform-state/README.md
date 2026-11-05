@@ -1,132 +1,145 @@
 # Terraform: Create an S3 State Backend
 
-Create a bucket with local state, then move that state into S3. Later labs reuse the bucket.
+Create a bucket locally, migrate its state to S3, then enable versioning and deletion protection from `remote/`. Later labs reuse the bucket.
 
-## 1. Create the bucket locally
+Use Terraform `>=1.10,<2`, AWS CLI v2 and configured AWS credentials. The default region is `us-east-1`, which works with the tested UPC Academy role. Run commands in order in the **same terminal**.
 
-You need Terraform `>=1.10,<2`, AWS CLI v2, configured AWS credentials, and this repository checked out. Terraform's `aws_region` variable defaults to `eu-west-1`; no region setup is required. Run the commands in order in the **same terminal**. No `.tf` edits are needed. See [region overrides](../../../README.md) if using another region.
+This lab uses `awscc_s3_bucket` (AWS Cloud Control): the tested Academy role denies an Object Lock metadata read required by the standard S3 resource.
 
-From the repository root, `cd` changes your working directory to the local configuration:
+## 1. Create locally
+
+From the repository root, `cd` changes your working directory:
 
 ```sh
 cd course/infra/labs/aws/00-terraform-state/local
 ```
 
-`init` downloads the required providers and prepares the working directory. This folder uses local state.
+`init` installs providers and prepares local state storage.
 
 ```sh
 terraform init
 ```
 
-`plan` previews the resources Terraform will create. It does not deploy them.
+`plan` previews changes without deploying them.
 
 ```sh
 terraform plan
 ```
 
-`apply` shows the plan and asks for confirmation. Enter `yes` to create the bucket and its settings.
+`apply` asks for confirmation; enter `yes` to create the bucket.
 
 ```sh
 terraform apply
 ```
 
-`state list` lists the resource addresses recorded in Terraform state—not every resource in your AWS account.
+`state list` lists the resources Terraform manages.
 
 ```sh
 terraform state list
 ```
 
-`state show` displays the recorded attributes of one resource, including the bucket name and ARN.
+`state show` displays one resource's recorded attributes.
 
 ```sh
-terraform state show aws_s3_bucket.state
+terraform state show awscc_s3_bucket.state
 ```
 
-Illustrative excerpt, not captured AWS output. Your random suffix will differ; other attributes are omitted:
+Illustrative excerpt; your random suffix will differ:
 
 ```text
-❯ terraform state show aws_s3_bucket.state
-# aws_s3_bucket.state:
-resource "aws_s3_bucket" "state" {
-    arn           = "arn:aws:s3:::upc-k8s-terraform-state-a1b2"
-    bucket        = "upc-k8s-terraform-state-a1b2"
-    force_destroy = false
-    id            = "upc-k8s-terraform-state-a1b2"
+❯ terraform state show awscc_s3_bucket.state
+# awscc_s3_bucket.state:
+resource "awscc_s3_bucket" "state" {
+    arn         = "arn:aws:s3:::upc-k8s-terraform-state-a1b2"
+    bucket_name = "upc-k8s-terraform-state-a1b2"
+    id          = "upc-k8s-terraform-state-a1b2"
 }
 ```
 
-`bucket` is its name, `id` identifies the managed bucket, and `arn` is its AWS resource identifier. The suffix avoids S3's global name collisions. A 12-digit AWS account ID identifies the account—not the bucket—and is not part of the default name.
+`bucket_name` names the bucket; `arn` identifies it in AWS. The four-character suffix reduces naming collisions. It is not your AWS account ID.
 
-If an existing deployment uses the previous name, preserve it with `TF_VAR_bucket_name` before planning. Renaming requires replacement, which this state bucket's deletion protection intentionally blocks.
-
-`output` displays the values exposed by this configuration, such as the bucket name and region.
+`output` shows values exposed by the configuration.
 
 ```sh
 terraform output
 ```
 
-`export` saves the bucket name as a shell environment variable. `output -raw` returns just its value, without quotes.
+Save the bucket name in an environment variable. `-raw` returns the plain value.
 
 ```sh
 export STATE_BUCKET="$(terraform output -raw state_bucket_name)"
 ```
 
-The bucket is private, encrypted and versioned. State currently lives in `local/terraform.tfstate`.
+The bucket is private and encrypted. Locally, versioning is off and `prevent_destroy = false`; state lives in `local/terraform.tfstate`.
 
-## 2. Move state to S3
+## 2. Migrate to S3
 
-**Wait 15 minutes after first enabling bucket versioning.** Stop other Terraform operations before migrating.
-
-`cp` copies the existing state into the remote configuration. The original remains in `local/` as a backup.
+Copy state into the remote folder. The original remains as a backup.
 
 ```sh
 cp terraform.tfstate ../remote/terraform.tfstate
 ```
 
-Copy the provider lockfile so both folders use the same provider versions and checksums.
+Copy the provider lockfile to preserve provider versions and checksums.
 
 ```sh
 cp .terraform.lock.hcl ../remote/.terraform.lock.hcl
 ```
 
-Change to the remote configuration, which already declares the S3 backend.
+Switch to the fixed remote configuration.
 
 ```sh
 cd ../remote
 ```
 
-`init -migrate-state` moves the copied local state into S3. `-backend-config` supplies the bucket name. Approve the migration prompt.
+Migrate the copied state into the bucket. Confirm the prompt with `yes`.
 
 ```sh
 terraform init -migrate-state -backend-config="bucket=$STATE_BUCKET"
 ```
 
-Do not copy `.terraform/` or apply `remote/` before migrating. Only state storage is changing—not the bucket.
+Do not copy `.terraform/` or apply the remote configuration before migration. No waiting period is needed here: versioning has not been enabled yet.
 
-## 3. Verify the migration
+## 3. Enable remote protection
 
-Display the outputs again. The bucket name and ARN should match the local deployment.
-
-```sh
-terraform output
-```
-
-Check that Terraform recognizes the existing resources. Expect **no changes**.
+Preview the remote settings. Expect **one in-place update** enabling versioning, not a new bucket. This configuration also sets `prevent_destroy = true`.
 
 ```sh
 terraform plan
 ```
 
-List the state prefix in S3. You should see `terraform.tfstate`.
+Apply those settings to the existing bucket.
+
+```sh
+terraform apply
+```
+
+AWS recommends allowing propagation after first enabling versioning before subsequent object writes. This sequence avoids a timed wait before migration; propagation is still asynchronous.
+
+## 4. Verify
+
+Outputs should show the same bucket name and ARN as before migration.
+
+```sh
+terraform output
+```
+
+Expect **no changes** now.
+
+```sh
+terraform plan
+```
+
+List the remote state object in S3.
 
 ```sh
 aws s3 ls "s3://$STATE_BUCKET/terraform-state/"
 ```
 
-Use only `remote/` from now on; the original local state is a stale backup. Keep state out of Git.
+Use only `remote/` afterward; the original local state is stale. Keep state out of Git; commit provider lockfiles.
 
 ## Next labs
 
-Continue with [EC2 basics](../01-ec2-basics/README.md) or [WordPress](../02-wordpress/README.md). Fixed state keys allow **one deployment of each lab per bucket**. S3 encryption and native state locking remain enabled.
+Continue with [EC2 basics](../01-ec2-basics/README.md) or [WordPress](../02-wordpress/README.md). Each lab uses a fixed state key: one deployment per lab per bucket.
 
-Keep this protected bucket for the later labs; do not destroy it while it holds their state. See the [instructor guide](instructor-guide.md) for retirement notes.
+Keep this bucket while it stores state. For another approved region, see [region overrides](../../../README.md). If preserving a bucket with an older name, set `TF_VAR_bucket_name` to its actual name before planning; do not force replacement.

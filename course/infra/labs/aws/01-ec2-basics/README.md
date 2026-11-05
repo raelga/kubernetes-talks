@@ -2,7 +2,7 @@
 
 Deploy one public EC2 instance. A security group allows HTTP, and user-data installs Apache and checks out the application automatically. No ALB, NAT Gateway, database or TLS setup.
 
-Prerequisites: Terraform `>=1.10,<2`, AWS CLI v2, configured AWS credentials, and the completed [state bucket lab](../00-terraform-state/README.md). The `aws_region` variable defaults to `eu-west-1`; see [region overrides](../../../README.md) if needed.
+Prerequisites: Terraform `>=1.10,<2`, AWS CLI v2, configured AWS credentials, and the completed [state bucket lab](../00-terraform-state/README.md). The `aws_region` variable defaults to `us-east-1`; see [region overrides](../../../README.md) if needed.
 
 ## 1. Deploy
 

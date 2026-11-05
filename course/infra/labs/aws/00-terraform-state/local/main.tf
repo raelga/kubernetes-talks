@@ -7,43 +7,33 @@ resource "random_id" "bucket_suffix" {
   byte_length = 2
 }
 
-resource "aws_s3_bucket" "state" {
-  bucket        = var.bucket_name != null ? var.bucket_name : "upc-k8s-${var.lab_id}-${random_id.bucket_suffix[0].hex}"
-  force_destroy = false
+resource "awscc_s3_bucket" "state" {
+  bucket_name = var.bucket_name != null ? var.bucket_name : "upc-k8s-${var.lab_id}-${random_id.bucket_suffix[0].hex}"
 
-  tags = {
-    Project       = "TerraformS3Intro"
-    LabId         = var.lab_id
-    ManagedBy     = "Terraform"
-    Purpose       = "StateBackend"
-    Demonstration = var.demo_tag
+  bucket_encryption = {
+    server_side_encryption_configuration = [{
+      server_side_encryption_by_default = {
+        sse_algorithm = "AES256"
+      }
+    }]
   }
+
+  public_access_block_configuration = {
+    block_public_acls       = true
+    block_public_policy     = true
+    ignore_public_acls      = true
+    restrict_public_buckets = true
+  }
+
+  tags = [
+    { key = "Project", value = "TerraformS3Intro" },
+    { key = "LabId", value = var.lab_id },
+    { key = "ManagedBy", value = "Terraform" },
+    { key = "Purpose", value = "StateBackend" },
+    { key = "Demonstration", value = var.demo_tag },
+  ]
 
   lifecycle {
     prevent_destroy = false
   }
-}
-
-resource "aws_s3_bucket_versioning" "state" {
-  bucket = aws_s3_bucket.state.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
-  bucket = aws_s3_bucket.state.id
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "state" {
-  bucket                  = aws_s3_bucket.state.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
 }

@@ -1,11 +1,11 @@
 output "state_bucket_name" {
   description = "Bucket to use for this and subsequent labs' S3 backends."
-  value       = aws_s3_bucket.state.id
+  value       = awscc_s3_bucket.state.bucket_name
 }
 
 output "state_bucket_arn" {
   description = "Stable AWS resource identifier to compare before and after migration."
-  value       = aws_s3_bucket.state.arn
+  value       = awscc_s3_bucket.state.arn
 }
 
 output "region" {

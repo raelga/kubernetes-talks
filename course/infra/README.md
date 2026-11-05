@@ -11,7 +11,7 @@ Provision resources, inspect the application separately, then remove the deploym
 
 Each AWS application lab separates `infra/` from `app/`. EC2 installs automatically at launch. Adding the WordPress database configures the application through SSM without replacing EC2.
 
-Start with the state bucket lab: deploy from `local/`, copy state to `remote/`, then migrate. EC2 and WordPress reuse that bucket. Each backend declares its own fixed key; initialization needs only the bucket name. Credentials come from your AWS configuration; `aws_region` defaults to `eu-west-1` in Terraform.
+Start with the state bucket lab: create an unversioned bucket in `local/`, copy state to `remote/`, migrate, then apply versioning and deletion protection. The lab uses Cloud Control for Academy compatibility. EC2 and WordPress reuse the bucket. Backends have fixed keys; initialization needs only the bucket name. Credentials come from AWS configuration; `aws_region` defaults to `us-east-1`.
 
 For another region, set `TF_VAR_aws_region` before deployment and add `-backend-config="region=$TF_VAR_aws_region"` to backend initialization. S3 backends cannot reference Terraform variables directly.
 
