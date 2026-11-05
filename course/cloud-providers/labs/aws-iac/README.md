@@ -1,14 +1,12 @@
 # AWS: one web server, its network and private storage
 
-Start with the [one-bucket Terraform demo](../terraform-intro/README.md#quick-instructor-demo-one-bucket-local-state) if you only want to explain `plan → apply → destroy`.
+Start with the [one-bucket Terraform demo](../terraform-intro/README.md#quick-path-one-bucket-with-local-state) if you only want to explain `plan → apply → destroy`.
 
 This lab adds **one small EC2 web server and its own network**. Your computer reaches its HTTP endpoint through an Internet Gateway; port 80 accepts only your public IPv4 `/32`. A **separate private S3 bucket** demonstrates storage: it does not host the website, and the VM does not use it. There is no SSH, IAM role, container, load balancer or Kubernetes.
 
-**Live rehearsal, 5 November 2026:** tested in the **talks instructor account**, in `us-east-1`: creation, cloud-init completion, HTTP 200 with the initial message, live inventory/S3 protections, message-change EC2 replacement, HTTP 200 with the new message, a no-change plan, reviewed destruction and verified absence with empty state. This is **not Academy permission proof**; rehearse independently in the assigned Academy environment. Fixtures remain **synthetic**, not cloud evidence. Billing and the optional restricted-CIDR failure were not part of this VM rehearsal.
-
 ## 1. Check access and open the lab
 
-Use your assigned Academy credentials, your own working directory/local state and a unique `lab_id`. The instructor must confirm the allowed region, Canonical Ubuntu 24.04 x86_64 AMI, small EC2 type, quotas and EC2/S3/Cloud Control permissions. Do not change IAM or account policies to bypass a denial.
+Use authorized AWS credentials, your own working directory/local state and a unique `lab_id`. Confirm the allowed region, compatible Ubuntu AMI, small EC2 type, quotas and EC2/S3/Cloud Control permissions. Do not change IAM or account policies to bypass a denial.
 
 From the repository root:
 
@@ -20,7 +18,7 @@ aws --version
 aws sts get-caller-identity --region us-east-1
 ```
 
-Requirements: Terraform `>=1.6,<2`, Python `>=3.11`, AWS CLI v2. Substitute your **authorized region** and compare the returned account/identity with the assigned lab before continuing. Never put credentials or session tokens in these files or Git.
+Requirements: Terraform matching [versions.tf](versions.tf), Python `>=3.11` and AWS CLI v2. Substitute your authorized region and confirm the returned account/identity before continuing. Never put credentials or session tokens in these files or Git.
 
 ## 2. Configure your deployment
 
@@ -29,8 +27,8 @@ Copy `terraform.tfvars.example` to `terraform.tfvars` with your editor. Set:
 - `aws_region`: your authorized region.
 - `lab_id`: your own unique identifier, 3–20 lowercase letters/digits/hyphens, starting with a letter.
 - `client_cidr`: your actual public outbound IPv4 followed by `/32`, not a private or documentation address. Never use `/0`.
-- `instance_type`: a small permitted x86_64 type; `t3.micro` is not a promise of free usage or Academy availability.
-- `ami_id`: leave unset for Canonical Ubuntu 24.04, or use the instructor-approved compatible AMI.
+- `instance_type`: a small permitted x86_64 type; `t3.micro` is not necessarily available or free.
+- `ami_id`: leave unset for the configured Canonical image lookup, or use an explicitly authorized compatible AMI.
 
 Keep `message` public and non-secret. Leave `bucket_name` unset for a generated unique name; a custom name must belong to a **new**, globally available bucket, not existing storage.
 
@@ -58,7 +56,7 @@ terraform output -json > outputs.local.json
 
 **Show this first:** locate your tagged EC2 instance and its VPC/subnet/security group in the console, then open the printed `http_url` from your authorized computer. Expect HTTP 200 and JSON containing `status: "ok"` and your `message`. The separate S3 bucket must remain private and empty.
 
-EC2 `running` is not application readiness: wait for cloud-init. If HTTP fails, inspect that instance's system log and check bootstrap, your current outbound IP and the route/SG. Do not add SSH, grant an IAM role or widen ingress. The [instructor guide](instructor-guide.md) covers diagnosis and later Python/AI activities; you do not need to read the application source to understand this AWS demonstration.
+EC2 `running` is not application readiness: wait for cloud-init. If HTTP fails, inspect that instance's system log and check bootstrap, your current outbound IP and the route/SG. Do not add SSH, grant an IAM role or widen ingress. The [lab guide](instructor-guide.md) covers verification and troubleshooting; reading the application source is not required to run this lab.
 
 ## 5. Change the message
 
@@ -76,7 +74,7 @@ Review before applying: changed bootstrap configuration **replaces EC2**, not a 
 
 ## 6. Destroy only your resources and verify absence
 
-Use the same directory, workspace and state. Do not reset Academy, delete shared resources or remove the environment prepared for later container classes.
+Use the same directory, workspace and state. Do not reset a shared environment or delete resources outside this deployment.
 
 ```sh
 terraform workspace show
@@ -91,8 +89,8 @@ terraform state list
 
 Replace both uppercase placeholders. Review that the destruction plan contains **only your exercise resources**. Save the **latest** outputs before destruction, not outputs from before replacement. The read-only verifier checks ownership tags, the saved resource IDs and exact bucket; it requires network/disk/storage absence and accepts only `terminated` EC2, not a stopped instance. The final state list must be empty too. `AccessDenied`, expired credentials or query errors are **not proof of cleanup**.
 
-Retain private state/outputs until cleanup is verified. The bucket has no automatic emptying or `force_destroy`: if objects were added, stop and have the instructor review that exact bucket. Never run recursive deletion or erase state to conceal resources. Small instances, disks, public IPv4 and traffic can cost money; stopping EC2 is not cleanup.
+Retain private state/outputs until cleanup is verified. The bucket has no automatic emptying or `force_destroy`: if objects were added, review that exact bucket with its owner. Never run recursive deletion or erase state to conceal resources. Small instances, disks, public IPv4 and traffic can cost money; stopping EC2 is not cleanup.
 
-## Later class activities
+## Further checks
 
-The [instructor guide](instructor-guide.md) retains the complete class sequence, M1 Python/AI exercises, synthetic fixtures, live `inventory.py --probe-http` verification, controlled failure/recovery and Billing/Cost Explorer/Budgets work. These are distinct from the first AWS walkthrough above. Budgets do not automatically stop spending, and billing data is delayed.
+See the [lab guide](instructor-guide.md) for live HTTP verification, troubleshooting, the optional network-failure experiment and cost checks. Fixtures are synthetic, not cloud evidence. Billing data is delayed, and budget alerts do not automatically stop spending.

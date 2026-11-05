@@ -1,24 +1,45 @@
-# Your first Terraform lab: buckets and state
+# Terraform: S3 buckets and state
 
-Learn how Terraform creates infrastructure, applies changes and tracks resources. Start with the **single-bucket instructor demo** below. The full **optional 90-minute state workflow** (steps 1–5) creates two private S3 buckets and moves the exercise state to S3. No VMs, Kubernetes or IAM changes.
+Create a private S3 bucket, update it and remove it with Terraform. The optional backend workflow adds a second bucket and migrates the exercise state to S3. No VMs, Kubernetes or IAM changes are needed.
 
-| Directory | What it creates | Where its state lives |
+| Root | Resources | State |
 | --- | --- | --- |
-| `bootstrap/` | The bucket that will store Terraform state | Always local; keep a secure backup |
-| `exercise/` | A separate bucket and `hello.txt` | Local first, then S3 |
+| `exercise/` | Private bucket and `hello.txt` | Local, optionally migrated to S3 |
+| `bootstrap/` | Protected state bucket | Always local; back up outside Git and the bucket |
 
-**Configuration describes what you want. State records what Terraform manages.** Keep each learner's state separate; copying someone else's state means managing their resources, not creating your own.
+Configuration describes desired resources; state records which resources Terraform manages. Never copy another run's state to create an independent deployment. Keep credentials, states, plans, private tfvars, backend settings and real captures outside Git. Reviewed `.terraform.lock.hcl` files may be committed.
 
-## Quick instructor demo: one bucket, local state
+## Get ready
 
-Complete [Get ready](#get-ready), including its one-line tools bootstrap and identity/permission checks. Use a fresh personal exercise directory and local state; **skip `bootstrap/`, backend files and migration**. Keep private state, plans and tfvars outside Git.
+Install the tools and clone the repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/main/course/cloud-providers/labs/terraform-intro/bootstrap.sh | bash
+```
+
+The script installs Terraform in `$HOME/.local/bin` and clones `main` into `$HOME/kubernetes-talks`; existing checkouts are untouched. It does not change directory, configure AWS or deploy resources. It requires Git, curl, unzip and a SHA-256 utility. If `terraform` is not already discoverable, use `$HOME/.local/bin/terraform` in place of `terraform` below.
+
+```bash
+cd "$HOME/kubernetes-talks/course/cloud-providers/labs/terraform-intro"
+terraform version
+aws --version
+aws sts get-caller-identity
+```
+
+Use AWS CLI v2 and Terraform compatible with the root's HCL constraints; S3 lockfiles require Terraform >= 1.10. Obtain authorized credentials and confirm the account, region, expiry, workspace persistence and spending limits. Never put credentials in configuration or Git. Account guards do not authorize a region. Identity alone does not prove API access: review [permissions and preflight](instructor-guide.md#permissions-and-preflight). Stop on access errors; do not change IAM or weaken protections.
+
+Storage, versions and requests cost money. Billing is delayed, and budget alerts do not stop spending.
+
+## Quick path: one bucket with local state
+
+Use a fresh exercise root with no active backend configuration. Skip `bootstrap/`, backend files and migration.
 
 ```bash
 cd "$HOME/kubernetes-talks/course/cloud-providers/labs/terraform-intro/exercise"
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `terraform.tfvars` with your real authorized account/region, your own `lab_id`, `bucket_name = null` and `demo_tag = "initial"`. Generated names include account, lab ID and a state-persisted random suffix for global uniqueness; never reuse someone else's state or an existing bucket name.
+Set your authorized account/region, a recognizable `lab_id`, `bucket_name = null` and `demo_tag = "initial"`. Default names include the account, lab ID and a state-persisted random suffix. An optional non-null `bucket_name` is an exact, globally available name, not an import; it must differ from the backend bucket. Changing names, account or lab ID can require replacement. Preserve state and never bypass backend `prevent_destroy` to resolve replacement.
 
 ```bash
 export AWS_REGION="us-east-1" # Replace with the authorized region in your tfvars.
@@ -31,129 +52,65 @@ aws s3api get-object --bucket "$EXERCISE_BUCKET" --key hello.txt --region "$AWS_
 cat private-hello.download.txt
 ```
 
-Review every saved plan before applying: only your private encrypted exercise bucket, object and random suffix. Read with credentials; anonymous access is denied. Change only nonsensitive example content in `../files/hello.txt` and set `demo_tag = "updated"` in your tfvars:
+Review every saved plan before applying: only the private encrypted exercise bucket, object and random suffix belong here. Read the object with credentials; anonymous access is denied. Use nonsensitive example content only.
+
+1. Edit `../files/hello.txt` and set `demo_tag = "updated"` in `terraform.tfvars`.
+2. Plan, review and apply; download the object again:
+
+   ```bash
+   terraform plan -out=private-change.tfplan
+   terraform show private-change.tfplan
+   terraform apply private-change.tfplan
+   aws s3api get-object --bucket "$EXERCISE_BUCKET" --key hello.txt --region "$AWS_REGION" private-hello.download.txt
+   cat private-hello.download.txt
+   terraform plan # Expect no changes.
+   ```
+
+3. Optionally observe drift: in the S3 console change only the exercise bucket's `Demonstration` tag to `outside-terraform`, preserving all other tags. Review `terraform plan -out=private-drift.tfplan`; it must restore the tag without replacing the bucket. Apply with `terraform apply private-drift.tfplan`. Never change privacy controls or use `ignore_changes` to hide drift.
+4. Either continue to the optional backend workflow or [remove only the exercise](#remove-only-the-exercise).
+
+## Optional backend workflow
+
+### 1. Create the backend with separate local state
+
+The exercise must already exist with local state. From any directory:
 
 ```bash
-terraform plan -out=private-change.tfplan
-terraform show private-change.tfplan
-terraform apply private-change.tfplan
-aws s3api get-object --bucket "$EXERCISE_BUCKET" --key hello.txt --region "$AWS_REGION" private-hello.download.txt
-cat private-hello.download.txt
-terraform plan # Expect no changes.
-terraform plan -destroy -out=private-destroy.tfplan
-terraform show private-destroy.tfplan
-terraform apply private-destroy.tfplan
-terraform state list
-aws s3api get-bucket-location --bucket "$EXERCISE_BUCKET" --region "$AWS_REGION"
-```
-
-Approve destruction only for your exercise resources. Require empty state **and `NoSuchBucket`** from the exact-name AWS check. Do not bulk-empty buckets; investigate unexpected objects. Retain local state until cleanup is verified. Stop here: no state bucket is needed.
-
-Live create/read/change, private-access checks, tag-only drift reconciliation and verified deletion were rehearsed on 2026-11-05 in the **`talks` instructor account**, not as proof of Academy permissions. The remaining numbered sections preserve the full optional 90-minute workflow.
-
-## Get ready
-
-Run this in your Academy terminal to install Terraform 1.13.3 and clone the repo:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/main/course/cloud-providers/labs/terraform-intro/bootstrap.sh | bash
-```
-
-It installs Terraform in `$HOME/.local/bin` and clones `main` into `$HOME/kubernetes-talks`. Existing checkouts are left untouched. It does not change directory, configure AWS or deploy anything. Requires Git, curl, unzip and a SHA-256 utility.
-
-Now open the lab and check your tools and Academy identity:
-
-```bash
-cd "$HOME/kubernetes-talks/course/cloud-providers/labs/terraform-intro"
-terraform version
-aws --version
-aws sts get-caller-identity
-```
-
-Use Terraform **>= 1.10 and < 2.0**, AWS CLI v2 and your assigned temporary credentials. Confirm the account, allowed region, session expiry, persistence and budget with your instructor. Never put credentials in Terraform files or Git.
-
-The instructor must check Cloud Control/S3 permissions before the lab. State and lock access are needed only for the optional backend migration. An identity check alone does not prove these permissions. **Stop on access errors; do not weaken protections or change IAM.** See the [instructor guide](instructor-guide.md) for preflight details and prior Academy verification.
-
-S3 storage, versions and requests can cost money. Billing is delayed; budget alerts do not automatically stop spending.
-
-## 1. Create backend infrastructure, but keep its state local
-
-Start in the directory that creates the state bucket:
-
-```bash
-cd bootstrap
+cd "$HOME/kubernetes-talks/course/cloud-providers/labs/terraform-intro/bootstrap"
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `terraform.tfvars`: enter your account, authorized region and a recognizable `lab_id`. Keep `bucket_name = null`, `enable_versioning = false` and `stage = "basics"`.
-
-Bucket names include a random suffix saved in state, so independent runs do not collide. An optional `bucket_name` uses an exact, globally available name instead; it must differ from the other bucket and does not import existing storage. Changing names/account/lab ID can require replacement. Do not delete state or remove the backend's `prevent_destroy` protection to work around it.
+Set the same authorized account/region and `lab_id`; keep `bucket_name = null`, `enable_versioning = false` and `stage = "basics"`. Use outputs, never reconstructed bucket names.
 
 ```bash
 terraform init
-terraform fmt
 terraform validate
 terraform plan -out=private-bootstrap.tfplan
+terraform show private-bootstrap.tfplan
 terraform apply private-bootstrap.tfplan
 terraform output
 ```
 
-**Read the plan before applying.** Confirm the account, region and private, encrypted bucket. `init` installs providers; `validate` checks configuration, not permissions or costs; `plan` previews changes; `apply` executes the saved plan. Editing configuration afterward requires a new plan.
+Confirm the exact account, region and private encrypted bucket. Validation checks configuration, not permissions or costs. Changed configuration requires a new plan. Securely back up this root and its local state outside Git and the bucket. **Never migrate bootstrap's state into its own bucket.**
 
-Keep this directory and its local state securely backed up outside Git and the bucket. **Never migrate bootstrap's own state into its bucket.**
-
-Next, set `enable_versioning = true` and `stage = "backend-ready"` in the same tfvars file:
+Set `enable_versioning = true` and `stage = "backend-ready"` in the same tfvars:
 
 ```bash
 terraform plan -out=private-versioning.tfplan
+terraform show private-versioning.tfplan
 terraform apply private-versioning.tfplan
-export AWS_REGION="us-east-1" # Use the authorized region from your tfvars.
 export STATE_BUCKET="$(terraform output -raw state_bucket_name)"
 aws s3api get-bucket-versioning --bucket "$STATE_BUCKET" --region "$AWS_REGION"
 ```
 
-Require `"Status": "Enabled"`. Wait **15 minutes after first enabling versioning before writing to this bucket**. Work through the exercise below while it propagates.
+Require `"Status": "Enabled"`. **Wait 15 minutes after first enabling versioning before writing any objects to this bucket**, including preflight objects. Then complete the [controlled-scope preflight](instructor-guide.md#controlled-scope-api-preflight). Stop if exact state/lock permissions are unconfirmed.
 
-## 2. Apply the exercise with local state
+### 2. Migrate only the exercise state
 
-Switch to the separate exercise directory:
+Ensure no other operation uses this state. Return to the exercise, preserve its IDs and a private backup, then enable its backend:
 
 ```bash
 cd ../exercise
-cp terraform.tfvars.example terraform.tfvars
-```
-
-Set the same account, region and `lab_id`, with `demo_tag = "initial"`. **Do not enable the S3 backend yet.**
-
-```bash
-terraform init
-terraform validate
-terraform plan -out=private-exercise.tfplan
-terraform apply private-exercise.tfplan
-export EXERCISE_BUCKET="$(terraform output -raw exercise_bucket_name)"
-aws s3api get-object --bucket "$EXERCISE_BUCKET" --key hello.txt --region "$AWS_REGION" private-hello.download.txt
-```
-
-Read `private-hello.download.txt`. The object is private: download it with your credentials, not an anonymous URL. Use only nonsensitive example content.
-
-**Stay in `exercise/` for the remaining steps.**
-
-## 3. Changes and drift, only in the exercise
-
-1. Edit `../files/hello.txt` and set `demo_tag = "updated"` in `terraform.tfvars`.
-2. Run `terraform plan -out=private-change.tfplan`. Review the changes, then run `terraform apply private-change.tfplan`. Download `hello.txt` again to see the new content.
-3. In the S3 console, open exactly `$EXERCISE_BUCKET` and change only its `Demonstration` tag to `outside-terraform`. Keep all other tags; **do not touch the state bucket**.
-4. Run `terraform plan -out=private-drift.tfplan`. It should restore the declared tag without replacing the bucket. Review and apply with `terraform apply private-drift.tfplan`.
-
-That difference between code and the actual resource is **drift**. Do not hide it with `ignore_changes`.
-
-## 4. Migrate only the exercise state
-
-Before continuing, ask the instructor to confirm versioning propagation and state/lock permissions. Nobody else should be using this state.
-
-Save the current resource IDs and a private state backup, then enable the backend:
-
-```bash
 terraform output -json > private-ids.before.json
 terraform state list
 terraform state pull > private-before-migration.tfstate
@@ -161,7 +118,7 @@ cp backend.tf.example backend.tf
 cp backend.hcl.example backend.hcl
 ```
 
-Edit `backend.hcl` with the actual `$STATE_BUCKET`, account and region. Keep `key = "exercise/terraform.tfstate"`, `encrypt = true` and `use_lockfile = true`. Backend settings are separate from tfvars; never add credentials.
+Set the actual `$STATE_BUCKET`, account and region in `backend.hcl`. Preserve `key = "exercise/terraform.tfstate"`, `encrypt = true` and `use_lockfile = true`. Backend configuration is separate from tfvars and cannot use provider variables or resource references. Do not add credentials.
 
 ```bash
 terraform init -migrate-state -backend-config=backend.hcl
@@ -171,41 +128,33 @@ terraform plan
 aws s3api head-object --bucket "$STATE_BUCKET" --key exercise/terraform.tfstate --region "$AWS_REGION"
 ```
 
-Accept the migration prompt only for the intended source and destination. Do not use `-reconfigure` or force copying. Expect unchanged IDs, a **no-change plan**, and an S3 state object with `AES256` encryption and a `VersionId`. Migration moves the record; it does not recreate infrastructure.
+Accept migration only for the intended source/destination. Never use `-reconfigure` or force copying. Require unchanged IDs, a no-change plan, and an S3 state object with `AES256` encryption and a `VersionId`. Migration moves the record, not the resources.
 
-### Observe the lock without writing resource changes
+### 3. Observe and release the lock
 
-Set `demo_tag = "lock-observation"` temporarily and run `terraform apply`. **Leave the approval prompt open; do not approve.**
-
-In a second terminal with the same authorized credentials:
+Temporarily set `demo_tag = "lock-observation"` and run `terraform apply`. Leave the approval prompt open; **do not approve**. In a second terminal with the same authorized credentials:
 
 ```bash
 cd "$HOME/kubernetes-talks/course/cloud-providers/labs/terraform-intro/exercise"
 terraform plan -lock-timeout=5s
 ```
 
-The second operation should fail because the first holds the state lock. Answer **`no`** in the first terminal, restore `demo_tag = "updated"` and run `terraform plan`: no changes. Never delete an active lock or force-unlock another operation.
+The second operation must fail because the first holds the lock. Answer `no` in the first terminal, restore `demo_tag = "updated"` and run `terraform plan`: expect no changes. The owning process releases the lock; never delete an active lock, force-unlock or use `-lock=false`.
 
-The S3 `.tflock` object protects state operations. `.terraform.lock.hcl` pins provider versions and checksums; it is not a concurrency lock. No DynamoDB is needed here.
+The S3 `.tflock` provides mutual exclusion. `.terraform.lock.hcl` pins provider versions/checksums, not concurrent operations. Versioning supports recovery, not locking; no DynamoDB is needed.
 
-## 5. Normal completion: remove only the exercise
+## Remove only the exercise
 
-Still in `exercise/`, prepare and inspect a destruction plan:
+From `exercise/`:
 
 ```bash
 terraform plan -destroy -out=private-destroy.tfplan
 terraform show private-destroy.tfplan
-```
-
-Confirm it removes only the exact exercise bucket, `hello.txt` and its random suffix—**never the backend bucket**. Then:
-
-```bash
 terraform apply private-destroy.tfplan
 terraform state list
+aws s3api get-bucket-location --bucket "$EXERCISE_BUCKET" --region "$AWS_REGION"
 ```
 
-Expect no managed exercise resources. Confirm the exact exercise bucket is gone in AWS; an empty state alone is not proof. A normal plan now proposes recreation: do not apply it. If deletion fails because the bucket contains extra objects, review those objects with the instructor; do not bulk-empty it.
+Apply only if the plan removes the exact exercise bucket, `hello.txt` and random suffix—never the backend bucket. Require empty managed state **and `NoSuchBucket`** from the exact-name AWS check. Access denied is not proof of deletion. Investigate unexpected objects with their owner; never bulk-empty buckets. Retain state until cleanup is verified. A subsequent normal plan proposes recreation: do not apply it.
 
-**Keep the backend bucket and bootstrap's local state.** Even an empty remote state still depends on the backend. Full backend retirement is a separate authorized procedure in the [instructor guide](instructor-guide.md#complete-and-exceptional-backend-retirement), not part of normal cleanup.
-
-Keep credentials, states, plans, private tfvars, backend settings and real captures out of Git and securely stored. Reviewed `.terraform.lock.hcl` files can be committed.
+If you used S3 state, keep the backend and bootstrap's local state: **an empty remote state is still a backend consumer**. Full retirement requires the separate [authorized retirement procedure](instructor-guide.md#complete-and-exceptional-backend-retirement). See [safe error responses](instructor-guide.md#common-incidents-and-safe-responses) if an operation fails.

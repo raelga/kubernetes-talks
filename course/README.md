@@ -1,8 +1,8 @@
-# Kubernetes Course
+# Infrastructure labs
 
-Slides are available at https://go.rael.dev/k8s-course
+Standalone labs for containers, Kubernetes and cloud infrastructure.
 
-## Course material
+## Explore
 
 - [Cloud providers](cloud-providers/README.md): AWS hands-on infrastructure and Azure/GCP transfer labs.
 - [Terraform introduction: S3 and remote state](cloud-providers/labs/terraform-intro/README.md): fast bucket deployments, drift and state migration.
@@ -10,4 +10,4 @@ Slides are available at https://go.rael.dev/k8s-course
 - [Containers](containers/README.md).
 - [Kubernetes](kubernetes/README.md).
 
-Lab code and instructions are maintained here. Edition-specific schedules and teaching assignments belong in the course planning repository.
+Lab documentation should be concise and reusable: prerequisites, execution, verification, troubleshooting and cleanup. Keep dates, teacher assignments, schedules and edition-specific requirements in the planning repository, not lab READMEs or guides. Keep technical constraints and operational safety waits where they are needed to run the lab.

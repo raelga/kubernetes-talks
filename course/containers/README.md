@@ -1,19 +1,9 @@
-# Kubernetes Course
+# Container labs
 
-## Containers
+Explore Linux namespaces/cgroups, Docker and Docker Compose. Check each lab's prerequisites before starting.
 
-Slides are available at https://go.rael.dev/k8s-course
+- [Namespaces and cgroups](labs/01-Namespaces-and-CGroups/README.md)
+- [Docker examples](labs/02-Docker/)
+- [Docker Compose examples](labs/03-Docker-Compose/)
 
-## Labs
-
-Labs will require a Linux server with CGroups tools, Docker and Docker Compose.
-
-In case you don't have access to a server, in the [terraform](../terraform) folder
-you can find a som terraform stacks to deploy an instance.
-
-- [AWS Academy EC2 Instance](../terraform/aws-academy-ec2-instance) if your are using an AWS
-  academty account, as it has some restrictions and limitations.
-- [EC2 Instance](../terraform/ec2-instance) if your are using a regular AWS account with full
-  privleges.
-- [EC2 Spot Instance](../terraform/ec2-spot-instance) if your are using a regular AWS account
-  with full privleges and want to use cheaper spot instances.
+Use a suitable Linux machine or provision a dedicated instance with the [Terraform configurations](../terraform/): [restricted-account EC2](../terraform/aws-academy-ec2-instance/), [EC2](../terraform/ec2-instance/) or [EC2 Spot](../terraform/ec2-spot-instance/). Check permissions, instance availability and costs before deploying; remove only your own resources afterward.
