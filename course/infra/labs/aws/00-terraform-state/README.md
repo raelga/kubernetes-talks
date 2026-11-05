@@ -1,13 +1,11 @@
 # Terraform: Create an S3 State Backend
 
-Create one S3 bucket using local state, then move its state into that bucket. The next labs reuse it.
+Create one S3 bucket locally, then move its Terraform state into that bucket. The next labs reuse it.
 
-```text
-local/   Same resources, local state
-remote/  Same resources, S3 backend
-```
+- `local/`: bucket configuration with local state.
+- `remote/`: the same resources with the S3 backend already configured.
 
-Both folders contain complete, fixed Terraform configurations. No `.tf` editing is needed. A **provider** calls AWS APIs; **resources** describe infrastructure; **state** records what Terraform manages.
+No `.tf` editing or settings files are needed. Use the same terminal, configured AWS account and region throughout.
 
 ## 1. Get ready
 
@@ -17,11 +15,9 @@ cd "$HOME/kubernetes-talks/course/infra/labs/aws/00-terraform-state/local"
 aws sts get-caller-identity
 ```
 
-Use your configured AWS account and region. Existing checkouts are preserved; update yours first if needed. Terraform must be on your PATH, or use `$HOME/.local/bin/terraform`.
+Update an existing checkout first if needed. Terraform must be on your PATH, or use `$HOME/.local/bin/terraform`.
 
-The lab ID defaults to `terraform-state`. Bucket names include your account and a random suffix. Optionally override `TF_VAR_lab_id` or `TF_VAR_bucket_name`; keep the same inputs and AWS environment across both folders. No tfvars files are needed.
-
-## 2. Deploy locally
+## 2. Create and inspect the bucket
 
 ```bash
 terraform init
@@ -30,49 +26,40 @@ terraform apply
 terraform state list
 terraform state show aws_s3_bucket.state
 terraform output
-export STATE_BUCKET="$(terraform output -raw state_bucket_name)"
+STATE_BUCKET="$(terraform output -raw state_bucket_name)"
 ```
 
-Review and approve the apply. Terraform creates one encrypted, versioned bucket with public access blocked. State is in `local/terraform.tfstate`; keep it out of Git.
+Review and approve the apply. The bucket is private, encrypted and versioned; its name includes your account and a random suffix. State is now in `local/terraform.tfstate`.
 
-## 3. Change folders and migrate
+A **provider** calls AWS APIs, **resources** describe infrastructure, and **state** records what Terraform manages. To use an exact bucket name instead, optionally set `TF_VAR_bucket_name` before the first plan; keep that setting through migration.
 
-**Wait 15 minutes after first enabling bucket versioning before writing state to it.** Stop other Terraform operations. Start with a fresh `remote/` directory without another deployment's state or initialized backend.
+## 3. Move state to S3
 
-From `local/`, copy the original state and provider lockfile, then change folders:
+**Wait 15 minutes after first enabling bucket versioning.** With no other Terraform operation running, copy the state and provider lockfile, then change folders:
 
 ```bash
 cp terraform.tfstate ../remote/terraform.tfstate
 cp .terraform.lock.hcl ../remote/.terraform.lock.hcl
 cd ../remote
+terraform init -migrate-state -backend-config="bucket=$STATE_BUCKET"
 ```
 
-The original state stays in `local/` as your backup. The copy supplies the migration source; the provider lockfile keeps provider versions identical. Do not copy `.terraform/` or commit state.
+Approve the migration. The original state stays in `local/` as a backup. The provider lockfile keeps both folders on the same provider versions. Do not copy `.terraform/` or apply `remote/` before migrating.
 
-```bash
-STATE_KEY="aws/terraform-state/${TF_VAR_lab_id:-terraform-state}/terraform.tfstate"
-terraform init -migrate-state \
-  -backend-config="bucket=$STATE_BUCKET" \
-  -backend-config="key=$STATE_KEY"
-```
-
-Approve migration from local state to your bucket. Encryption and native S3 locking are already declared in `remote/backend.tf`. **Do not apply `remote/` before migrating:** that would propose a second deployment.
-
-## 4. Verify the migration
+## 4. Verify
 
 ```bash
 terraform output
 terraform plan
-aws s3api head-object --bucket "$STATE_BUCKET" --key "$STATE_KEY" \
-  --query '{Encryption:ServerSideEncryption,Version:VersionId}'
+aws s3 ls "s3://$STATE_BUCKET/terraform-state/"
 ```
 
-The bucket name and ARN should match the outputs shown in `local/`. Expect a **no-change plan** and an S3 state object with `AES256` encryption and a version ID. Only state storage moved.
+Expect the same bucket name and ARN, a **no-change plan**, and `terraform.tfstate` listed in S3. Only state storage moved.
 
-**Use only `remote/` from now on.** The old local state is a stale backup, not another active stack. Keep both roots' resource definitions aligned when maintaining this lab.
+Use only `remote/` from now on. Keep state out of Git; provider lockfiles belong in Git.
 
-## 5. Continue with EC2
+## Next: EC2
 
-Proceed to [EC2 basics](../01-ec2-basics/README.md). EC2 and WordPress read the bucket output from `remote/` and use different state keys.
+Continue with [EC2 basics](../01-ec2-basics/README.md). Each lab has its own fixed state key in the shared bucket: one deployment of each lab per bucket.
 
-**Keep the bucket.** It stores its own state and the later labs' states, so destruction is protected. Application cleanup uses `terraform destroy` without deleting this bucket. See the [instructor guide](instructor-guide.md) for resuming or retiring the backend.
+Keep the bucket for the later labs. Its deletion is protected because it also stores its own state. See the [instructor guide](instructor-guide.md) for teaching notes and backend retirement.

@@ -29,6 +29,7 @@ The copied state supplies the existing resource identities. Without it, Terrafor
 - **New resources or replacement proposed:** stop. Check state, inputs, account and backend key.
 - **Access denied:** fix the authorized credentials or permissions; do not weaken bucket protections.
 - **Interrupted migration:** inspect both states and the destination before retrying; never force-copy or discard state.
+- **Previously initialized with an older state key:** deliberately migrate with `terraform init -migrate-state` before adopting the fixed key; do not use `-reconfigure` to silently switch states.
 
 ## After the demo
 
