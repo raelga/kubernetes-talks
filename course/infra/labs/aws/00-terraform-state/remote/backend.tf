@@ -1,4 +1,3 @@
-# Copy to backend.tf only when migrating the existing local state.
 terraform {
   backend "s3" {
     encrypt      = true

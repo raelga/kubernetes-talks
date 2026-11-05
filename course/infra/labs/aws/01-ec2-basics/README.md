@@ -16,7 +16,7 @@ aws sts get-caller-identity
 Inspect the identity and confirm the account is authorized, then:
 
 ```sh
-STATE_BUCKET="$(terraform -chdir=../../00-terraform-state output -raw state_bucket_name)"
+STATE_BUCKET="$(terraform -chdir=../../00-terraform-state/remote output -raw state_bucket_name)"
 ```
 
 The optional `TF_VAR_lab_id` defaults to `ec2-basics`; override it for a separate deployment with a unique 3–20 character lowercase ID starting with a letter. Keep any overrides and the same backend key/workspace through cleanup. Recover an existing ID with `terraform output -raw lab_id` after initializing its original key.

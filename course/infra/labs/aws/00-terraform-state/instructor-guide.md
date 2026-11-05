@@ -1,14 +1,37 @@
-# Terraform and S3: instructor pointers
+# Teaching the Terraform state lab
 
-The [README](README.md) is the complete learner path: create one bucket locally, inspect it, then migrate the same root's state to that bucket. `setup.sh` prepares tools and checkout only; there is no separate infrastructure bootstrap root.
+Use the [README](README.md) for the commands. The story is simple: **create a bucket locally, move its state to S3, prove nothing was recreated**.
 
-- Inspect and confirm the authorized caller identity before continuing. Terraform derives the account through `aws_caller_identity`; automatic discovery is not an independent account authorization guard. Use the existing AWS SDK environment/profile region configuration, with no Terraform region input or fallback. Stop if the configured account or region is unauthorized, or the region is missing.
-- Confirm permission to create/read/tag the bucket and manage its versioning, AES256 encryption and public access block. Backend access additionally needs bucket listing, state get/put, and lockfile get/put/delete on the exact authorized keys. Stop on permission restrictions; do not change IAM or weaken protections.
-- Require actual AWS versioning `Enabled` and the 15-minute initial propagation wait before migration. Keep persistent private state/configuration backups outside Git and the managed bucket.
-- Migration success means unchanged output values and resource IDs, a no-change plan, and `head-object` evidence of AES256 and a version ID at the exact intro key. A plan proposing recreation means stop and investigate root, account, bucket, key and state—not apply.
-- A globally unavailable name is not a reason to import an unknown bucket or remove `prevent_destroy`. Credential expiry is not a reason to discard state. A 403 does not prove that a bucket or object is absent.
-- Other labs reuse `state_bucket_name`, never the intro state key. Keep native S3 locking enabled; only the owning operation releases an active lock.
-- The lab ID defaults to `terraform-state`; `TF_VAR_lab_id` is an optional override, not a prerequisite. Keep each deployment's original ID and unnumbered remote key when resuming; later labs have their own defaults. Default bucket naming includes a persistent random suffix; `TF_VAR_bucket_name` is only an optional exact-name override. Recover the bucket, actual account and lab ID with `terraform output` using the original backend configuration; no account export is required, and only a custom lab ID needs restoring. Do not introduce tfvars or backend configuration copy workflows.
-- Leave the bucket in place for subsequent exercises. Self-hosted state makes deletion unsafe until every consumer has stopped and migrated away, including this root back to local state. Retirement requires explicit authorization, external backups and review of all object versions/delete markers; never force-empty or provide a bulk purge script.
+## Before you start
 
-No provider/API execution is implied by these source instructions. Account verification and actual deployment require a separately authorized run.
+- Check the AWS account and configured region. Automatic account discovery does not authorize access.
+- Start with fresh `local/` and `remote/` working directories, not another deployment's state.
+- Use the same AWS environment and input overrides throughout.
+
+## What to show
+
+1. In `local/`, compare the plan with the bucket created by apply.
+2. Open `terraform.tfstate` privately and identify the bucket ID. Never commit or share it.
+3. Wait 15 minutes after enabling versioning before migrating state.
+4. Back up state, copy it and the provider lockfile into `remote/`, then change folders.
+5. Run migration, compare outputs, and show the no-change plan and S3 state object.
+
+The copied state supplies the existing resource identities. Without it, Terraform would propose another bucket. The copied provider lockfile keeps provider selection consistent; do not copy `.terraform/`.
+
+## Questions worth asking
+
+- Did the bucket move, or only the state? Only the state.
+- Why does `remote/` need the old state? To recognize the existing bucket.
+- Why separate state keys for later labs? Each stack owns different resources.
+
+## If something goes wrong
+
+- **New resources or replacement proposed:** stop. Check state, inputs, account and backend key.
+- **Access denied:** fix the authorized credentials or permissions; do not weaken bucket protections.
+- **Interrupted migration:** inspect both states and the destination before retrying; never force-copy or discard state.
+
+## After the demo
+
+Use only `remote/`. The original `local/` state is now a stale backup. Keep both folders' resource definitions aligned when changing the lab.
+
+Leave the bucket for the later labs. To retire it, stop all consumers, back up every state privately, and migrate those states elsewhere first. This bucket's own state must also move back to a local backend before deletion protection can be deliberately removed. Account for old object versions; do not force-empty the bucket.

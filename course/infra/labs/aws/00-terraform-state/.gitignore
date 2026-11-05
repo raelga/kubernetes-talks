@@ -12,6 +12,4 @@
 **/backend.hcl
 **/backend.tf
 **/private-*
-!**/*.tfvars.example
-!**/backend.hcl.example
-!**/backend.tf.example
+!/remote/backend.tf

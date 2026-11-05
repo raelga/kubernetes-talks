@@ -17,7 +17,7 @@ Inspect the identity and confirm the account is authorized, then:
 
 ```sh
 export TF_VAR_enable_database=false
-STATE_BUCKET="$(terraform -chdir=../../00-terraform-state output -raw state_bucket_name)"
+STATE_BUCKET="$(terraform -chdir=../../00-terraform-state/remote output -raw state_bucket_name)"
 export TF_VAR_ami_id="$(aws ec2 describe-images --owners amazon \
   --filters 'Name=name,Values=al2023-ami-2023.*-kernel-6.1-x86_64' \
     'Name=architecture,Values=x86_64' 'Name=virtualization-type,Values=hvm' \

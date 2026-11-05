@@ -81,7 +81,7 @@ Live safety boundaries:
 
 After live setup, the guide provides the exact [capture commands](instructor-guide.md#capture-and-normalize). `capture.py live` performs read-only API queries with explicit subscription/group or project and exact ownership. Its envelope contains `source=live`, `provider`, `scope`, `ownership`, `data`; it refuses to overwrite an existing capture. `normalize.py live` reads that file **without calling APIs**. Neither mode silently substitutes fixtures or turns authentication/API errors into `[]`.
 
-A zero-VM capture is not proof of cleanup. Use the guide's [destruction and residual verification](instructor-guide.md#safe-destruction-and-read-only-verification), including preserved output names and `cleanup.py live`.
+Finish with the guide's [cleanup step](instructor-guide.md#cleanup): run `terraform destroy` from each deployed provider root and wait for successful completion.
 
 ## Costs and private files
 
