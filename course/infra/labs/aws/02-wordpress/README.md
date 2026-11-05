@@ -2,7 +2,7 @@
 
 Deploy the web tier, then add private MySQL without replacing EC2.
 
-Prerequisites: Terraform `>=1.10,<2`, AWS CLI v2, a configured AWS account and region, this repository checked out, and the completed [state bucket lab](../00-terraform-state/README.md). Account, region, resource names and the official Amazon Linux 2023 AMI are automatic; no AMI export is needed.
+Prerequisites: Terraform `>=1.10,<2`, AWS CLI v2, configured AWS credentials, this repository checked out, and the completed [state bucket lab](../00-terraform-state/README.md). The `aws_region` variable defaults to `eu-west-1`; account, resource names and the AMI are automatic. See [region overrides](../../../README.md) if needed.
 
 ## 1. Deploy the web tier
 

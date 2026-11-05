@@ -1,3 +1,10 @@
+variable "aws_region" {
+  description = "AWS deployment region."
+  type        = string
+  default     = "eu-west-1"
+  nullable    = false
+}
+
 variable "lab_id" {
   description = "Unique personal deployment identifier used in names and tags."
   type        = string

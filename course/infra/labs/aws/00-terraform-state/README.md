@@ -4,7 +4,7 @@ Create a bucket with local state, then move that state into S3. Later labs reuse
 
 ## 1. Create the bucket locally
 
-You need Terraform `>=1.10,<2`, AWS CLI v2, configured AWS credentials/region, and this repository checked out. Run the commands in order in the **same terminal**. No `.tf` edits are needed.
+You need Terraform `>=1.10,<2`, AWS CLI v2, configured AWS credentials, and this repository checked out. Terraform's `aws_region` variable defaults to `eu-west-1`; no region setup is required. Run the commands in order in the **same terminal**. No `.tf` edits are needed. See [region overrides](../../../README.md) if using another region.
 
 From the repository root, `cd` changes your working directory to the local configuration:
 
