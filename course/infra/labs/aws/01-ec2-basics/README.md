@@ -14,12 +14,12 @@ Two public and two private subnets span two availability zones. EC2 runs in the 
 
 Use Terraform `>=1.10,<2`, AWS CLI v2, curl and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html). Authenticate with authorized AWS credentials. Your identity needs permissions for VPC/networking, EC2, ELB, IAM roles and instance profiles, `iam:PassRole`, and SSM sessions; optional TLS also requires ACM and access to the selected Route 53 zone. Do not bypass account restrictions. Two available zones, a permitted `t3.micro` (or another x86_64 type), NAT/EIP and ALB quotas are required.
 
-First complete [Terraform state backend](../terraform-state/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
+First complete [Terraform state backend](../00-terraform-state/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
 
 From the repository root:
 
 ```sh
-cd course/infra/labs/aws/ec2-basics/infra
+cd course/infra/labs/aws/01-ec2-basics/infra
 aws sts get-caller-identity
 cp terraform.tfvars.example terraform.tfvars
 cp backend.hcl.example backend.hcl
@@ -82,12 +82,12 @@ sudo cat /var/log/infra-lab-bootstrap.log
 sudo journalctl -u httpd -u amazon-ssm-agent --no-pager
 sudo find /opt/infra-lab -maxdepth 2 -type d
 sudo git -C /opt/infra-lab/repository rev-parse HEAD
-sudo cat /opt/infra-lab/repository/course/infra/labs/aws/ec2-basics/app/runtime.json
+sudo cat /opt/infra-lab/repository/course/infra/labs/aws/01-ec2-basics/app/runtime.json
 curl --fail http://localhost/health
 exit
 ```
 
-The inline EC2 user-data installs packages, explicitly creates `/opt/infra-lab`, fetches the requested Git ref and checks out a detached commit. Apache serves the checked-out `course/infra/labs/aws/ec2-basics/app/` directory directly; bootstrap adds only public `runtime.json` information. Logs go to cloud-init, `/var/log/infra-lab-bootstrap.log` and the system console. No wrapper script is required. The SSM role is for instance management only; the static application does not call AWS APIs. IMDSv2 is required.
+The inline EC2 user-data installs packages, explicitly creates `/opt/infra-lab`, fetches the requested Git ref and checks out a detached commit. Apache serves the checked-out `course/infra/labs/aws/01-ec2-basics/app/` directory directly; bootstrap adds only public `runtime.json` information. Logs go to cloud-init, `/var/log/infra-lab-bootstrap.log` and the system console. No wrapper script is required. The SSM role is for instance management only; the static application does not call AWS APIs. IMDSv2 is required.
 
 If requests fail, inspect target health and bootstrap logs, verify the published ref, current public `/32`, routes/NAT and SSM permissions. Do not add SSH, assign a public IP or widen inbound access. Changing `repository_ref` changes user-data and **replaces EC2**, deleting its old root disk. Review a new plan before applying; a moving branch does not automatically update an existing instance. A newer AMI discovered on a later plan can also replace EC2.
 

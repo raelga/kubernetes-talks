@@ -14,7 +14,7 @@ resource "aws_instance" "app" {
     install -d -m 0755 /opt/infra-lab
     git clone --no-checkout https://github.com/raelga/kubernetes-talks.git /opt/infra-lab/repository
     git -C /opt/infra-lab/repository checkout --detach '${var.repository_ref}'
-    APP=/opt/infra-lab/repository/course/infra/labs/aws/wordpress/app
+    APP=/opt/infra-lab/repository/course/infra/labs/aws/02-wordpress/app
     install -d -m 0750 -o root -g apache /etc/infra-lab
     curl -fsSL https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o /etc/infra-lab/global-bundle.pem
     chmod 0644 /etc/infra-lab/global-bundle.pem
@@ -32,8 +32,8 @@ resource "aws_instance" "app" {
     ln -s /etc/infra-lab/wp-config.php "$APP/wp-config.php"
     cat > /etc/httpd/conf.d/wordpress.conf <<'APACHE'
     <VirtualHost *:80>
-      DocumentRoot /opt/infra-lab/repository/course/infra/labs/aws/wordpress/app/public
-      <Directory /opt/infra-lab/repository/course/infra/labs/aws/wordpress/app/public>
+      DocumentRoot /opt/infra-lab/repository/course/infra/labs/aws/02-wordpress/app/public
+      <Directory /opt/infra-lab/repository/course/infra/labs/aws/02-wordpress/app/public>
         Require all granted
         AllowOverride None
         Options -Indexes +FollowSymLinks

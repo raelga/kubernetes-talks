@@ -63,5 +63,5 @@ fi
 
 "${bin_dir}/terraform" version
 printf '\nRepository: %s\n' "$repo_dir"
-printf 'Lab: %s/course/infra/labs/aws/terraform-state\n' "$repo_dir"
+printf 'Lab: %s/course/infra/labs/aws/00-terraform-state\n' "$repo_dir"
 printf 'No directory change, Terraform initialization or cloud deployment was performed.\n'

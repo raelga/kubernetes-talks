@@ -14,7 +14,7 @@ Keep credentials, states, saved plans and private configuration out of Git. Do n
 Install Terraform and check out the repository without changing your shell's directory or PATH:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/main/course/infra/labs/aws/terraform-state/setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/main/course/infra/labs/aws/00-terraform-state/setup.sh | bash
 ```
 
 The environment-only script installs Terraform in `$HOME/.local/bin`, clones `main` into `$HOME/kubernetes-talks` and preserves existing checkouts without pulling or resetting. If a checkout already exists, update it to the approved revision before entering the new `/aws/` path. It requires Git, curl, unzip and a SHA-256 utility. It neither initializes Terraform nor provisions infrastructure. Use `$HOME/.local/bin/terraform` instead of `terraform` below if needed.
@@ -22,7 +22,7 @@ The environment-only script installs Terraform in `$HOME/.local/bin`, clones `ma
 Have AWS CLI v2 and authorized credentials available. Confirm the account, permitted region, credential expiry and workspace persistence; never put credentials in HCL. Stop on access errors rather than changing IAM or weakening protections. Storage, versions and requests cost money; billing is delayed and budget alerts do not stop spending.
 
 ```bash
-cd "$HOME/kubernetes-talks/course/infra/labs/aws/terraform-state"
+cd "$HOME/kubernetes-talks/course/infra/labs/aws/00-terraform-state"
 aws sts get-caller-identity
 cp terraform.tfvars.example terraform.tfvars
 ```
@@ -89,7 +89,7 @@ Native S3 `.tflock` locking coordinates concurrent state operations (Terraform >
 
 ## Next exercise and lifecycle
 
-Continue with [EC2 basics](../ec2-basics/README.md), reusing this bucket with its independent key `aws/ec2-basics/YOUR-LAB-ID/terraform.tfstate`; WordPress uses `aws/wordpress/YOUR-LAB-ID/terraform.tfstate`. Never share keys between roots or deployments.
+Continue with [EC2 basics](../01-ec2-basics/README.md), reusing this bucket with its independent key `aws/ec2-basics/YOUR-LAB-ID/terraform.tfstate`; WordPress uses `aws/wordpress/YOUR-LAB-ID/terraform.tfstate`. Never share keys between roots or deployments.
 
 **Do not destroy this self-managed backend bucket while any state depends on it.** `prevent_destroy = true` and `force_destroy = false` are intentional. Normal completion leaves it available for later labs. For explicitly authorized retirement, first back up every state outside Git/S3, stop all consumers (including empty states), and migrate each elsewhere. For this root, replace the S3 declaration in `backend.tf` with:
 

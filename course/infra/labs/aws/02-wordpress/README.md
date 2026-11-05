@@ -11,11 +11,11 @@ There is no public EC2 address, SSH, Docker, Kubernetes or deployment wrapper. O
 
 Requirements: Terraform `>=1.10,<2`, AWS CLI v2, `jq`, `curl`, an AWS account/identity allowed to create VPC, EC2, ALB, NAT/EIP, IAM, SSM, RDS and Secrets Manager resources. Optional TLS additionally needs ACM and write access to an existing **public, publicly delegated** Route 53 zone. Account restrictions, quotas and available instance classes still apply.
 
-First complete [Terraform state backend](../terraform-state/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
+First complete [Terraform state backend](../00-terraform-state/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
 
 **Publish this implementation to the public repository before launching EC2.** Bootstrap checks out `https://github.com/raelga/kubernetes-talks.git`; unpublished local files cannot be used. Prefer a published commit SHA over `main`. Do not put Git credentials in Terraform or user-data. This lab uses independent state, not the state of the EC2-only lab.
 
-From `course/infra/labs/aws/wordpress/`:
+From `course/infra/labs/aws/02-wordpress/`:
 
 ```sh
 export AWS_PROFILE=your-profile
@@ -132,7 +132,7 @@ APP_URL="$(terraform output -raw application_url)"
 PARAMETERS="$(jq -cn \
   --arg endpoint "$DB_ENDPOINT" --arg database "$DB_NAME" \
   --arg secret "$DB_SECRET_ARN" --arg region "$AWS_REGION" --arg url "$APP_URL" \
-  '{commands:[(["php", "/opt/infra-lab/repository/course/infra/labs/aws/wordpress/app/configure.php", "--endpoint", $endpoint, "--secret-arn", $secret, "--database", $database, "--region", $region, "--site-url", $url] | map(@sh) | join(" "))]}')"
+  '{commands:[(["php", "/opt/infra-lab/repository/course/infra/labs/aws/02-wordpress/app/configure.php", "--endpoint", $endpoint, "--secret-arn", $secret, "--database", $database, "--region", $region, "--site-url", $url] | map(@sh) | join(" "))]}')"
 COMMAND_ID="$(aws ssm send-command \
   --instance-ids "$INSTANCE_ID" --document-name AWS-RunShellScript \
   --parameters "$PARAMETERS" --query 'Command.CommandId' --output text)"

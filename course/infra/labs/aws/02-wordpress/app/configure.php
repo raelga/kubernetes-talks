@@ -125,7 +125,7 @@ if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') {
     $_SERVER['SERVER_PORT'] = '443';
 }
 if (!defined('ABSPATH')) {
-    define('ABSPATH', '/opt/infra-lab/repository/course/infra/labs/aws/wordpress/app/public/');
+    define('ABSPATH', '/opt/infra-lab/repository/course/infra/labs/aws/02-wordpress/app/public/');
 }
 if (!defined('INFRA_LAB_READINESS')) {
     require_once ABSPATH . 'wp-settings.php';

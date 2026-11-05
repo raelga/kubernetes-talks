@@ -221,7 +221,7 @@ resource "aws_instance" "app" {
     git -C /opt/infra-lab/repository remote add origin https://github.com/raelga/kubernetes-talks.git
     git -C /opt/infra-lab/repository fetch --depth=1 origin ${jsonencode(var.repository_ref)}
     git -C /opt/infra-lab/repository checkout --detach FETCH_HEAD
-    app=/opt/infra-lab/repository/course/infra/labs/aws/ec2-basics/app
+    app=/opt/infra-lab/repository/course/infra/labs/aws/01-ec2-basics/app
     test -f "$app/index.html"
     test -f "$app/health"
     printf '{"hostname":"%s","commit":"%s"}\n' "$(hostname)" "$(git -C /opt/infra-lab/repository rev-parse HEAD)" > "$app/runtime.json"
@@ -230,8 +230,8 @@ resource "aws_instance" "app" {
       chcon -R -t httpd_sys_content_t "$app"
     fi
     cat > /etc/httpd/conf.d/infra-lab.conf <<'APACHE'
-    DocumentRoot "/opt/infra-lab/repository/course/infra/labs/aws/ec2-basics/app"
-    <Directory "/opt/infra-lab/repository/course/infra/labs/aws/ec2-basics/app">
+    DocumentRoot "/opt/infra-lab/repository/course/infra/labs/aws/01-ec2-basics/app"
+    <Directory "/opt/infra-lab/repository/course/infra/labs/aws/01-ec2-basics/app">
         Options -Indexes +FollowSymLinks
         AllowOverride None
         Require all granted

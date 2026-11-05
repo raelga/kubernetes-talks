@@ -4,9 +4,9 @@ Provision resources, inspect the application separately, then remove the deploym
 
 | Lab | Infrastructure | Application |
 | --- | --- | --- |
-| [AWS: Terraform state backend](labs/aws/terraform-state/README.md) | Create the shared private S3 state bucket; migrate its own state from local to S3 | No application |
-| [AWS: EC2 basics](labs/aws/ec2-basics/README.md) | Public load balancer, private EC2 and outbound NAT | Static Apache site; inspect launch-time directory creation and Git checkout |
-| [AWS: WordPress](labs/aws/wordpress/README.md) | The same network pattern, then optional private RDS MySQL | Deploy the web host first, add the database, then explicitly configure WordPress |
+| [AWS: Terraform state backend](labs/aws/00-terraform-state/README.md) | Create the shared private S3 state bucket; migrate its own state from local to S3 | No application |
+| [AWS: EC2 basics](labs/aws/01-ec2-basics/README.md) | Public load balancer, private EC2 and outbound NAT | Static Apache site; inspect launch-time directory creation and Git checkout |
+| [AWS: WordPress](labs/aws/02-wordpress/README.md) | The same network pattern, then optional private RDS MySQL | Deploy the web host first, add the database, then explicitly configure WordPress |
 | [Azure and GCP](labs/azure-gcp/README.md) | Optional independent provider deployments | Offline response comparison and a small HTTP service |
 
 Each AWS application lab separates `infra/` (Terraform resources) from `app/` (application files). READMEs document actual commands, not wrapper scripts. EC2 user-data is visible in Terraform; enabling the database does not replace the web host.
