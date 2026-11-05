@@ -9,9 +9,9 @@ Provision resources, inspect the application separately, then remove the deploym
 | [AWS: WordPress](labs/aws/02-wordpress/README.md) | The same network pattern, then optional private RDS MySQL | Deploy the web host first, add the database, then explicitly configure WordPress |
 | [Azure and GCP](labs/azure-gcp/README.md) | Optional independent provider deployments | Offline response comparison and a small HTTP service |
 
-Each AWS application lab separates `infra/` (Terraform resources) from `app/` (application files). READMEs document actual commands, not wrapper scripts. EC2 user-data is visible in Terraform; enabling the database does not replace the web host.
+Each AWS application lab separates `infra/` (Terraform resources) from `app/` (application files). EC2 basics user-data runs `infra/install.sh` automatically at launch; no manual installation is needed. READMEs separate deployment steps from optional troubleshooting. Enabling the WordPress database does not replace the web host.
 
-Start with the AWS Terraform state lab: one S3 bucket, one Terraform root, first local state and then remote state in that same bucket. EC2 basics is the next infrastructure exercise; WordPress follows it. Both reuse the state lab's bucket with native S3 locking and their own state keys. The WordPress web/database stages keep one unchanged key. Copy each lab's `backend.hcl.example`, fill the real settings privately and initialize with `terraform init -backend-config=backend.hcl`. Application destruction leaves the shared state bucket intact.
+Start with the AWS Terraform state lab: create one S3 bucket locally, then migrate that root's state into its bucket. EC2 basics follows; WordPress comes next. Both reuse the bucket with separate state keys and native S3 locking. The labs inherit your configured AWS region, take deployment inputs through `TF_VAR_…` environment variables, and pass bucket/key arguments directly to `terraform init`; no copied tfvars or backend settings files are needed. WordPress keeps the same key across its web/database stages. Application destruction leaves the shared bucket intact.
 
 ALB accepts web traffic only from your client IP, EC2 accepts it only from the ALB security group, and MySQL accepts it only from the application security group. Instances and databases have no public IP. Optional ACM HTTPS requires a domain and an existing public Route 53 zone you control; without those inputs the lab uses HTTP.
 
@@ -20,7 +20,7 @@ ALB accepts web traffic only from your client IP, EC2 accepts it only from the A
 - Confirm account, region, permissions, quotas and credential expiry. Use a unique lab ID and independent state; never copy another deployment's state.
 - Review every plan. Keep databases private, do not open SSH or bypass access restrictions, and never put credentials in Git, user-data or command output.
 - ALB, NAT Gateway, public IPv4, EC2, RDS and storage incur charges while running. One NAT Gateway keeps the lab simple; this is not a highly available production architecture.
-- Review destruction and verify all owned resources are gone, including NAT/EIPs, load balancers, database and networking. Disposable database deletion loses its data; preserve it explicitly if required.
+- Run `terraform destroy` to remove each application stack; review and confirm the deletions. WordPress data is disposable. Keep the shared state bucket for the other labs.
 - Keep state, plans, private variables, credentials and real captures outside Git. Do not delete shared DNS zones, backends or unrelated resources.
 
 Fixtures are synthetic and do not prove live cloud correctness. Offline checks never deploy resources. Reviewed dependency lockfiles may be committed.

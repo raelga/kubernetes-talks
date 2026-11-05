@@ -7,11 +7,6 @@ variable "account_id" {
   }
 }
 
-variable "aws_region" {
-  type    = string
-  default = "eu-west-1"
-}
-
 variable "lab_id" {
   type = string
   validation {

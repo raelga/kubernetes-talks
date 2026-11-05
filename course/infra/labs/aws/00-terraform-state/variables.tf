@@ -1,14 +1,3 @@
-variable "region" {
-  description = "AWS region authorized for this deployment."
-  type        = string
-  default     = "us-east-1"
-
-  validation {
-    condition     = can(regex("^[a-z]{2}(-[a-z]+)+-[0-9]+$", var.region))
-    error_message = "Specify a valid, authorized AWS region."
-  }
-}
-
 variable "account_id" {
   description = "Authorized AWS account; the provider rejects other accounts."
   type        = string

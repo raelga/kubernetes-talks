@@ -2,6 +2,7 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+data "aws_region" "current" {}
 
 resource "random_id" "name" {
   byte_length = 3

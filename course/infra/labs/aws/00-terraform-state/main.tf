@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 resource "random_id" "bucket_suffix" {
   count       = var.bucket_name == null ? 1 : 0
   byte_length = 6

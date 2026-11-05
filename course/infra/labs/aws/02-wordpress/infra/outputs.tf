@@ -2,10 +2,13 @@ output "account_id" {
   value = var.account_id
 }
 output "aws_region" {
-  value = var.aws_region
+  value = data.aws_region.current.name
 }
 output "lab_id" {
   value = var.lab_id
+}
+output "ami_id" {
+  value = aws_instance.app.ami
 }
 output "stack_name" {
   value = local.name
@@ -23,7 +26,7 @@ output "instance_private_ip" {
   value = aws_instance.app.private_ip
 }
 output "ssm_start_session_command" {
-  value = "aws ssm start-session --region ${var.aws_region} --target ${aws_instance.app.id}"
+  value = "aws ssm start-session --region ${data.aws_region.current.name} --target ${aws_instance.app.id}"
 }
 output "vpc_id" {
   value = aws_vpc.lab.id

@@ -1,6 +1,0 @@
-bucket              = "REPLACE-WITH-state_bucket_name-OUTPUT"
-region              = "us-east-1"
-allowed_account_ids = ["123456789012"]
-key                 = "aws/terraform-state/YOUR-LAB-ID/terraform.tfstate"
-encrypt             = true
-use_lockfile        = true

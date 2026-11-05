@@ -8,16 +8,6 @@ variable "account_id" {
   }
 }
 
-variable "aws_region" {
-  description = "AWS region authorized for this deployment."
-  type        = string
-  nullable    = false
-  validation {
-    condition     = can(regex("^[a-z]{2}(-[a-z]+)+-[0-9]+$", var.aws_region))
-    error_message = "Specify a valid AWS region."
-  }
-}
-
 variable "lab_id" {
   description = "Unique deployment label, 3–20 lowercase letters, digits or internal hyphens."
   type        = string

@@ -3,7 +3,7 @@ output "account_id" {
 }
 
 output "aws_region" {
-  value = var.aws_region
+  value = data.aws_region.current.name
 }
 
 output "lab_id" {
@@ -29,7 +29,7 @@ output "instance_id" {
 }
 
 output "ssm_start_session_command" {
-  value = "aws ssm start-session --region ${var.aws_region} --target ${aws_instance.app.id}"
+  value = "aws ssm start-session --region ${data.aws_region.current.name} --target ${aws_instance.app.id}"
 }
 
 output "vpc_id" {
