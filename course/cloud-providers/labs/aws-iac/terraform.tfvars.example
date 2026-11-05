@@ -1,8 +1,0 @@
-# Copy to terraform.tfvars and replace values before plan/apply.
-# 203.0.113.10 is a DOCUMENTATION address, not your actual connection.
-aws_region    = "us-east-1"
-lab_id        = "alumna-ana-01"
-client_cidr   = "203.0.113.10/32"
-instance_type = "t3.micro"
-# ami_id = "ami-..." # Ubuntu 24.04 x86_64 only, region and permission confirmed.
-message = "Hello from AWS and UPC"

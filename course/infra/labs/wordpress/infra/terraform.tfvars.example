@@ -1,0 +1,20 @@
+account_id = "123456789012"
+aws_region = "us-east-1"
+lab_id     = "my-demo"
+client_cidr = "203.0.113.10/32"
+# Replace with the real regional Amazon Linux 2023 x86_64 ID before the first apply.
+ami_id = "ami-REPLACE-WITH-REGIONAL-ID"
+
+# Publish this implementation first. Prefer its public commit SHA to main.
+repository_ref = "main"
+wordpress_version = "7.1.4"
+instance_type = "t3.micro"
+
+# Persist this change to true only at the database stage.
+enable_database = false
+mysql_engine_version = "8.4.11"
+database_instance_class = "db.t4g.micro"
+
+# Both optional. Use a NEW hostname in an existing public zone you control.
+# domain_name = "wordpress-demo.example.com"
+# hosted_zone_id = "Z0123456789EXAMPLE"

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Private EC2 · Infrastructure lab</title>
+  <style>
+    :root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+    body { max-width: 54rem; margin: 4rem auto; padding: 0 1.5rem; }
+    h1 { line-height: 1.2; }
+    code { overflow-wrap: anywhere; }
+    dt { font-weight: 650; margin-top: 1rem; }
+    dd { margin-left: 0; }
+    .ready { color: #16814b; font-weight: 650; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>A public load balancer. A private EC2 instance.</h1>
+    <p class="ready">Apache is serving the checked-out application.</p>
+    <p>This static page comes from the public Git repository, not from a container or an embedded fallback page.</p>
+    <dl>
+      <dt>Request path</dt>
+      <dd>Client → Application Load Balancer → private EC2 → Apache</dd>
+      <dt>Server hostname</dt>
+      <dd><code id="hostname">Loading deployment information…</code></dd>
+      <dt>Checked-out commit</dt>
+      <dd><code id="commit">Loading deployment information…</code></dd>
+      <dt>Application health</dt>
+      <dd><a href="/health">/health</a></dd>
+    </dl>
+    <p>There is no public instance IP and no SSH listener. Session Manager provides authenticated private inspection; outbound package, Git and SSM traffic uses a NAT Gateway.</p>
+    <p id="runtime-status" role="status"></p>
+  </main>
+  <script>
+    fetch('/runtime.json', { cache: 'no-store' })
+      .then(response => {
+        if (!response.ok) throw new Error('Deployment information unavailable');
+        return response.json();
+      })
+      .then(runtime => {
+        document.getElementById('hostname').textContent = runtime.hostname;
+        document.getElementById('commit').textContent = runtime.commit;
+      })
+      .catch(() => {
+        document.getElementById('hostname').textContent = 'Unavailable';
+        document.getElementById('commit').textContent = 'Unavailable';
+        document.getElementById('runtime-status').textContent = 'The page is reachable, but runtime.json could not be loaded. Inspect bootstrap through Session Manager.';
+      });
+  </script>
+</body>
+</html>

@@ -4,8 +4,8 @@ Standalone labs for containers, Kubernetes and cloud infrastructure.
 
 ## Explore
 
-- [Cloud providers](cloud-providers/README.md): AWS hands-on infrastructure and Azure/GCP transfer labs.
-- [Terraform introduction: S3 and remote state](cloud-providers/labs/terraform-intro/README.md): fast bucket deployments, drift and state migration.
+- [Infrastructure](infra/README.md): Terraform basics, private EC2 behind an ALB, staged WordPress/MySQL and Azure/GCP comparison.
+- [Terraform introduction: S3 and remote state](infra/labs/terraform-intro/README.md): fast bucket deployments, drift and state migration.
 - [Terraform infrastructure examples](terraform/): existing environment and cluster configurations.
 - [Containers](containers/README.md).
 - [Kubernetes](kubernetes/README.md).
