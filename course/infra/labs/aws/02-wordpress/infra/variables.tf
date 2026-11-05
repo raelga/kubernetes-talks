@@ -10,14 +10,6 @@ variable "lab_id" {
 }
 
 
-variable "ami_id" {
-  description = "Persist an official regional Amazon Linux 2023 x86_64 AMI before the first apply; never resolve latest during staged applies."
-  type        = string
-  validation {
-    condition     = can(regex("^ami-[0-9a-f]{17}$", var.ami_id))
-    error_message = "Set ami_id to the actual regional AMI ID selected with the documented AWS CLI query."
-  }
-}
 
 variable "instance_type" {
   type    = string

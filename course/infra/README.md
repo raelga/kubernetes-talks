@@ -6,10 +6,10 @@ Provision resources, inspect the application separately, then remove the deploym
 | --- | --- | --- |
 | [AWS: Terraform state backend](labs/aws/00-terraform-state/README.md) | Create the shared private S3 state bucket; migrate its own state from local to S3 | No application |
 | [AWS: EC2 basics](labs/aws/01-ec2-basics/README.md) | Public load balancer, private EC2 and outbound NAT | Static Apache site; inspect launch-time directory creation and Git checkout |
-| [AWS: WordPress](labs/aws/02-wordpress/README.md) | The same network pattern, then optional private RDS MySQL | Deploy the web host first, add the database, then explicitly configure WordPress |
+| [AWS: WordPress](labs/aws/02-wordpress/README.md) | The same network pattern, then optional private RDS MySQL | Deploy the web tier, add the database, then complete the WordPress installer |
 | [Azure and GCP](labs/azure-gcp/README.md) | Optional independent provider deployments | Offline response comparison and a small HTTP service |
 
-Each AWS application lab separates `infra/` (Terraform resources) from `app/` (application files). EC2 basics user-data runs `infra/install.sh` automatically at launch; no manual installation is needed. READMEs separate deployment steps from optional troubleshooting. Enabling the WordPress database does not replace the web host.
+Each AWS application lab separates `infra/` from `app/`. EC2 installs automatically at launch. Adding the WordPress database configures the application through SSM without replacing EC2.
 
 Start with the state bucket lab: deploy from `local/`, copy state to `remote/`, then migrate. EC2 and WordPress reuse that bucket. Each backend already declares its own fixed key; initialization needs only the bucket name. Account and region come from your AWS configuration.
 

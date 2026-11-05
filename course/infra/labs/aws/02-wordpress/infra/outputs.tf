@@ -62,13 +62,13 @@ output "database_identifier" {
   value = var.enable_database ? aws_db_instance.app[0].identifier : null
 }
 output "database_endpoint" {
-  description = "Hostname only, without the port; pass to configure.php."
+  description = "Database hostname without the port; configured automatically through SSM."
   value       = var.enable_database ? aws_db_instance.app[0].address : null
 }
 output "database_name" {
   value = var.enable_database ? aws_db_instance.app[0].db_name : null
 }
 output "database_secret_arn" {
-  description = "Master secret identifier, not its value; EC2 reads it only during explicit configuration."
+  description = "Master secret identifier, not its value; EC2 reads it during automatic SSM configuration."
   value       = var.enable_database ? aws_db_instance.app[0].master_user_secret[0].secret_arn : null
 }

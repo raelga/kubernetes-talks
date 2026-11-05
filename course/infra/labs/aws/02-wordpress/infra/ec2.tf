@@ -1,11 +1,36 @@
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-kernel-6.1-x86_64"]
+  }
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+}
+
 resource "aws_instance" "app" {
-  ami                         = var.ami_id
+  ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.private[0].id
   associate_public_ip_address = false
   vpc_security_group_ids      = [aws_security_group.app.id]
   iam_instance_profile        = aws_iam_instance_profile.app.name
   user_data_replace_on_change = true
+  lifecycle {
+    ignore_changes = [ami]
+  }
   user_data                   = <<-USERDATA
     #!/bin/bash
     set -euo pipefail

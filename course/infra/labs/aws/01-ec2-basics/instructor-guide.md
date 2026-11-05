@@ -1,23 +1,17 @@
 # Teaching the EC2 lab
 
-Follow the [README](README.md). The goal is to connect Terraform infrastructure, automatic installation and security groups.
+## Demo flow
 
-## What to show
+Follow the [README](README.md): plan/apply, open the page, inspect internet → ALB → EC2 security groups, then destroy. Point out the hostname and Git commit on the page.
 
-1. The plan creates networking, a public ALB and private EC2.
-2. User-data runs [`infra/install.sh`](infra/install.sh) automatically. Students do not install Apache manually.
-3. Open the application and point out its hostname and Git commit.
-4. Inspect the security groups: internet → ALB → EC2. Only the ALB security group can reach EC2 port 80.
-5. Run `terraform destroy` and wait for completion. The shared state bucket stays.
+## Key points
 
-## What students should notice
+- User-data runs [`infra/install.sh`](infra/install.sh); students do not install Apache manually. Infrastructure is in `infra/`, served files in `app/`.
+- EC2 is private with no SSH access. NAT enables outbound installation; only the ALB security group reaches EC2 port 80.
+- Check the configured AWS account/profile and region before applying. Review replacement actions when changing the installer, Git ref or AMI.
+- HTTP is public and unencrypted. Optional HTTPS uses both `TF_VAR_domain_name` and `TF_VAR_hosted_zone_id` for a new hostname in an existing public Route 53 zone, followed by plan/apply; Terraform creates ACM and DNS validation resources.
+- ALB, NAT and EC2 cost money until destroyed. The shared backend bucket and existing DNS zone remain.
 
-- A running instance is not necessarily a ready application. Bootstrap and health checks take time.
-- The ALB is public; EC2 has no public IP or SSH access.
-- Infrastructure lives in `infra/`; the served files live in `app/`.
+## Troubleshooting
 
-## If the page does not load
-
-Use the optional SSM/log instructions in the README. Check bootstrap and target health before changing network rules. Do not add SSH or make EC2 public.
-
-ALB and NAT keep charging while they exist. Finish with destroy, not just stopping the instance.
+Bootstrap and target health checks take time; early HTTP 503 responses do not mean the network is broken. Check ALB target health and `/var/log/cloud-init-output.log`. For private access, use the command from `terraform output -raw ssm_start_session_command` with the Session Manager plugin installed. Do not add SSH or make EC2 public.
