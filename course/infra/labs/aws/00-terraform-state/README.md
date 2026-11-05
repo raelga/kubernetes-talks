@@ -39,19 +39,15 @@ Review and approve the apply. Terraform creates one encrypted, versioned bucket 
 
 **Wait 15 minutes after first enabling bucket versioning before writing state to it.** Stop other Terraform operations. Start with a fresh `remote/` directory without another deployment's state or initialized backend.
 
-From `local/`, back up state and record the resource outputs:
+From `local/`, copy the original state and provider lockfile, then change folders:
 
 ```bash
-mkdir -p "$HOME/terraform-backups"
-BACKUP_DIR="$(mktemp -d "$HOME/terraform-backups/state.XXXXXX")"
-terraform state pull > "$BACKUP_DIR/terraform.tfstate"
-terraform output -json > "$BACKUP_DIR/outputs.before.json"
-cp "$BACKUP_DIR/terraform.tfstate" ../remote/terraform.tfstate
+cp terraform.tfstate ../remote/terraform.tfstate
 cp .terraform.lock.hcl ../remote/.terraform.lock.hcl
 cd ../remote
 ```
 
-The state copy supplies the migration source; the provider lockfile keeps provider versions identical. Do not copy `.terraform/`. Keep the external backup private.
+The original state stays in `local/` as your backup. The copy supplies the migration source; the provider lockfile keeps provider versions identical. Do not copy `.terraform/` or commit state.
 
 ```bash
 STATE_KEY="aws/terraform-state/${TF_VAR_lab_id:-terraform-state}/terraform.tfstate"
@@ -65,14 +61,13 @@ Approve migration from local state to your bucket. Encryption and native S3 lock
 ## 4. Verify the migration
 
 ```bash
-terraform output -json > "$BACKUP_DIR/outputs.after.json"
-diff "$BACKUP_DIR/outputs.before.json" "$BACKUP_DIR/outputs.after.json"
+terraform output
 terraform plan
 aws s3api head-object --bucket "$STATE_BUCKET" --key "$STATE_KEY" \
   --query '{Encryption:ServerSideEncryption,Version:VersionId}'
 ```
 
-Expect no output from `diff`, a **no-change plan**, and an S3 state object with `AES256` encryption and a version ID. The bucket identity is unchanged; only state storage moved.
+The bucket name and ARN should match the outputs shown in `local/`. Expect a **no-change plan** and an S3 state object with `AES256` encryption and a version ID. Only state storage moved.
 
 **Use only `remote/` from now on.** The old local state is a stale backup, not another active stack. Keep both roots' resource definitions aligned when maintaining this lab.
 

@@ -13,7 +13,7 @@ Use the [README](README.md) for the commands. The story is simple: **create a bu
 1. In `local/`, compare the plan with the bucket created by apply.
 2. Open `terraform.tfstate` privately and identify the bucket ID. Never commit or share it.
 3. Wait 15 minutes after enabling versioning before migrating state.
-4. Back up state, copy it and the provider lockfile into `remote/`, then change folders.
+4. Copy `terraform.tfstate` and the provider lockfile into `remote/`, then change folders. The original local state remains as the backup.
 5. Run migration, compare outputs, and show the no-change plan and S3 state object.
 
 The copied state supplies the existing resource identities. Without it, Terraform would propose another bucket. The copied provider lockfile keeps provider selection consistent; do not copy `.terraform/`.
