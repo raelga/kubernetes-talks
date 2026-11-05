@@ -17,7 +17,7 @@ variable "lab_id" {
 }
 
 variable "bucket_name" {
-  description = "Optional exact globally available bucket name; null uses account, lab ID and a persistent random suffix."
+  description = "Optional exact globally available bucket name; null uses upc-k8s, the lab ID and a persistent random suffix."
   type        = string
   default     = null
 

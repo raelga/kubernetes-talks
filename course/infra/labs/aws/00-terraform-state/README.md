@@ -42,6 +42,23 @@ terraform state list
 terraform state show aws_s3_bucket.state
 ```
 
+Illustrative excerpt, not captured AWS output. Your random suffix will differ; other attributes are omitted:
+
+```text
+❯ terraform state show aws_s3_bucket.state
+# aws_s3_bucket.state:
+resource "aws_s3_bucket" "state" {
+    arn           = "arn:aws:s3:::upc-k8s-terraform-state-a1b2c3d4e5f6"
+    bucket        = "upc-k8s-terraform-state-a1b2c3d4e5f6"
+    force_destroy = false
+    id            = "upc-k8s-terraform-state-a1b2c3d4e5f6"
+}
+```
+
+`bucket` is its name, `id` identifies the managed bucket, and `arn` is its AWS resource identifier. The suffix avoids S3's global name collisions. A 12-digit AWS account ID identifies the account—not the bucket—and is not part of the default name.
+
+If an existing deployment uses the previous name, preserve it with `TF_VAR_bucket_name` before planning. Renaming requires replacement, which this state bucket's deletion protection intentionally blocks.
+
 `output` displays the values exposed by this configuration, such as the bucket name and region.
 
 ```sh
