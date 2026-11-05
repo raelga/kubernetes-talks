@@ -5,8 +5,8 @@ umask 022
 # Send installation output to the log file and EC2 system console.
 exec > >(tee -a /var/log/infra-lab-bootstrap.log /dev/console) 2>&1
 
-repository_ref="$1"
-wordpress_version="$2"
+repository_ref='${repository_ref}'
+wordpress_version='${wordpress_version}'
 lab_dir=/opt/infra-lab
 repo_dir="$lab_dir/repository"
 app_dir="$repo_dir/course/infra/labs/aws/02-wordpress/app"
@@ -40,7 +40,7 @@ chmod 0755 /usr/local/bin/wp
 
 # Use GNU tar to preserve long filenames in the official WordPress archive.
 curl --fail --silent --show-error --location \
-  "https://wordpress.org/wordpress-${wordpress_version}.tar.gz" \
+  "https://wordpress.org/wordpress-$wordpress_version.tar.gz" \
   --output "$lab_dir/wordpress.tar.gz"
 tar -xzf "$lab_dir/wordpress.tar.gz" --strip-components=1 -C "$app_dir/public"
 rm "$lab_dir/wordpress.tar.gz"
@@ -66,8 +66,8 @@ cat > /etc/httpd/conf.d/wordpress.conf <<APACHE
     RewriteEngine On
     RewriteCond /etc/infra-lab/configured !-f
     RewriteRule ^(?!health\.php$|readiness\.php$|ready\.php$) /ready.php [END]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %%{REQUEST_FILENAME} !-f
+    RewriteCond %%{REQUEST_FILENAME} !-d
     RewriteRule . /index.php [END]
   </Directory>
   <FilesMatch "^(wp-config\.php|\.ht)">

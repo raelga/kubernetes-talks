@@ -36,13 +36,10 @@ resource "aws_instance" "app" {
   lifecycle {
     ignore_changes = [ami]
   }
-  user_data = <<-USERDATA
-    #!/bin/bash
-    set -euo pipefail
-    install -d -m 0755 /opt/infra-lab
-    printf '%s' '${filebase64("${path.module}/install.sh")}' | base64 --decode > /opt/infra-lab/install.sh
-    bash /opt/infra-lab/install.sh ${jsonencode(var.repository_ref)} ${jsonencode(var.wordpress_version)}
-  USERDATA
+  user_data = templatefile("${path.module}/install.sh", {
+    repository_ref    = var.repository_ref
+    wordpress_version = var.wordpress_version
+  })
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
