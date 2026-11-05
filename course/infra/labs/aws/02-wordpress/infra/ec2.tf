@@ -20,10 +20,15 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+resource "random_shuffle" "subnet" {
+  input        = sort(aws_subnet.private[*].id)
+  result_count = 1
+}
+
 resource "aws_instance" "app" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
-  subnet_id                   = aws_subnet.private[0].id
+  subnet_id                   = random_shuffle.subnet.result[0]
   associate_public_ip_address = false
   vpc_security_group_ids      = [aws_security_group.app.id]
   iam_instance_profile        = data.aws_iam_instance_profile.app.name

@@ -2,6 +2,8 @@
 
 Deploy a public ALB and private WordPress EC2 first, then add private MySQL without replacing EC2.
 
+EC2 randomly selects one of the two private subnets. The choice persists across applies; destroying and recreating the stack makes a new selection.
+
 Use Terraform `>=1.10,<2`, AWS CLI v2, configured AWS Academy credentials in `us-east-1`, and the completed [state bucket lab](../00-terraform-state/README.md).
 
 The lab reuses Academy's `LabInstanceProfile`/`LabRole`; it creates no IAM roles or policies. EC2 needs SSM and Secrets Manager access.
