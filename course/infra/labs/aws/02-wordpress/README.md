@@ -4,9 +4,9 @@ Deploy a public ALB and private WordPress EC2 first, then add private MySQL with
 
 EC2 randomly selects one of the two private subnets. The choice persists across applies; destroying and recreating the stack makes a new selection.
 
-Terraform renders `infra/install.sh` directly as user-data with `templatefile`; cloud-init runs it on first boot.
+Cloud-init runs [`infra/install.sh`](infra/install.sh) on first boot. SSM runs the same repeatable installer and Terraform waits for success, including in the web-only stage.
 
-Downloads retry transient network/server failures up to three times, with bounded connection and transfer timeouts. Checksum failures still stop installation.
+WordPress is downloaded directly and checked against a pinned SHA-256; WP-CLI is not needed. Downloads have bounded retries. Changing `wordpress_version` also requires its matching `wordpress_sha256`.
 
 Use Terraform `>=1.10,<2`, AWS CLI v2, configured AWS Academy credentials in `us-east-1`, and the completed [state bucket lab](../00-terraform-state/README.md).
 
@@ -50,7 +50,7 @@ Print the URL and open it in your browser. Allow time for automatic installation
 terraform output -raw application_url
 ```
 
-User-data runs [`infra/install.sh`](infra/install.sh), installs Apache/PHP and downloads WordPress into `app/public/`. The first page explains that the files are ready but the database is not configured.
+The first page explains that WordPress files are ready but the database is not configured.
 
 ## 2. Inspect the security group chain
 
@@ -84,7 +84,7 @@ Review the plan: it should add the database and configuration, **not replace EC2
 terraform plan
 ```
 
-Apply and confirm with `yes`. Terraform configures WordPress automatically through an SSM association and waits for success.
+Apply and confirm with `yes`. SSM reruns installation safely, configures WordPress, and waits for success.
 
 ```sh
 terraform apply
@@ -109,6 +109,17 @@ Open it and complete the **browser-based WordPress installer** to create the sit
 `/readiness.php` returns HTTP 503 before database configuration, then HTTP 200 with `installer-ready` when the database connects. It reports `installed` once the installer saves the WordPress site URL.
 
 Keep `TF_VAR_enable_database=true` set through cleanup, including when resuming in another terminal. Setting it to `false` and applying deletes the database; it is not a pause switch.
+
+## Recover a failed installation
+
+After fixing connectivity, repeat the apply. A failed SSM association is recreated and reruns installation without replacing EC2. Uploads and database configuration are preserved; checksum failures still stop the installation.
+
+```sh
+terraform apply
+```
+
+Cloud-init may retain its original failure status; the SSM execution reports the repair result. Updating an older deployment to this installer changes user-data and replaces EC2 once. Keep `TF_VAR_enable_database=true` to retain RDS.
+
 
 ## 4. Cleanup
 

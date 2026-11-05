@@ -1,6 +1,5 @@
 resource "aws_ssm_association" "configure_wordpress" {
-  count = var.enable_database ? 1 : 0
-  name  = "AWS-RunShellScript"
+  name = "AWS-RunShellScript"
 
   targets {
     key    = "InstanceIds"
@@ -8,9 +7,16 @@ resource "aws_ssm_association" "configure_wordpress" {
   }
 
   parameters = {
-    commands = join("\n", [
+    commands = join("\n", concat([
       "set -e",
-      "cloud-init status --wait",
+      "bash <<'INSTALL_WORDPRESS'",
+      templatefile("${path.module}/install.sh", {
+        repository_ref    = var.repository_ref
+        wordpress_version = var.wordpress_version
+        wordpress_sha256  = var.wordpress_sha256
+      }),
+      "INSTALL_WORDPRESS",
+      ], var.enable_database ? [
       join(" ", [
         "php /opt/infra-lab/repository/course/infra/labs/aws/02-wordpress/app/configure.php",
         "--endpoint ${jsonencode(aws_db_instance.app[0].address)}",
@@ -19,7 +25,7 @@ resource "aws_ssm_association" "configure_wordpress" {
         "--region ${jsonencode(data.aws_region.current.name)}",
         "--site-url ${jsonencode(local.tls_enabled ? "https://${var.domain_name}" : "http://${aws_lb.app.dns_name}")}",
       ]),
-    ])
+    ] : []))
   }
 
   wait_for_success_timeout_seconds = 600

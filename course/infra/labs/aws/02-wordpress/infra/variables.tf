@@ -40,12 +40,22 @@ variable "repository_ref" {
 }
 
 variable "wordpress_version" {
-  description = "Exact stable WordPress version downloaded and checksum-verified by WP-CLI."
+  description = "Exact stable WordPress release; override wordpress_sha256 together with this value."
   type        = string
   default     = "7.1.4"
   validation {
     condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.wordpress_version))
     error_message = "Pin a stable three-component WordPress version."
+  }
+}
+
+variable "wordpress_sha256" {
+  description = "SHA-256 of the official WordPress release tarball."
+  type        = string
+  default     = "881e53a4681ff2cd911651b11cccdede5ae477ddf0765af5d6a1a8b219a1d835"
+  validation {
+    condition     = can(regex("^[a-f0-9]{64}$", var.wordpress_sha256))
+    error_message = "Use the lowercase SHA-256 digest of the selected WordPress archive."
   }
 }
 

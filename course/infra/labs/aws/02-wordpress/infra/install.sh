@@ -1,62 +1,68 @@
 #!/bin/bash
-set -euo pipefail
+set -Eeuo pipefail
 umask 022
 
 # Send installation output to the log file and EC2 system console.
 exec > >(tee -a /var/log/infra-lab-bootstrap.log /dev/console) 2>&1
 
+# Cloud-init and SSM may start together; only one installer can run at a time.
+exec 9>/var/lock/infra-lab-install.lock
+flock 9
+step=initialization
+trap 'echo "Installation failed during $step (line $LINENO)." >&2' ERR
+
+download() {
+  curl -fsSL --retry 3 --retry-max-time 180 --connect-timeout 10 --max-time 120 \
+    "$1" --output "$2"
+}
+
 repository_ref='${repository_ref}'
 wordpress_version='${wordpress_version}'
+wordpress_sha256='${wordpress_sha256}'
 lab_dir=/opt/infra-lab
 repo_dir="$lab_dir/repository"
 app_dir="$repo_dir/course/infra/labs/aws/02-wordpress/app"
 config_dir=/etc/infra-lab
 
 # Install Apache, PHP and the tools used by WordPress configuration.
+step=packages
 dnf install -y \
-  httpd git awscli-2 jq tar gzip \
+  httpd git awscli-2 tar gzip \
   php8.3 php8.3-cli php8.3-fpm php8.3-mysqlnd \
   php8.3-process php8.3-mbstring php8.3-xml php8.3-gd php8.3-opcache
 
 # Check out the application and its configuration helper.
+step=checkout
 install -d -m 0755 "$lab_dir"
-git clone --no-checkout https://github.com/raelga/kubernetes-talks.git "$repo_dir"
-git -C "$repo_dir" checkout --detach "$repository_ref"
+git init "$repo_dir"
+git -C "$repo_dir" fetch --depth=1 https://github.com/raelga/kubernetes-talks.git "$repository_ref"
+git -C "$repo_dir" checkout --detach FETCH_HEAD
 
 # Trust the AWS RDS certificates for encrypted database connections.
+step=certificates
 install -d -m 0750 -o root -g apache "$config_dir"
-curl -fsSL --retry 3 --retry-max-time 180 --connect-timeout 10 --max-time 120 \
-  https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
-  -o "$config_dir/global-bundle.pem"
-chmod 0644 "$config_dir/global-bundle.pem"
+download https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem "$config_dir/global-bundle.pem.new"
+chmod 0644 "$config_dir/global-bundle.pem.new"
+mv "$config_dir/global-bundle.pem.new" "$config_dir/global-bundle.pem"
 cp "$config_dir/global-bundle.pem" /etc/pki/ca-trust/source/anchors/rds-global-bundle.pem
 update-ca-trust
 
-# Install the pinned WP-CLI release and verify its checksum.
-curl -fsSL --retry 3 --retry-max-time 180 --connect-timeout 10 --max-time 120 \
-  https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar \
-  -o /usr/local/bin/wp
-echo 'ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c  /usr/local/bin/wp' \
-  | sha256sum --check
-chmod 0755 /usr/local/bin/wp
 
-# Use GNU tar to preserve long filenames in the official WordPress archive.
-curl -fsSL --retry 3 --retry-max-time 180 --connect-timeout 10 --max-time 120 \
-  "https://wordpress.org/wordpress-$wordpress_version.tar.gz" \
-  --output "$lab_dir/wordpress.tar.gz"
-tar -xzf "$lab_dir/wordpress.tar.gz" --strip-components=1 -C "$app_dir/public"
-rm "$lab_dir/wordpress.tar.gz"
-php -d memory_limit=256M /usr/local/bin/wp core verify-checksums --allow-root --path="$app_dir/public" \
-  --version="$wordpress_version" --locale=en_US
+# Verify the pinned archive before changing any WordPress files.
+step=wordpress
+archive="$lab_dir/wordpress.tar.gz"
+download "https://wordpress.org/wordpress-$wordpress_version.tar.gz" "$archive"
+echo "$wordpress_sha256  $archive" | sha256sum --check
+tar -xzf "$archive" --strip-components=1 --no-same-owner --no-same-permissions \
+  --exclude=wordpress/wp-content/uploads -C "$app_dir/public"
+rm "$archive"
 
-# Keep core files read-only to Apache; only uploads need write access.
-chown -R root:apache "$app_dir"
-find "$app_dir" -type d -exec chmod 0755 {} +
-find "$app_dir" -type f -exec chmod 0644 {} +
+# Leave existing uploads and root-only database configuration untouched.
 install -d -m 0755 -o apache -g apache "$app_dir/public/wp-content/uploads"
-ln -s "$config_dir/wp-config.php" "$app_dir/wp-config.php"
+ln -sfn "$config_dir/wp-config.php" "$app_dir/wp-config.php"
 
 # Serve a database-not-configured page until the second deployment stage.
+step=apache
 cat > /etc/httpd/conf.d/wordpress.conf <<APACHE
 <VirtualHost *:80>
   DocumentRoot $app_dir/public
@@ -82,4 +88,6 @@ APACHE
 printf 'expose_php=Off\ndisplay_errors=Off\nlog_errors=On\n' > /etc/php.d/99-infra-lab.ini
 
 # Start the instance management agent, PHP and Apache.
+step=services
 systemctl enable --now amazon-ssm-agent php-fpm httpd
+echo 'WordPress installation complete.'

@@ -39,6 +39,7 @@ resource "aws_instance" "app" {
   user_data = templatefile("${path.module}/install.sh", {
     repository_ref    = var.repository_ref
     wordpress_version = var.wordpress_version
+    wordpress_sha256  = var.wordpress_sha256
   })
   metadata_options {
     http_endpoint               = "enabled"
