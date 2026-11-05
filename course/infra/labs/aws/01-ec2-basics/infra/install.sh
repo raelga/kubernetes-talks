@@ -1,25 +1,42 @@
 #!/bin/bash
 set -euo pipefail
+
+# Send installation output to the log file and EC2 system console.
 exec > >(tee -a /var/log/infra-lab-bootstrap.log /dev/console) 2>&1
+
 repository_ref="$1"
+lab_dir=/opt/infra-lab
+repo_dir="$lab_dir/repository"
+app_dir="$repo_dir/course/infra/labs/aws/01-ec2-basics/app"
+
+# Install the web server and Git.
 echo 'Installing Apache and Git'
 dnf install -y httpd git
-mkdir -p /opt/infra-lab
-git init /opt/infra-lab/repository
-git -C /opt/infra-lab/repository remote add origin https://github.com/raelga/kubernetes-talks.git
-git -C /opt/infra-lab/repository fetch --depth=1 origin "$repository_ref"
-git -C /opt/infra-lab/repository checkout --detach FETCH_HEAD
-app=/opt/infra-lab/repository/course/infra/labs/aws/01-ec2-basics/app
-test -f "$app/index.html"
-test -f "$app/health"
-printf '{"hostname":"%s","commit":"%s"}\n' "$(hostname)" "$(git -C /opt/infra-lab/repository rev-parse HEAD)" > "$app/runtime.json"
-chmod -R a+rX "$app"
+
+# Check out the requested version of the application.
+mkdir -p "$lab_dir"
+git init "$repo_dir"
+git -C "$repo_dir" remote add origin https://github.com/raelga/kubernetes-talks.git
+git -C "$repo_dir" fetch --depth=1 origin "$repository_ref"
+git -C "$repo_dir" checkout --detach FETCH_HEAD
+commit="$(git -C "$repo_dir" rev-parse HEAD)"
+
+# Publish the hostname and commit displayed on the demo page.
+test -f "$app_dir/index.html"
+test -f "$app_dir/health"
+printf '{"hostname":"%s","commit":"%s"}\n' \
+  "$(hostname)" "$commit" > "$app_dir/runtime.json"
+
+# Allow Apache to read the checked-out files, including on SELinux systems.
+chmod -R a+rX "$app_dir"
 if command -v selinuxenabled >/dev/null 2>&1 && selinuxenabled; then
-  chcon -R -t httpd_sys_content_t "$app"
+  chcon -R -t httpd_sys_content_t "$app_dir"
 fi
-cat > /etc/httpd/conf.d/infra-lab.conf <<'APACHE'
-DocumentRoot "/opt/infra-lab/repository/course/infra/labs/aws/01-ec2-basics/app"
-<Directory "/opt/infra-lab/repository/course/infra/labs/aws/01-ec2-basics/app">
+
+# Serve the application directly from the repository checkout.
+cat > /etc/httpd/conf.d/infra-lab.conf <<APACHE
+DocumentRoot "$app_dir"
+<Directory "$app_dir">
     Options -Indexes +FollowSymLinks
     AllowOverride None
     Require all granted
@@ -27,5 +44,7 @@ DocumentRoot "/opt/infra-lab/repository/course/infra/labs/aws/01-ec2-basics/app"
 ServerTokens Prod
 ServerSignature Off
 APACHE
+
+# Start Apache now and enable it on future boots.
 systemctl enable --now httpd
-echo "Application ready from commit $(git -C /opt/infra-lab/repository rev-parse HEAD)"
+echo "Application ready from commit $commit"
