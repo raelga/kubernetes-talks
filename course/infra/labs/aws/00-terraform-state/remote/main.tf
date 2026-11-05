@@ -4,7 +4,7 @@ data "aws_region" "current" {}
 
 resource "random_id" "bucket_suffix" {
   count       = var.bucket_name == null ? 1 : 0
-  byte_length = 6
+  byte_length = 4
 }
 
 resource "aws_s3_bucket" "state" {
