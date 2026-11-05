@@ -28,26 +28,3 @@ variable "repository_ref" {
   }
 }
 
-variable "domain_name" {
-  description = "Optional new public application hostname in hosted_zone_id. Set both DNS inputs or neither."
-  type        = string
-  default     = null
-  validation {
-    condition     = (var.domain_name == null) == (var.hosted_zone_id == null)
-    error_message = "domain_name and hosted_zone_id must both be set or both be null."
-  }
-  validation {
-    condition     = var.domain_name == null ? true : can(regex("^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$", var.domain_name))
-    error_message = "Use a lowercase public hostname without a wildcard or trailing dot."
-  }
-}
-
-variable "hosted_zone_id" {
-  description = "Existing public Route 53 hosted zone ID. The zone is never created or deleted."
-  type        = string
-  default     = null
-  validation {
-    condition     = var.hosted_zone_id == null ? true : can(regex("^Z[A-Z0-9]+$", var.hosted_zone_id))
-    error_message = "Specify a Route 53 hosted zone ID beginning with Z."
-  }
-}

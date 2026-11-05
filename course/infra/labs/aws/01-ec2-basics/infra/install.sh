@@ -2,9 +2,8 @@
 set -euo pipefail
 exec > >(tee -a /var/log/infra-lab-bootstrap.log /dev/console) 2>&1
 repository_ref="$1"
-echo 'Installing Apache, Git and the SSM agent'
-dnf install -y httpd git amazon-ssm-agent
-systemctl enable --now amazon-ssm-agent
+echo 'Installing Apache and Git'
+dnf install -y httpd git
 mkdir -p /opt/infra-lab
 git init /opt/infra-lab/repository
 git -C /opt/infra-lab/repository remote add origin https://github.com/raelga/kubernetes-talks.git

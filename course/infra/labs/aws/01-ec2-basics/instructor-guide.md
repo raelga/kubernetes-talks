@@ -1,17 +1,20 @@
-# Teaching the EC2 lab
+# Teaching the EC2 basics lab
 
 ## Demo flow
 
-Follow the [README](README.md): plan/apply, open the page, inspect internet → ALB → EC2 security groups, then destroy. Point out the hostname and Git commit on the page.
+Follow the [README](README.md): deploy one EC2, open its public IP, inspect the security group and user-data, then destroy.
 
 ## Key points
 
-- User-data runs [`infra/install.sh`](infra/install.sh); students do not install Apache manually. Infrastructure is in `infra/`, served files in `app/`.
-- EC2 is private with no SSH access. NAT enables outbound installation; only the ALB security group reaches EC2 port 80.
-- Check the configured AWS account/profile and region before applying. Review replacement actions when changing the installer, Git ref or AMI.
-- HTTP is public and unencrypted. Optional HTTPS uses both `TF_VAR_domain_name` and `TF_VAR_hosted_zone_id` for a new hostname in an existing public Route 53 zone, followed by plan/apply; Terraform creates ACM and DNS validation resources.
-- ALB, NAT and EC2 cost money until destroyed. The shared backend bucket and existing DNS zone remain.
+- Public subnet + Internet Gateway + public IP provide connectivity; the security group controls allowed traffic.
+- HTTP port 80 is open; SSH is not. Outbound access lets package installation and Git checkout work. Security groups are stateful.
+- User-data runs `infra/install.sh` automatically. Point out package installation, `/opt/infra-lab` and the Git checkout.
+- No ALB, NAT Gateway, IAM instance role or database is needed. WordPress introduces the private tiers later.
 
-## Troubleshooting
+## Troubleshooting and cleanup
 
-Bootstrap and target health checks take time; early HTTP 503 responses do not mean the network is broken. Check ALB target health and `/var/log/cloud-init-output.log`. For private access, use the command from `terraform output -raw ssm_start_session_command` with the Session Manager plugin installed. Do not add SSH or make EC2 public.
+If the page is not ready, check the instance system log in the EC2 console. Installation takes time; EC2 running does not mean Apache is ready.
+
+Finish with `terraform destroy`. The shared state bucket remains. EC2, public IPv4 and disk storage cost money until removed.
+
+If replacing the earlier ALB-based version, review the destructive plan: old load balancer/NAT/private-tier resources are removed and EC2 is replaced. Do not apply without reviewing those changes.

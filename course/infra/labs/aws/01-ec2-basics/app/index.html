@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Private EC2 · Infrastructure lab</title>
+  <title>EC2 basics · Infrastructure lab</title>
   <style>
     :root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
     body { max-width: 54rem; margin: 4rem auto; padding: 0 1.5rem; }
@@ -16,12 +16,12 @@
 </head>
 <body>
   <main>
-    <h1>A public load balancer. A private EC2 instance.</h1>
+    <h1>One EC2 instance. Installed by user-data.</h1>
     <p class="ready">Apache is serving the checked-out application.</p>
     <p>This static page comes from the public Git repository, not from a container or an embedded fallback page.</p>
     <dl>
       <dt>Request path</dt>
-      <dd>Client → Application Load Balancer → private EC2 → Apache</dd>
+      <dd>Client → EC2 public IP → security group port 80 → Apache</dd>
       <dt>Server hostname</dt>
       <dd><code id="hostname">Loading deployment information…</code></dd>
       <dt>Checked-out commit</dt>
@@ -29,7 +29,7 @@
       <dt>Application health</dt>
       <dd><a href="/health">/health</a></dd>
     </dl>
-    <p>There is no public instance IP and no SSH listener. Session Manager provides authenticated private inspection; outbound package, Git and SSM traffic uses a NAT Gateway.</p>
+    <p>The instance has a public IP. Its security group allows HTTP on port 80 and blocks inbound SSH. User-data installs Apache and checks out the application automatically.</p>
     <p id="runtime-status" role="status"></p>
   </main>
   <script>
@@ -45,7 +45,7 @@
       .catch(() => {
         document.getElementById('hostname').textContent = 'Unavailable';
         document.getElementById('commit').textContent = 'Unavailable';
-        document.getElementById('runtime-status').textContent = 'The page is reachable, but runtime.json could not be loaded. Inspect bootstrap through Session Manager.';
+        document.getElementById('runtime-status').textContent = 'The page is reachable, but runtime.json could not be loaded. Check bootstrap in the EC2 console system log.';
       });
   </script>
 </body>

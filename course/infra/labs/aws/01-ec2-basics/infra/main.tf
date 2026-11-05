@@ -2,8 +2,6 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-data "aws_partition" "current" {}
-
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
@@ -35,8 +33,7 @@ resource "random_id" "suffix" {
 }
 
 locals {
-  name        = "infra-lab-ec2-${var.lab_id}-${random_id.suffix.hex}"
-  tls_enabled = var.domain_name != null
+  name = "infra-lab-ec2-${var.lab_id}-${random_id.suffix.hex}"
 }
 
 resource "aws_vpc" "lab" {
@@ -52,21 +49,11 @@ resource "aws_internet_gateway" "lab" {
 }
 
 resource "aws_subnet" "public" {
-  count                   = 2
   vpc_id                  = aws_vpc.lab.id
-  cidr_block              = cidrsubnet(aws_vpc.lab.cidr_block, 8, count.index)
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = false
-  tags                    = { Name = "${local.name}-public-${count.index + 1}" }
-}
-
-resource "aws_subnet" "private" {
-  count                   = 2
-  vpc_id                  = aws_vpc.lab.id
-  cidr_block              = cidrsubnet(aws_vpc.lab.cidr_block, 8, count.index + 10)
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = false
-  tags                    = { Name = "${local.name}-private-${count.index + 1}" }
+  cidr_block              = "10.42.0.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
+  tags                    = { Name = "${local.name}-public" }
 }
 
 resource "aws_route_table" "public" {
@@ -79,138 +66,38 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  count          = 2
-  subnet_id      = aws_subnet.public[count.index].id
+  subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
-}
-
-resource "aws_eip" "nat" {
-  domain = "vpc"
-  tags   = { Name = "${local.name}-nat" }
-}
-
-resource "aws_nat_gateway" "lab" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id
-  tags          = { Name = local.name }
-  depends_on    = [aws_internet_gateway.lab, aws_route_table_association.public]
-}
-
-resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.lab.id
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.lab.id
-  }
-  tags = { Name = "${local.name}-private" }
-}
-
-resource "aws_route_table_association" "private" {
-  count          = 2
-  subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private.id
-}
-
-resource "aws_security_group" "alb" {
-  name        = "${local.name}-alb"
-  description = "Client-only HTTP and optional HTTPS; egress only to the application"
-  vpc_id      = aws_vpc.lab.id
-  tags        = { Name = "${local.name}-alb" }
 }
 
 resource "aws_security_group" "app" {
   name        = "${local.name}-app"
-  description = "HTTP only from the ALB; outbound package, Git and SSM access"
+  description = "Public HTTP for the EC2 demo; no SSH"
   vpc_id      = aws_vpc.lab.id
   tags        = { Name = "${local.name}-app" }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "http" {
-  security_group_id = aws_security_group.alb.id
-  description       = "Public HTTP access"
+  security_group_id = aws_security_group.app.id
   ip_protocol       = "tcp"
   from_port         = 80
   to_port           = 80
   cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_vpc_security_group_ingress_rule" "https" {
-  count             = local.tls_enabled ? 1 : 0
-  security_group_id = aws_security_group.alb.id
-  description       = "Public HTTPS access"
-  ip_protocol       = "tcp"
-  from_port         = 443
-  to_port           = 443
-  cidr_ipv4         = "0.0.0.0/0"
-}
-
-resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
-  security_group_id            = aws_security_group.alb.id
-  description                  = "Application traffic and health checks"
-  ip_protocol                  = "tcp"
-  from_port                    = 80
-  to_port                      = 80
-  referenced_security_group_id = aws_security_group.app.id
-}
-
-resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
-  security_group_id            = aws_security_group.app.id
-  description                  = "Only the ALB can contact Apache"
-  ip_protocol                  = "tcp"
-  from_port                    = 80
-  to_port                      = 80
-  referenced_security_group_id = aws_security_group.alb.id
-}
-
-resource "aws_vpc_security_group_egress_rule" "app_web" {
-  for_each          = toset(["80", "443"])
+resource "aws_vpc_security_group_egress_rule" "app" {
   security_group_id = aws_security_group.app.id
-  description       = "Packages, public Git checkout and SSM through NAT"
-  ip_protocol       = "tcp"
-  from_port         = tonumber(each.value)
-  to_port           = tonumber(each.value)
+  description       = "Outbound package downloads and Git checkout"
+  ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
-}
-
-resource "aws_vpc_security_group_egress_rule" "app_dns" {
-  for_each          = toset(["tcp", "udp"])
-  security_group_id = aws_security_group.app.id
-  description       = "DNS within the VPC"
-  ip_protocol       = each.value
-  from_port         = 53
-  to_port           = 53
-  cidr_ipv4         = aws_vpc.lab.cidr_block
-}
-
-resource "aws_iam_role" "app" {
-  name = local.name
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ssm" {
-  role       = aws_iam_role.app.name
-  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_instance_profile" "app" {
-  name = local.name
-  role = aws_iam_role.app.name
 }
 
 resource "aws_instance" "app" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
-  subnet_id                   = aws_subnet.private[0].id
-  associate_public_ip_address = false
+  subnet_id                   = aws_subnet.public.id
+  associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.app.id]
-  iam_instance_profile        = aws_iam_instance_profile.app.name
   user_data_replace_on_change = true
 
   user_data = <<-USER_DATA
@@ -237,129 +124,7 @@ resource "aws_instance" "app" {
 
   tags = { Name = local.name }
   depends_on = [
-    aws_route_table_association.private,
-    aws_iam_role_policy_attachment.ssm,
-    aws_vpc_security_group_egress_rule.app_web,
-    aws_vpc_security_group_egress_rule.app_dns,
+    aws_route_table_association.public,
+    aws_vpc_security_group_egress_rule.app,
   ]
-}
-
-resource "aws_lb" "app" {
-  name                       = "infra-lab-ec2-${random_id.suffix.hex}"
-  internal                   = false
-  load_balancer_type         = "application"
-  security_groups            = [aws_security_group.alb.id]
-  subnets                    = aws_subnet.public[*].id
-  enable_deletion_protection = false
-  drop_invalid_header_fields = true
-  tags                       = { Name = local.name }
-  depends_on                 = [aws_route_table_association.public]
-}
-
-resource "aws_lb_target_group" "app" {
-  name                 = "infra-lab-ec2-${random_id.suffix.hex}"
-  port                 = 80
-  protocol             = "HTTP"
-  target_type          = "instance"
-  vpc_id               = aws_vpc.lab.id
-  deregistration_delay = 10
-
-  health_check {
-    path                = "/health"
-    protocol            = "HTTP"
-    matcher             = "200"
-    interval            = 15
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
-  tags = { Name = local.name }
-}
-
-resource "aws_lb_target_group_attachment" "app" {
-  target_group_arn = aws_lb_target_group.app.arn
-  target_id        = aws_instance.app.id
-  port             = 80
-}
-
-resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.app.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = local.tls_enabled ? "redirect" : "forward"
-    target_group_arn = local.tls_enabled ? null : aws_lb_target_group.app.arn
-
-    dynamic "redirect" {
-      for_each = local.tls_enabled ? [1] : []
-      content {
-        host        = var.domain_name
-        port        = "443"
-        protocol    = "HTTPS"
-        status_code = "HTTP_301"
-      }
-    }
-  }
-}
-
-resource "aws_acm_certificate" "app" {
-  count             = local.tls_enabled ? 1 : 0
-  domain_name       = var.domain_name
-  validation_method = "DNS"
-  tags              = { Name = local.name }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_route53_record" "validation" {
-  for_each = local.tls_enabled ? {
-    for option in aws_acm_certificate.app[0].domain_validation_options : option.domain_name => {
-      name  = option.resource_record_name
-      type  = option.resource_record_type
-      value = option.resource_record_value
-    }
-  } : {}
-
-  zone_id         = var.hosted_zone_id
-  name            = each.value.name
-  type            = each.value.type
-  ttl             = 60
-  records         = [each.value.value]
-  allow_overwrite = false
-}
-
-resource "aws_acm_certificate_validation" "app" {
-  count                   = local.tls_enabled ? 1 : 0
-  certificate_arn         = aws_acm_certificate.app[0].arn
-  validation_record_fqdns = [for record in aws_route53_record.validation : record.fqdn]
-}
-
-resource "aws_lb_listener" "https" {
-  count             = local.tls_enabled ? 1 : 0
-  load_balancer_arn = aws_lb.app.arn
-  port              = 443
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = aws_acm_certificate_validation.app[0].certificate_arn
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.app.arn
-  }
-}
-
-resource "aws_route53_record" "app" {
-  count           = local.tls_enabled ? 1 : 0
-  zone_id         = var.hosted_zone_id
-  name            = var.domain_name
-  type            = "A"
-  allow_overwrite = false
-
-  alias {
-    name                   = aws_lb.app.dns_name
-    zone_id                = aws_lb.app.zone_id
-    evaluate_target_health = true
-  }
 }
