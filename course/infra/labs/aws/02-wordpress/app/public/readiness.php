@@ -19,7 +19,10 @@ try {
         PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true,
     ]);
     $connection->query('SELECT 1');
-    $installed = $connection->query("SHOW TABLES LIKE 'wp_options'")->fetchColumn() !== false;
+    $hasOptions = $connection->query("SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'wp_options'")->fetchColumn() !== false;
+    // WordPress considers installation complete only after its site URL is stored.
+    $installed = $hasOptions
+        && (bool) $connection->query("SELECT option_value FROM wp_options WHERE option_name = 'siteurl' LIMIT 1")->fetchColumn();
     echo json_encode(['application' => $installed ? 'installed' : 'installer-ready', 'database' => 'connected']);
 } catch (Throwable $error) {
     http_response_code(503);
