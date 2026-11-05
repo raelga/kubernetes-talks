@@ -17,7 +17,9 @@ terraform apply
 terraform output -raw application_url
 ```
 
-Review and approve the apply. The database is disabled by default (`enable_database=false`). Open the URL after installation and health checks finish: WordPress files are ready, but no database is configured.
+User-data runs [`infra/install.sh`](infra/install.sh) automatically. It installs Apache/PHP and downloads WordPress into `app/public/` (the web root).
+
+The database is disabled by default. Once installation and health checks finish, the page reports that WordPress files are ready but the database is not configured.
 
 The fixed backend key is `wordpress/terraform.tfstate`: use **one deployment of this lab per bucket**. Terraform keeps the existing instance's AMI when newer images appear.
 
