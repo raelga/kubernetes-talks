@@ -14,7 +14,7 @@ config_dir=/etc/infra-lab
 
 # Install Apache, PHP and the tools used by WordPress configuration.
 dnf install -y \
-  httpd git awscli-2 jq \
+  httpd git awscli-2 jq tar gzip \
   php8.3 php8.3-cli php8.3-fpm php8.3-mysqlnd \
   php8.3-process php8.3-mbstring php8.3-xml php8.3-gd php8.3-opcache
 
@@ -38,10 +38,13 @@ echo 'ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c  /usr/loc
   | sha256sum --check
 chmod 0755 /usr/local/bin/wp
 
-# Download official WordPress into Apache's document root.
-wp core download --allow-root --path="$app_dir/public" \
-  --version="$wordpress_version" --locale=en_US
-wp core verify-checksums --allow-root --path="$app_dir/public" \
+# Use GNU tar to preserve long filenames in the official WordPress archive.
+curl --fail --silent --show-error --location \
+  "https://wordpress.org/wordpress-${wordpress_version}.tar.gz" \
+  --output "$lab_dir/wordpress.tar.gz"
+tar -xzf "$lab_dir/wordpress.tar.gz" --strip-components=1 -C "$app_dir/public"
+rm "$lab_dir/wordpress.tar.gz"
+php -d memory_limit=256M /usr/local/bin/wp core verify-checksums --allow-root --path="$app_dir/public" \
   --version="$wordpress_version" --locale=en_US
 
 # Keep core files read-only to Apache; only uploads need write access.

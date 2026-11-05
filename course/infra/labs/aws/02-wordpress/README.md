@@ -1,59 +1,117 @@
 # Private EC2 + WordPress + MySQL
 
-Deploy the web tier, then add private MySQL without replacing EC2.
+Deploy a public ALB and private WordPress EC2 first, then add private MySQL without replacing EC2.
 
-Prerequisites: Terraform `>=1.10,<2`, AWS CLI v2, configured AWS credentials, this repository checked out, and the completed [state bucket lab](../00-terraform-state/README.md). The `aws_region` variable defaults to `us-east-1`; account, resource names and the AMI are automatic. See [region overrides](../../../README.md) if needed.
+Use Terraform `>=1.10,<2`, AWS CLI v2, configured AWS Academy credentials in `us-east-1`, and the completed [state bucket lab](../00-terraform-state/README.md).
+
+The lab reuses Academy's `LabInstanceProfile`/`LabRole`; it creates no IAM roles or policies. EC2 needs SSM and Secrets Manager access.
 
 ## 1. Deploy the web tier
 
-From the repository root:
+From the repository root, enter the Terraform directory.
 
 ```sh
 cd course/infra/labs/aws/02-wordpress/infra
+```
+
+Read the shared bucket name from the state lab.
+
+```sh
 export STATE_BUCKET="$(terraform -chdir=../../00-terraform-state/remote output -raw state_bucket_name)"
+```
+
+Initialize the backend with its fixed key, `wordpress/terraform.tfstate`. Use one deployment of this lab per state bucket.
+
+```sh
 terraform init -backend-config="bucket=$STATE_BUCKET"
+```
+
+Preview the web tier. The database is disabled by default.
+
+```sh
 terraform plan
+```
+
+Create the web tier; review the plan and confirm with `yes`.
+
+```sh
 terraform apply
+```
+
+Print the URL and open it in your browser. Allow time for automatic installation and ALB health checks.
+
+```sh
 terraform output -raw application_url
 ```
 
-User-data runs [`infra/install.sh`](infra/install.sh) automatically. It installs Apache/PHP and downloads WordPress into `app/public/` (the web root).
+User-data runs [`infra/install.sh`](infra/install.sh), installs Apache/PHP and downloads WordPress into `app/public/`. The first page explains that the files are ready but the database is not configured.
 
-The database is disabled by default. Once installation and health checks finish, the page reports that WordPress files are ready but the database is not configured.
+## 2. Inspect the security group chain
 
-The fixed backend key is `wordpress/terraform.tfstate`: use **one deployment of this lab per bucket**. Terraform keeps the existing instance's AMI when newer images appear.
+Inspect the ALB security group and its rules in the AWS console, using this resource to identify it.
 
-## 2. Follow the security groups
+```sh
+terraform state show aws_security_group.alb
+```
 
-Inspect the chain in the AWS console:
+The public ALB accepts HTTP on port 80; HTTPS on port 443 is optional when a domain and certificate are configured.
 
-- Internet → public ALB on HTTP.
-- ALB security group → private EC2 on port 80.
-- EC2 security group → private RDS on port 3306, added next.
+Inspect the private EC2 security group. HTTP on port 80 is allowed only from the ALB security group, with no SSH ingress.
 
-EC2 and RDS have no public access. A NAT Gateway provides EC2 outbound connectivity.
+```sh
+terraform state show aws_security_group.app
+```
 
-## 3. Add MySQL and finish WordPress
+EC2 has no public IP; a NAT Gateway provides outbound connectivity.
+
+## 3. Add MySQL
+
+Enable the database for subsequent Terraform commands.
 
 ```sh
 export TF_VAR_enable_database=true
+```
+
+Review the plan: it should add the database and configuration, **not replace EC2**.
+
+```sh
 terraform plan
+```
+
+Apply and confirm with `yes`. Terraform configures WordPress automatically through an SSM association and waits for success.
+
+```sh
 terraform apply
+```
+
+Inspect the database security group and its rules in the AWS console. Private RDS accepts MySQL on port 3306 only from the EC2 security group.
+
+```sh
+terraform state show 'aws_security_group.database[0]'
+```
+
+RDS manages the database password in Secrets Manager. EC2 retrieves it at runtime; the password is not persisted in Terraform state or passed as an SSM command argument. Do not print or commit credentials.
+
+Print the application URL again.
+
+```sh
 terraform output -raw application_url
 ```
 
-Review the plan: it should add the database and configuration, **not replace EC2**. Terraform runs the configuration helper automatically through an SSM association and waits for success. The instance retrieves its database credentials from Secrets Manager; the password is not passed through Terraform state or SSM command arguments.
+Open it and complete the **browser-based WordPress installer** to create the site. Public HTTP is unencrypted: use unique demo credentials and no sensitive data.
 
-Open the URL and complete the **browser-based WordPress installer** to create the site. HTTP is public and unencrypted: use unique demo credentials and no sensitive data.
+`/readiness.php` returns HTTP 503 before database configuration, then HTTP 200 with `installer-ready` when the database connects. It reports `installed` once the installer saves the WordPress site URL.
 
 Keep `TF_VAR_enable_database=true` set through cleanup, including when resuming in another terminal. Setting it to `false` and applying deletes the database; it is not a pause switch.
 
 ## 4. Cleanup
 
+Delete this stack's resources. Review, confirm with `yes`, and wait for completion.
+
 ```sh
 terraform destroy
 ```
 
-Review, confirm, and wait for completion. **Database contents and uploads are deleted**, with no final database snapshot. The shared state bucket remains. ALB, NAT, EC2 and RDS incur charges until destroyed.
+**Database contents and uploads are deleted**, with no final database snapshot. The shared state bucket and existing Academy IAM resources remain. ALB, NAT Gateway, EC2 and RDS incur charges until destroyed.
 
-If configuration fails, inspect the SSM association execution and `/var/log/cloud-init-output.log`; never print credentials or make EC2/RDS public. Optional HTTPS: set both `TF_VAR_domain_name` and `TF_VAR_hosted_zone_id` for a new hostname in an existing public Route 53 zone, then plan/apply. Terraform creates the certificate and DNS records; the existing zone remains after cleanup.
+For configuration failures, inspect the SSM association execution and EC2 console system log without exposing credentials or making private resources public. Optional HTTPS requires both `TF_VAR_domain_name` and `TF_VAR_hosted_zone_id` for a new hostname in an existing public Route 53 zone; then repeat the plan and apply steps. Terraform creates the certificate and DNS records; the existing zone remains after cleanup.

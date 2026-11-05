@@ -26,7 +26,7 @@ resource "aws_instance" "app" {
   subnet_id                   = aws_subnet.private[0].id
   associate_public_ip_address = false
   vpc_security_group_ids      = [aws_security_group.app.id]
-  iam_instance_profile        = aws_iam_instance_profile.app.name
+  iam_instance_profile        = data.aws_iam_instance_profile.app.name
   user_data_replace_on_change = true
   lifecycle {
     ignore_changes = [ami]
@@ -54,7 +54,6 @@ resource "aws_instance" "app" {
   depends_on = [
     aws_route_table_association.private,
     aws_route_table_association.public,
-    aws_iam_role_policy_attachment.ssm,
     aws_vpc_security_group_egress_rule.web,
     aws_vpc_security_group_egress_rule.dns
   ]

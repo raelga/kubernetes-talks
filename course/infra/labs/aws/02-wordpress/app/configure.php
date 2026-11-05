@@ -33,7 +33,7 @@ try {
     if (!preg_match('/^[a-zA-Z0-9.-]+$/D', $endpoint)
         || !preg_match('/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/D', $database)
         || !preg_match('/^[a-z]{2}(?:-[a-z]+)+-[0-9]+$/D', $region)
-        || !preg_match('/^arn:aws:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:[a-zA-Z0-9\/_+=.@-]+$/D', $args['secret-arn'])
+        || !preg_match('/^arn:aws:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:[a-zA-Z0-9\/_+=.@!-]+$/D', $args['secret-arn'])
         || !preg_match('~^https?://[a-z0-9.-]+$~D', $siteUrl)) {
         throw new InvalidArgumentException('Invalid nonsecret configuration argument.');
     }

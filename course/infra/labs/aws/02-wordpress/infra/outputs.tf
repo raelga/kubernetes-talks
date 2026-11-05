@@ -47,7 +47,7 @@ output "app_security_group_id" {
   value = aws_security_group.app.id
 }
 output "instance_role_name" {
-  value = aws_iam_role.app.name
+  value = data.aws_iam_instance_profile.app.role_name
 }
 output "certificate_arn" {
   value = local.tls_enabled ? aws_acm_certificate.app[0].arn : null

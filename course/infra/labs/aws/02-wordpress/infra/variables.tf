@@ -5,6 +5,12 @@ variable "aws_region" {
   nullable    = false
 }
 
+variable "instance_profile_name" {
+  description = "Existing instance profile; Academy supplies LabInstanceProfile."
+  type        = string
+  default     = "LabInstanceProfile"
+}
+
 variable "lab_id" {
   description = "Optional deployment label, 3–20 lowercase letters, digits or internal hyphens."
   type        = string

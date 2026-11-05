@@ -25,7 +25,6 @@ resource "aws_ssm_association" "configure_wordpress" {
   wait_for_success_timeout_seconds = 600
 
   depends_on = [
-    aws_iam_role_policy.database_secret,
     aws_db_instance.app,
     aws_vpc_security_group_ingress_rule.database,
     aws_vpc_security_group_egress_rule.database,

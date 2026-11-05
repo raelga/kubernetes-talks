@@ -47,7 +47,7 @@ resource "aws_nat_gateway" "lab" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
   tags          = { Name = local.name }
-  depends_on    = [aws_internet_gateway.lab]
+  depends_on    = [aws_internet_gateway.lab, aws_route_table_association.public]
 }
 
 resource "aws_route_table" "public" {
@@ -82,7 +82,7 @@ resource "aws_route_table_association" "private" {
 
 resource "aws_security_group" "alb" {
   name        = "${local.name}-alb"
-  description = "Only the selected client can reach the ALB"
+  description = "Public HTTP and optional HTTPS"
   vpc_id      = aws_vpc.lab.id
   tags        = { Name = "${local.name}-alb" }
 }
