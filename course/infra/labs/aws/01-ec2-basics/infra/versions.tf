@@ -20,7 +20,6 @@ provider "aws" {
       Project = "infra-lab"
       Lab     = "ec2-basics"
       LabId   = var.lab_id
-      Stack   = local.name
     }
   }
 }

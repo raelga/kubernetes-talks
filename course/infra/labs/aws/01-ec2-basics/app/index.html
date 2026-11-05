@@ -29,7 +29,7 @@
       <dt>Application health</dt>
       <dd><a href="/health">/health</a></dd>
     </dl>
-    <p>The instance has a public IP. Its security group allows HTTP on port 80 and blocks inbound SSH. User-data installs Apache and checks out the application automatically.</p>
+    <p>The instance has a public IP. Web ports 80/443 stay public; SSH starts public and can be restricted to your IP. Apache serves HTTP; port 443 needs separate TLS configuration. User-data installs the application automatically.</p>
     <p id="runtime-status" role="status"></p>
   </main>
   <script>

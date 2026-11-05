@@ -23,7 +23,7 @@ output "public_ip" {
 }
 
 output "vpc_id" {
-  value = aws_vpc.lab.id
+  value = data.aws_vpc.default.id
 }
 
 output "app_security_group_id" {

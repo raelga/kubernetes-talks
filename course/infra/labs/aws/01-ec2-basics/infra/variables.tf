@@ -5,6 +5,25 @@ variable "aws_region" {
   nullable    = false
 }
 
+variable "ssh_cidr" {
+  description = "IPv4 CIDR allowed to access SSH; web access stays public."
+  type        = string
+  default     = "0.0.0.0/0"
+  nullable    = false
+
+  validation {
+    condition     = can(cidrnetmask(var.ssh_cidr))
+    error_message = "Use a valid IPv4 CIDR, such as 0.0.0.0/0 or your public IP followed by /32."
+  }
+}
+
+variable "key_name" {
+  description = "Existing EC2 SSH key pair; Academy provides vockey."
+  type        = string
+  default     = "vockey"
+  nullable    = false
+}
+
 variable "lab_id" {
   description = "Unique deployment label, 3–20 lowercase letters, digits or internal hyphens."
   type        = string

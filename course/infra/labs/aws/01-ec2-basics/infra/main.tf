@@ -1,5 +1,16 @@
-data "aws_availability_zones" "available" {
-  state = "available"
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
+  }
 }
 
 data "aws_region" "current" {}
@@ -36,45 +47,12 @@ locals {
   name = "infra-lab-ec2-${var.lab_id}-${random_id.suffix.hex}"
 }
 
-resource "aws_vpc" "lab" {
-  cidr_block           = "10.42.0.0/16"
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-  tags                 = { Name = local.name }
-}
-
-resource "aws_internet_gateway" "lab" {
-  vpc_id = aws_vpc.lab.id
-  tags   = { Name = local.name }
-}
-
-resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.lab.id
-  cidr_block              = "10.42.0.0/24"
-  availability_zone       = data.aws_availability_zones.available.names[0]
-  map_public_ip_on_launch = true
-  tags                    = { Name = "${local.name}-public" }
-}
-
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.lab.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.lab.id
-  }
-  tags = { Name = "${local.name}-public" }
-}
-
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
-}
 
 resource "aws_security_group" "app" {
   name        = "${local.name}-app"
-  description = "Public HTTP for the EC2 demo; no SSH"
-  vpc_id      = aws_vpc.lab.id
-  tags        = { Name = "${local.name}-app" }
+  description = "Public web access and configurable SSH access"
+  vpc_id      = data.aws_vpc.default.id
+  tags        = { Name = local.name, Stack = local.name }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "http" {
@@ -83,6 +61,22 @@ resource "aws_vpc_security_group_ingress_rule" "http" {
   from_port         = 80
   to_port           = 80
   cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "https" {
+  security_group_id = aws_security_group.app.id
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+  security_group_id = aws_security_group.app.id
+  ip_protocol       = "tcp"
+  from_port         = 22
+  to_port           = 22
+  cidr_ipv4         = var.ssh_cidr
 }
 
 resource "aws_vpc_security_group_egress_rule" "app" {
@@ -95,9 +89,10 @@ resource "aws_vpc_security_group_egress_rule" "app" {
 resource "aws_instance" "app" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
-  subnet_id                   = aws_subnet.public.id
+  subnet_id                   = sort(data.aws_subnets.default.ids)[0]
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.app.id]
+  key_name                    = var.key_name
   user_data_replace_on_change = true
 
   user_data = <<-USER_DATA
@@ -122,9 +117,6 @@ resource "aws_instance" "app" {
     tags                  = { Name = local.name, Stack = local.name }
   }
 
-  tags = { Name = local.name }
-  depends_on = [
-    aws_route_table_association.public,
-    aws_vpc_security_group_egress_rule.app,
-  ]
+  tags       = { Name = local.name, Stack = local.name }
+  depends_on = [aws_vpc_security_group_egress_rule.app]
 }
