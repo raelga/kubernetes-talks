@@ -12,7 +12,7 @@ Two public and two private subnets span two availability zones. EC2 runs in the 
 
 ## 1. Prerequisites and configuration
 
-Use Terraform `>=1.9,<2`, AWS CLI v2, curl and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html). Authenticate with authorized AWS credentials. Your identity needs permissions for VPC/networking, EC2, ELB, IAM roles and instance profiles, `iam:PassRole`, and SSM sessions; optional TLS also requires ACM and access to the selected Route 53 zone. Do not bypass account restrictions. Two available zones, a permitted `t3.micro` (or another x86_64 type), NAT/EIP and ALB quotas are required.
+Use Terraform `>=1.10,<2`, AWS CLI v2, curl and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html). Authenticate with authorized AWS credentials. Your identity needs permissions for VPC/networking, EC2, ELB, IAM roles and instance profiles, `iam:PassRole`, and SSM sessions; optional TLS also requires ACM and access to the selected Route 53 zone. Do not bypass account restrictions. Two available zones, a permitted `t3.micro` (or another x86_64 type), NAT/EIP and ALB quotas are required.
 
 From the repository root:
 
@@ -20,6 +20,7 @@ From the repository root:
 cd course/infra/labs/ec2-basics/infra
 aws sts get-caller-identity
 cp terraform.tfvars.example terraform.tfvars
+cp backend.hcl.example backend.hcl
 ```
 
 Edit `terraform.tfvars`:
@@ -30,7 +31,9 @@ Edit `terraform.tfvars`:
 - `client_cidr`: your actual public outbound IPv4 followed by `/32`; the example address will not work.
 - `repository_ref`: preferably a **full published commit SHA containing this lab**. The default is `main`, which can change. Unpublished local changes cannot be fetched by EC2. Publish the complete lab before applying.
 
-This deployment uses new independent local state in `infra/`; never copy old lab state into it or migrate an existing deployment with this configuration. Keep credentials, local variables, plans and state out of Git. Random suffixes distinguish independent stacks; no shared Terraform modules or existing resources are adopted.
+State lives in an existing private, encrypted, versioned S3 bucket, not the instance. Edit ignored `backend.hcl` with your bucket, its region, expected account and a unique key such as `infra/ec2-basics/YOUR-LAB-ID/terraform.tfstate`. Keep `encrypt = true` and `use_lockfile = true`; backend credentials come from your authorized AWS session, never this file. Confirm exact-key read/write and `.tflock` read/write/delete permissions. The WordPress lab must use a different key, even when sharing this bucket.
+
+Use a fresh state for this configuration; do not copy the retired lab's state. If this exact stack already exists with local state, back it up and explicitly review `terraform init -migrate-state -backend-config=backend.hcl` rather than creating duplicate infrastructure. Never force copying or bypass a lock. Destroy removes the application stack, not the shared state bucket; retain the backend and private state for recreation.
 
 ### Optional HTTPS with ACM
 
@@ -41,7 +44,7 @@ Use a fresh hostname. Both DNS resources set `allow_overwrite = false`: existing
 ## 2. Initialize, inspect and apply
 
 ```sh
-terraform init
+terraform init -backend-config=backend.hcl
 terraform workspace show
 terraform validate
 terraform plan -out=apply.tfplan

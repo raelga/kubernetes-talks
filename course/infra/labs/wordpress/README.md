@@ -9,9 +9,9 @@ There is no public EC2 address, SSH, Docker, Kubernetes or deployment wrapper. O
 
 ## 1. Prepare persistent inputs
 
-Requirements: Terraform 1.5+, AWS CLI v2, `jq`, `curl`, an AWS account/identity allowed to create VPC, EC2, ALB, NAT/EIP, IAM, SSM, RDS and Secrets Manager resources. Optional TLS additionally needs ACM and write access to an existing **public, publicly delegated** Route 53 zone. Account restrictions, quotas and available instance classes still apply.
+Requirements: Terraform `>=1.10,<2`, AWS CLI v2, `jq`, `curl`, an AWS account/identity allowed to create VPC, EC2, ALB, NAT/EIP, IAM, SSM, RDS and Secrets Manager resources. Optional TLS additionally needs ACM and write access to an existing **public, publicly delegated** Route 53 zone. Account restrictions, quotas and available instance classes still apply.
 
-**Publish this implementation to the public repository before launching EC2.** Bootstrap checks out `https://github.com/raelga/kubernetes-talks.git`; unpublished local files cannot be used. Prefer a published commit SHA over `main`. Do not put Git credentials in Terraform or user-data. This lab is independent of other labs: use a new directory/state, not a migrated state.
+**Publish this implementation to the public repository before launching EC2.** Bootstrap checks out `https://github.com/raelga/kubernetes-talks.git`; unpublished local files cannot be used. Prefer a published commit SHA over `main`. Do not put Git credentials in Terraform or user-data. This lab uses independent state, not the state of the EC2-only lab.
 
 From this directory:
 
@@ -19,6 +19,7 @@ From this directory:
 export AWS_PROFILE=your-profile
 cd infra
 cp terraform.tfvars.example terraform.tfvars
+cp backend.hcl.example backend.hcl
 aws sts get-caller-identity
 curl -4 https://checkip.amazonaws.com
 ```
@@ -40,10 +41,20 @@ For HTTPS, set **both** `domain_name` and `hosted_zone_id` to a **new** hostname
 
 All resources incur normal AWS charges, especially the continuously running ALB, NAT, EC2 and RDS. NAT cross-AZ traffic is possible. Budgets/alerts do not stop spending. This is disposable infrastructure, not a production design.
 
+### One stack, separate resource files
+
+All files in `infra/` belong to **one Terraform root and one state**: `network.tf` creates networking/security groups, `ec2.tf` defines the instance and launch data, `db.tf` defines optional MySQL, `alb.tf` contains load balancing/ACM/DNS, and `iam.tf` defines instance permissions. `main.tf` holds shared data/locals. Files are organizational boundaries, not independently applied stacks; do not use `-target` for staging.
+
+### S3 state and locking
+
+Edit ignored `backend.hcl` with your existing private, encrypted, versioned state bucket, its region, expected account and a unique key such as `infra/wordpress/YOUR-LAB-ID/terraform.tfstate`. Both web and database stages **must keep this same key, directory and workspace**. The EC2-only lab needs a different key. Preserve `encrypt = true` and `use_lockfile = true`; never put credentials in backend configuration.
+
+Confirm exact state-key read/write and `.tflock` read/write/delete permissions before initialization. An existing local deployment needs a secure backup and an explicitly reviewed `terraform init -migrate-state -backend-config=backend.hcl`; never force state copying or remove an active lock. The database and application are disposable, but `destroy` does not delete the state bucket. An empty remote state remains a backend consumer.
+
 ## 2. Apply and inspect the web stage
 
 ```sh
-terraform init
+terraform init -backend-config=backend.hcl
 terraform plan -out=web.tfplan
 terraform apply web.tfplan
 export AWS_REGION="$(terraform output -raw aws_region)"

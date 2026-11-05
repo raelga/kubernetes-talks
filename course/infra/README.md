@@ -11,6 +11,8 @@ Provision resources, inspect the application separately, then remove the deploym
 
 Each AWS application lab separates `infra/` (Terraform resources) from `app/` (application files). READMEs document actual commands, not wrapper scripts. EC2 user-data is visible in Terraform; enabling the database does not replace the web host.
 
+Both AWS application labs use S3 remote state with native lockfiles. Share an existing protected bucket, but give each deployment its own key; the WordPress web/database stages use one unchanged key and state. Copy each lab's `backend.hcl.example`, fill the real settings privately and initialize with `terraform init -backend-config=backend.hcl`. Application destruction leaves the shared state bucket intact.
+
 ALB accepts web traffic only from your client IP, EC2 accepts it only from the ALB security group, and MySQL accepts it only from the application security group. Instances and databases have no public IP. Optional ACM HTTPS requires a domain and an existing public Route 53 zone you control; without those inputs the lab uses HTTP.
 
 ## Run safely

@@ -1,0 +1,8 @@
+# Copy to backend.hcl and use your existing private, versioned state bucket.
+# Match the authorized account/region; choose a unique key for this deployment.
+bucket              = "YOUR-STATE-BUCKET"
+key                 = "infra/ec2-basics/YOUR-LAB-ID/terraform.tfstate"
+region              = "us-east-1"
+encrypt             = true
+use_lockfile        = true
+allowed_account_ids = ["000000000000"]
