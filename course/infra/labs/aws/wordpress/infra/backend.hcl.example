@@ -1,7 +1,7 @@
-# Copy to backend.hcl and use your existing private, versioned state bucket.
+# Copy to backend.hcl; use the real bucket output from Terraform intro.
 # Web and database stages MUST use this same key, directory and workspace.
 bucket              = "YOUR-STATE-BUCKET"
-key                 = "infra/wordpress/YOUR-LAB-ID/terraform.tfstate"
+key                 = "aws/wordpress/YOUR-LAB-ID/terraform.tfstate"
 region              = "us-east-1"
 encrypt             = true
 use_lockfile        = true

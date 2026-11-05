@@ -1,9 +1,0 @@
-# Copy to terraform.tfvars (ignored); replace with the lab account and region.
-account_id        = "123456789012"
-region            = "us-east-1"
-lab_id            = "learner01"
-bucket_name       = null
-# Optional: your own globally available exact name (no suffix added).
-# bucket_name = "my-available-exact-backend"
-enable_versioning = false
-stage             = "basics"

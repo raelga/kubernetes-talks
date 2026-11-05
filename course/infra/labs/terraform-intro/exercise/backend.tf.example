@@ -1,4 +1,0 @@
-# Copy to backend.tf ONLY when reaching the exercise state migration.
-terraform {
-  backend "s3" {}
-}

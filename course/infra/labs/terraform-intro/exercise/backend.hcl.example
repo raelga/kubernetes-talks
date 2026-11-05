@@ -1,8 +1,0 @@
-# Copy to backend.hcl and replace with the actual bootstrap output.
-# Do not enter access keys, tokens or any other secrets.
-bucket              = "tfstate-123456789012-learner01-a1b2c3d4e5f6"
-key                 = "exercise/terraform.tfstate"
-region              = "us-east-1"
-encrypt             = true
-use_lockfile        = true
-allowed_account_ids = ["123456789012"]

@@ -5,7 +5,7 @@ Standalone labs for containers, Kubernetes and cloud infrastructure.
 ## Explore
 
 - [Infrastructure](infra/README.md): Terraform basics, private EC2 behind an ALB, staged WordPress/MySQL and Azure/GCP comparison.
-- [Terraform introduction: S3 and remote state](infra/labs/terraform-intro/README.md): fast bucket deployments, drift and state migration.
+- [Terraform introduction on AWS: the state bucket](infra/labs/aws/terraform-intro/README.md): plan, apply and inspect one S3 bucket, then migrate its state from local to S3. Reuse this bucket for the EC2 and WordPress labs.
 - [Terraform infrastructure examples](terraform/): existing environment and cluster configurations.
 - [Containers](containers/README.md).
 - [Kubernetes](kubernetes/README.md).

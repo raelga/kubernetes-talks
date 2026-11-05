@@ -1,6 +1,6 @@
 # Private EC2 behind an Application Load Balancer
 
-Deploy a real static Apache application from a public Git checkout. The public ALB accepts only your IPv4 `/32`; it forwards HTTP to one **private EC2 instance with no public IP and no SSH**. One NAT Gateway provides outbound package, Git and Session Manager connectivity. There is no database, S3, Python, Docker or Kubernetes.
+Deploy a real static Apache application from a public Git checkout. The public ALB accepts only your IPv4 `/32`; it forwards HTTP to one **private EC2 instance with no public IP and no SSH**. One NAT Gateway provides outbound package, Git and Session Manager connectivity. The application stack has no database, S3 resources, Python, Docker or Kubernetes; Terraform reuses the intro's S3 state bucket.
 
 ```text
 Your public IPv4 /32 → public ALB (two availability zones) → private EC2:80
@@ -14,10 +14,12 @@ Two public and two private subnets span two availability zones. EC2 runs in the 
 
 Use Terraform `>=1.10,<2`, AWS CLI v2, curl and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html). Authenticate with authorized AWS credentials. Your identity needs permissions for VPC/networking, EC2, ELB, IAM roles and instance profiles, `iam:PassRole`, and SSM sessions; optional TLS also requires ACM and access to the selected Route 53 zone. Do not bypass account restrictions. Two available zones, a permitted `t3.micro` (or another x86_64 type), NAT/EIP and ALB quotas are required.
 
+First complete [Terraform intro](../terraform-intro/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
+
 From the repository root:
 
 ```sh
-cd course/infra/labs/ec2-basics/infra
+cd course/infra/labs/aws/ec2-basics/infra
 aws sts get-caller-identity
 cp terraform.tfvars.example terraform.tfvars
 cp backend.hcl.example backend.hcl
@@ -31,7 +33,7 @@ Edit `terraform.tfvars`:
 - `client_cidr`: your actual public outbound IPv4 followed by `/32`; the example address will not work.
 - `repository_ref`: preferably a **full published commit SHA containing this lab**. The default is `main`, which can change. Unpublished local changes cannot be fetched by EC2. Publish the complete lab before applying.
 
-State lives in an existing private, encrypted, versioned S3 bucket, not the instance. Edit ignored `backend.hcl` with your bucket, its region, expected account and a unique key such as `infra/ec2-basics/YOUR-LAB-ID/terraform.tfstate`. Keep `encrypt = true` and `use_lockfile = true`; backend credentials come from your authorized AWS session, never this file. Confirm exact-key read/write and `.tflock` read/write/delete permissions. The WordPress lab must use a different key, even when sharing this bucket.
+Edit ignored `backend.hcl`: replace `YOUR-STATE-BUCKET` with the real bucket output from Terraform intro, then set its region and expected account. Use the independent key `aws/ec2-basics/YOUR-LAB-ID/terraform.tfstate`, replacing `YOUR-LAB-ID` with your unique lab ID. Never reuse the intro or WordPress state key. Keep `encrypt = true` and `use_lockfile = true` for native S3 locking; backend credentials come from your authorized AWS session, never this file. Confirm exact-key read/write and `.tflock` read/write/delete permissions.
 
 Use a fresh state for this configuration; do not copy the retired lab's state. If this exact stack already exists with local state, back it up and explicitly review `terraform init -migrate-state -backend-config=backend.hcl` rather than creating duplicate infrastructure. Never force copying or bypass a lock. Destroy removes the application stack, not the shared state bucket; retain the backend and private state for recreation.
 
@@ -80,12 +82,12 @@ sudo cat /var/log/infra-lab-bootstrap.log
 sudo journalctl -u httpd -u amazon-ssm-agent --no-pager
 sudo find /opt/infra-lab -maxdepth 2 -type d
 sudo git -C /opt/infra-lab/repository rev-parse HEAD
-sudo cat /opt/infra-lab/repository/course/infra/labs/ec2-basics/app/runtime.json
+sudo cat /opt/infra-lab/repository/course/infra/labs/aws/ec2-basics/app/runtime.json
 curl --fail http://localhost/health
 exit
 ```
 
-The inline EC2 user-data installs packages, explicitly creates `/opt/infra-lab`, fetches the requested Git ref and checks out a detached commit. Apache serves the checked-out `course/infra/labs/ec2-basics/app/` directory directly; bootstrap adds only public `runtime.json` information. Logs go to cloud-init, `/var/log/infra-lab-bootstrap.log` and the system console. No wrapper script is required. The SSM role is for instance management only; the static application does not call AWS APIs. IMDSv2 is required.
+The inline EC2 user-data installs packages, explicitly creates `/opt/infra-lab`, fetches the requested Git ref and checks out a detached commit. Apache serves the checked-out `course/infra/labs/aws/ec2-basics/app/` directory directly; bootstrap adds only public `runtime.json` information. Logs go to cloud-init, `/var/log/infra-lab-bootstrap.log` and the system console. No wrapper script is required. The SSM role is for instance management only; the static application does not call AWS APIs. IMDSv2 is required.
 
 If requests fail, inspect target health and bootstrap logs, verify the published ref, current public `/32`, routes/NAT and SSM permissions. Do not add SSH, assign a public IP or widen inbound access. Changing `repository_ref` changes user-data and **replaces EC2**, deleting its old root disk. Review a new plan before applying; a moving branch does not automatically update an existing instance. A newer AMI discovered on a later plan can also replace EC2.
 
