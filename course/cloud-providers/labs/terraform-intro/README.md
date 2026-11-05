@@ -1,6 +1,6 @@
 # Your first Terraform lab: buckets and state
 
-Learn how Terraform creates infrastructure, applies changes and tracks resources. In about **90 minutes**, you will create two private S3 buckets, upload a file and move your Terraform state to S3. No VMs, Kubernetes or IAM changes.
+Learn how Terraform creates infrastructure, applies changes and tracks resources. Start with the **single-bucket instructor demo** below. The full **optional 90-minute state workflow** (steps 1–5) creates two private S3 buckets and moves the exercise state to S3. No VMs, Kubernetes or IAM changes.
 
 | Directory | What it creates | Where its state lives |
 | --- | --- | --- |
@@ -8,6 +8,48 @@ Learn how Terraform creates infrastructure, applies changes and tracks resources
 | `exercise/` | A separate bucket and `hello.txt` | Local first, then S3 |
 
 **Configuration describes what you want. State records what Terraform manages.** Keep each learner's state separate; copying someone else's state means managing their resources, not creating your own.
+
+## Quick instructor demo: one bucket, local state
+
+Complete [Get ready](#get-ready), including its one-line tools bootstrap and identity/permission checks. Use a fresh personal exercise directory and local state; **skip `bootstrap/`, backend files and migration**. Keep private state, plans and tfvars outside Git.
+
+```bash
+cd "$HOME/kubernetes-talks/course/cloud-providers/labs/terraform-intro/exercise"
+cp terraform.tfvars.example terraform.tfvars
+```
+
+Edit `terraform.tfvars` with your real authorized account/region, your own `lab_id`, `bucket_name = null` and `demo_tag = "initial"`. Generated names include account, lab ID and a state-persisted random suffix for global uniqueness; never reuse someone else's state or an existing bucket name.
+
+```bash
+export AWS_REGION="us-east-1" # Replace with the authorized region in your tfvars.
+terraform init
+terraform plan -out=private-exercise.tfplan
+terraform show private-exercise.tfplan
+terraform apply private-exercise.tfplan
+export EXERCISE_BUCKET="$(terraform output -raw exercise_bucket_name)"
+aws s3api get-object --bucket "$EXERCISE_BUCKET" --key hello.txt --region "$AWS_REGION" private-hello.download.txt
+cat private-hello.download.txt
+```
+
+Review every saved plan before applying: only your private encrypted exercise bucket, object and random suffix. Read with credentials; anonymous access is denied. Change only nonsensitive example content in `../files/hello.txt` and set `demo_tag = "updated"` in your tfvars:
+
+```bash
+terraform plan -out=private-change.tfplan
+terraform show private-change.tfplan
+terraform apply private-change.tfplan
+aws s3api get-object --bucket "$EXERCISE_BUCKET" --key hello.txt --region "$AWS_REGION" private-hello.download.txt
+cat private-hello.download.txt
+terraform plan # Expect no changes.
+terraform plan -destroy -out=private-destroy.tfplan
+terraform show private-destroy.tfplan
+terraform apply private-destroy.tfplan
+terraform state list
+aws s3api get-bucket-location --bucket "$EXERCISE_BUCKET" --region "$AWS_REGION"
+```
+
+Approve destruction only for your exercise resources. Require empty state **and `NoSuchBucket`** from the exact-name AWS check. Do not bulk-empty buckets; investigate unexpected objects. Retain local state until cleanup is verified. Stop here: no state bucket is needed.
+
+Live create/read/change, private-access checks, tag-only drift reconciliation and verified deletion were rehearsed on 2026-11-05 in the **`talks` instructor account**, not as proof of Academy permissions. The remaining numbered sections preserve the full optional 90-minute workflow.
 
 ## Get ready
 
@@ -30,7 +72,7 @@ aws sts get-caller-identity
 
 Use Terraform **>= 1.10 and < 2.0**, AWS CLI v2 and your assigned temporary credentials. Confirm the account, allowed region, session expiry, persistence and budget with your instructor. Never put credentials in Terraform files or Git.
 
-The instructor must check Cloud Control/S3 permissions, including state and lock access, before the lab. An identity check alone does not prove those permissions. **Stop on access errors; do not weaken protections or change IAM.** See the [instructor guide](instructor-guide.md) for preflight details and prior Academy verification.
+The instructor must check Cloud Control/S3 permissions before the lab. State and lock access are needed only for the optional backend migration. An identity check alone does not prove these permissions. **Stop on access errors; do not weaken protections or change IAM.** See the [instructor guide](instructor-guide.md) for preflight details and prior Academy verification.
 
 S3 storage, versions and requests can cost money. Billing is delayed; budget alerts do not automatically stop spending.
 

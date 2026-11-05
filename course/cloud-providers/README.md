@@ -4,10 +4,18 @@ Reusable cloud infrastructure and analysis labs. The guides preserve the teachin
 
 | Lab | Walkthrough | Execution |
 | --- | --- | --- |
+| [Terraform introduction](labs/terraform-intro/README.md) | One private S3 bucket, a file, a small change and cleanup | Brief instructor demo using `exercise/` with local state; full state migration is a separate extension |
 | [AWS and IaC](labs/aws-iac/README.md) | Networking, VM, private storage, Terraform, Python inventory, diagnosis and cleanup | Students use the assigned AWS Academy lab, with permissions checked by the instructor |
 | [Azure and GCP](labs/azure-gcp/README.md) | Transfer the same pattern, interpret differences and adapt queries | Instructor cloud demonstrations; student Python exercises use explicitly synthetic data without requiring Azure/GCP accounts |
 
-Start with the standalone **[Terraform bucket and remote-state lab](labs/terraform-intro/README.md)** before deploying networks and VMs. Two small buckets introduce the change workflow and migration to a dedicated state backend. This exercise does not automatically migrate the state of the cloud labs.
+## Simple AWS demo: storage, then a web server
+
+1. **Identity:** show the active account and region. Instructor credentials and student Academy credentials are separate.
+2. **S3:** use only `exercise/` in the [Terraform introduction](labs/terraform-intro/README.md). Create a private bucket and `hello.txt`, download it with credentials, change the file and destroy the exercise.
+3. **EC2:** use the prepared [AWS lab](labs/aws-iac/README.md). Explain its dedicated VPC, public subnet and client-only HTTP rule, then open the Python JSON endpoint and inspect the resources.
+4. **Cleanup:** review each destruction plan and verify the resources are gone. Keep the two labs' directories and states separate.
+
+Keep the bucket example brief within the existing IaC teaching block. The full 90-minute backend/versioning/migration/locking walkthrough is separate preparation, not a requirement for today's demo. The class still includes its 60-minute Python/AI activity and 20-minute AWS cost exercise. No Kubernetes, SSH, IAM changes or extra managed services are needed.
 
 ## Introductory references
 

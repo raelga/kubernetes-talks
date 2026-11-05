@@ -2,7 +2,7 @@
 
 **05/11/2026 · 18:00–21:00 · Rael Garcia · 3 h.** M2 with **1 transversal hour of M1** covering Python and AI-assisted review, included in these three hours, not additional. Entry profile: junior learners with basic Linux, networking and scripting. AWS is the main student hands-on lab; session 3 transfers this pattern to Azure/GCP demonstrations, not two mandatory new accounts/deployments.
 
-The material contains an executable implementation and **synthetic** responses for practice without credentials. **The complete network/EC2/HTTP lab has not been tested against AWS.** Available live evidence is an isolated S3 trial with the same Academy role: `hashicorp/awscc` 1.108.0 created a private/encrypted bucket with enforced ownership, refreshed it with a no-change plan and destroyed it. Do not extend that evidence to a complete execution of the introductory lab or this VM lab. A successful offline run does not establish actual Academy, apt, EC2 or Billing availability either.
+**Live rehearsal, 5 November 2026:** the complete network/EC2/HTTP lifecycle was tested in the **talks instructor account**, in `us-east-1`, using Terraform 1.17.1, `hashicorp/aws` 5.100.0, `hashicorp/awscc` 1.108.0, `hashicorp/random` 3.9.1, Python 3.13.13 and AWS CLI 2.34.33. Reviewed plans created only the isolated exercise resources. Console output showed cloud-init completion; live inventory verified the network, encrypted disk and private/encrypted/ACL-free S3. HTTP returned 200 and the expected JSON before and after a message-change EC2 replacement. The refreshed outputs matched the new instance/IP; the next plan had no changes. A reviewed destroy, live `--expect absent`, exact-ID queries (including both root disks and terminated instances), `NoSuchBucket` and empty state established cleanup. No application/IaC bug was found. The optional restricted-CIDR failure and Billing were not exercised in this VM rehearsal. **This is not proof of Academy permissions:** independently rehearse the actual assigned environment. Fixtures remain **synthetic**, not live evidence; no real outputs, states, plans or private configuration belong in Git.
 
 ## Learning outcome and teaching scope
 
@@ -76,7 +76,7 @@ AI exercise: supply only the fixture, request explanation/a small output adaptat
 2. Open **Cost Explorer → Cost and usage**. Show dates, daily granularity, group by service and filter by region; then show available cost allocation tags. Explain why an inactive tag or untagged charge may not appear in a filter. Do not enable global billing tags as an exercise side effect.
 3. In **Budgets → Create budget → Cost budget**, show a teaching monthly budget (e.g. USD 5), scope and actual-spend thresholds of 50/80/100%, forecast 100%. Review the recipient with its owner and confirmation if required by the selected notification. Use an authorized instructor account or walk through the form without saving when alerts must not be created. Do not execute budget actions or send test emails to unauthorized people.
 4. Explain billing/alert delays and that a budget does not automatically stop spending. Distinguish this mechanism from the actual Academy indicator and its specific rules, without guaranteeing a universal stop.
-5. If permissions or recent data are unavailable, use the README's **synthetic** table. It is invented, not a capture or rate: group USD 0.06 and make the untagged row's effect visible. State what was actually observable and what was not. The activity remains interpretation of queries, filters and alerts, not production of a fictional learner invoice.
+5. If permissions or recent data are unavailable, use the **synthetic table below**. It is invented, not a capture or rate: group USD 0.06 and make the untagged row's effect visible. State what was actually observable and what was not. The activity remains interpretation of queries, filters and alerts, not production of a fictional learner invoice.
 
 At wrap-up, connect costs to `root_volume_id`, public IP and `delete_on_termination`. Future managed-cluster sessions revisit control planes, nodes, load balancers, disks and traffic; do not add them here.
 
@@ -87,3 +87,87 @@ Use the exact README cleanup block: **current** outputs before destroy, reviewed
 The bucket starts empty and [`awscc_s3_bucket`](https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/s3_bucket) only permits deleting it when empty; its schema includes neither `force_destroy` nor automatic emptying. For BucketNotEmpty, review the exact bucket and agree on explicit deletion only of its data; do not introduce a recursive script. After partial apply failure, retain state, plan from the same state and clean up what was created; never delete the file to hide failure. Renew expired tokens through the official procedure and in the same account. Diagnose apt errors without adding SSH or IAM permissions and without confusing the offline parser with a repair.
 
 Accept sanitized evidence of plan/change, offline/live separation, intentional failure and AI review, cost/alert design and cleanup verification. Do not request real state or plans in submissions. Record every pending resource with an owner and specific cause without declaring cleanup complete. This session does not change course grading weights or create advanced final-project requirements.
+
+## Learner reading order and file map
+
+The learner README is deliberately a short AWS walkthrough, not the timetable. For a first Terraform explanation, use the [one-bucket demo](../terraform-intro/README.md#quick-instructor-demo-one-bucket-local-state). For this VM demonstration, show the EC2 instance and network in the console, open HTTP JSON, and connect those resources to the reviewed Terraform plan. The private S3 bucket is separate: the VM does not use it. Python is the existing server implementation and later M1 review activity, not an extra AWS concept to teach first.
+
+- `main.tf`, `variables.tf`, `versions.tf`, `outputs.tf`: resources, inputs, providers and resource references.
+- `user-data.sh.tftpl`, `app.py`: apt/systemd bootstrap and the small standard-library HTTP service.
+- `inventory.py`: explicit read-only verification, introduced during M1 and used to verify cleanup.
+- `fixtures/`: invented offline responses, never a substitute for a failed live check.
+
+## Detailed M1 exercise · 60 minutes
+
+These activities occupy the existing 19:05–20:05 block; they are not extra time or prerequisites for the opening AWS demo. All commands run from `course/cloud-providers/labs/aws-iac`. Confirm `python3` resolves to Python 3.11 or newer.
+
+### A. Read synthetic data · 15 minutes
+
+```sh
+python3 inventory.py --fixture-dir fixtures --lab-id demo-aws --region us-east-1
+```
+
+This makes no AWS or HTTP call. `fixtures/ec2.json` groups EC2 responses by operation; `fixtures/s3.json` groups tagging, blocking, encryption and ownership. Both declare `synthetic=true`. `fixtures/outputs.json` retains Terraform's `{name: {value, type, sensitive}}` structure with invented IDs and documentation-reserved addresses. The output is `offline-synthetic-NO-CLOUD-VERIFICATION`, not success in an account.
+
+Read the shell-free `subprocess.run`, tag filters and `Reservations → Instances` unpacking. Explain why a denied API cannot mean an absent resource.
+
+### B. Failures and AI-assisted review · 25 minutes
+
+Copy `fixtures` to a local `fixtures-local` directory and change only that copy:
+
+1. Set `instances.Reservations[0].Instances[0].State.Name` to `stopped` in `ec2.json`; run with `--fixture-dir fixtures-local`. Inspect the nonzero exit with `echo $?` immediately afterward.
+2. Restore `running`, then empty `instances.Reservations`: a missing expected instance must fail too.
+3. Restore the data, then set `BlockPublicPolicy` to `false` in `s3.json`: incomplete S3 protection must fail.
+4. Restore everything and explain the failure for malformed JSON.
+
+Using **synthetic fixtures only**, ask AI to explain or propose a small presentation improvement, such as resource counts by type. Review its diff and manually compare the defective inputs before accepting it. Preserve filters, explicit offline mode, nonzero failures, no mutations and JSON/HTTP checks. Reject `shell=True`, ignored return codes, broad exception suppression, removed scope, arbitrary redirects and requests for secrets. Submit the reviewed snippet and reasoning, never real credentials or infrastructure captures. This is a learner modification; the base script is already functional.
+
+### C. Compare with live AWS and HTTP · 20 minutes
+
+Use valid assigned credentials and the latest outputs from **your** deployment:
+
+```sh
+python3 inventory.py --live --outputs outputs.local.json --lab-id YOUR-LAB-ID --region YOUR-REGION
+python3 inventory.py --live --outputs outputs.local.json --lab-id YOUR-LAB-ID --region YOUR-REGION --probe-http
+```
+
+Replace the uppercase placeholders. Compare account, region, ownership tags, exact instance/network/disk IDs, running state, subnet association/route, IMDSv2, restricted `/32`, encrypted disk and S3 protections. Missing or extra tagged resources, denied APIs and malformed data must fail. The explicit probe makes one five-second HTTP request, without proxies or redirects, and compares status/provider/lab_id/message. Inventory without the probe does not establish application health; it is not an account-wide auditor.
+
+If HTTP fails, separate pending cloud-init from a changed client public IP, route/SG failure or a dead service. Inspect **that instance's** system log using Actions → Monitor and troubleshoot → Get system log when permitted. Retain actual startup evidence. Correct only the permitted cause and review replacement if needed; never add SSH, IAM permissions or broad ingress, or change inventory to hide a failure.
+
+Optional source exploration, without cloud or credentials:
+
+```sh
+python3 app.py --host 127.0.0.1 --port 8080
+```
+
+Open `http://127.0.0.1:8080/` and `/health`; stop with Ctrl-C. This uses `lab_id=local` and is not EC2 evidence.
+
+## Detailed change and controlled failure · existing 20-minute block
+
+Follow the README message-change plan/review/apply flow first. Explain `user_data_replace_on_change=true`: it replaces EC2 and its root disk, not an in-place application rollout. Regenerate outputs, wait for the new cloud-init completion, repeat live inventory with HTTP and verify the new message. A subsequent no-change plan demonstrates convergence.
+
+For the optional controlled failure, change **only your own** `client_cidr` to documentation address `192.0.2.10/32`; create/review/apply `network.tfplan` and save fresh outputs. Inventory without HTTP may correctly match the new configuration, while `--probe-http` from your actual client must fail. Restore the actual `/32` through a newly reviewed plan, save outputs again and verify recovery. Never use `/0`. If time is tight, the instructor demonstrates this after the message change without shortening M1 or the cost block. The failure/recovery was not part of the recorded instructor-account live rehearsal.
+
+## Synthetic cost sample for the existing 20-minute cost block
+
+Use the Billing/Cost Explorer/Budgets walkthrough above. Cost allocation tags may need prior activation and have visibility delays; do not enable account-wide settings as an exercise. Query the intended date range, daily granularity, available unblended cost, service grouping and region, then compare tag filters with inventory. Do not expect new spending to appear instantly.
+
+If the assigned role denies these views, show an authorized instructor screen or this **entirely synthetic sample**, not current rates or an invoice:
+
+| Fictional day | Service/item | Region | Tags | Fictional cost USD |
+|---|---|---|---|---:|
+| 05/11 | EC2, compute time | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0.04 |
+| 05/11 | EBS, storage | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0.01 |
+| 05/11 | Public IPv4, hours | us-east-1 | unassigned in this sample | 0.01 |
+| 05/11 | S3, requests | us-east-1 | upc-2026 / cloud-02 / demo-aws | 0.00 |
+
+Group USD 0.06 by item, apply a region filter and explain why a tag filter could hide the unassigned row. Distinguish compute hours, disk GiB-months, IPv4 hours, S3 storage/requests and traffic. Verify real region/type/duration prices for estimates: the sample neither establishes free usage nor measures this rehearsal. Stopping the VM retains chargeable storage; destruction is separate.
+
+Keep the existing budget/alert discussion: actual spend 50/80/100%, forecast 100%, authorized recipient/confirmation, no unauthorized budget creation or notifications, and no automatic actions. Alerts and Academy indicators do not promise an automatic spending stop.
+
+## Evidence and cleanup reminders
+
+Require sanitized reasoning about the network/compute/storage/identity map, `/32`, private S3 and absence of a VM IAM role; reviewed initial/replacement plans; separately labelled synthetic/live results; injected failure and AI-review reasoning; cost/alert limitations; and verified destruction or an explicit incident owner. Do not collect real state/plans/outputs as submissions.
+
+Save **current** outputs before destruction, including new instance/disk/IP after replacement. `--expect absent` queries ownership-tagged EC2 resource families and the exact saved bucket, and accepts only terminated EC2. The network and disks must disappear; exact-ID read-only queries can corroborate the tagged inventory. Only `NoSuchBucket` establishes S3 absence. API/credential/network failures are not cleanup. If consistency delays a query, wait and explicitly rerun it; do not suppress errors. Empty state alone is insufficient. Retain private state and evidence until cloud absence is verified, including after partial apply failures.
