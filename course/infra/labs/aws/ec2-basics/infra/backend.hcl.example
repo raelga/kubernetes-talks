@@ -1,4 +1,4 @@
-# Copy to backend.hcl; use the real bucket output from Terraform intro.
+# Copy to backend.hcl; use the real bucket output from the Terraform state lab.
 # Match the authorized account/region; choose a unique key for this deployment.
 bucket              = "YOUR-STATE-BUCKET"
 key                 = "aws/ec2-basics/YOUR-LAB-ID/terraform.tfstate"

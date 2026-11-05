@@ -1,4 +1,4 @@
-# Copy to backend.hcl; use the real bucket output from Terraform intro.
+# Copy to backend.hcl; use the real bucket output from the Terraform state lab.
 # Web and database stages MUST use this same key, directory and workspace.
 bucket              = "YOUR-STATE-BUCKET"
 key                 = "aws/wordpress/YOUR-LAB-ID/terraform.tfstate"

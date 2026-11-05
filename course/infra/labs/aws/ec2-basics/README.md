@@ -14,7 +14,7 @@ Two public and two private subnets span two availability zones. EC2 runs in the 
 
 Use Terraform `>=1.10,<2`, AWS CLI v2, curl and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html). Authenticate with authorized AWS credentials. Your identity needs permissions for VPC/networking, EC2, ELB, IAM roles and instance profiles, `iam:PassRole`, and SSM sessions; optional TLS also requires ACM and access to the selected Route 53 zone. Do not bypass account restrictions. Two available zones, a permitted `t3.micro` (or another x86_64 type), NAT/EIP and ALB quotas are required.
 
-First complete [Terraform intro](../terraform-intro/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
+First complete [Terraform state backend](../terraform-state/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
 
 From the repository root:
 
@@ -33,7 +33,7 @@ Edit `terraform.tfvars`:
 - `client_cidr`: your actual public outbound IPv4 followed by `/32`; the example address will not work.
 - `repository_ref`: preferably a **full published commit SHA containing this lab**. The default is `main`, which can change. Unpublished local changes cannot be fetched by EC2. Publish the complete lab before applying.
 
-Edit ignored `backend.hcl`: replace `YOUR-STATE-BUCKET` with the real bucket output from Terraform intro, then set its region and expected account. Use the independent key `aws/ec2-basics/YOUR-LAB-ID/terraform.tfstate`, replacing `YOUR-LAB-ID` with your unique lab ID. Never reuse the intro or WordPress state key. Keep `encrypt = true` and `use_lockfile = true` for native S3 locking; backend credentials come from your authorized AWS session, never this file. Confirm exact-key read/write and `.tflock` read/write/delete permissions.
+Edit ignored `backend.hcl`: replace `YOUR-STATE-BUCKET` with the real bucket output from the Terraform state lab, then set its region and expected account. Use the independent key `aws/ec2-basics/YOUR-LAB-ID/terraform.tfstate`, replacing `YOUR-LAB-ID` with your unique lab ID. Never reuse the state-bucket lab or WordPress state key. Keep `encrypt = true` and `use_lockfile = true` for native S3 locking; backend credentials come from your authorized AWS session, never this file. Confirm exact-key read/write and `.tflock` read/write/delete permissions.
 
 Use a fresh state for this configuration; do not copy the retired lab's state. If this exact stack already exists with local state, back it up and explicitly review `terraform init -migrate-state -backend-config=backend.hcl` rather than creating duplicate infrastructure. Never force copying or bypass a lock. Destroy removes the application stack, not the shared state bucket; retain the backend and private state for recreation.
 

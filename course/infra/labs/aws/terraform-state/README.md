@@ -1,4 +1,4 @@
-# Terraform: one S3 bucket and its state
+# Terraform: Create an S3 State Backend
 
 Create one protected S3 state bucket with local state, then migrate **this same root's state into its own bucket**. The bucket is private, versioned and encrypted with AES256. No sample objects, VMs or IAM changes are needed.
 
@@ -14,7 +14,7 @@ Keep credentials, states, saved plans and private configuration out of Git. Do n
 Install Terraform and check out the repository without changing your shell's directory or PATH:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/main/course/infra/labs/aws/terraform-intro/setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/raelga/kubernetes-talks/main/course/infra/labs/aws/terraform-state/setup.sh | bash
 ```
 
 The environment-only script installs Terraform in `$HOME/.local/bin`, clones `main` into `$HOME/kubernetes-talks` and preserves existing checkouts without pulling or resetting. If a checkout already exists, update it to the approved revision before entering the new `/aws/` path. It requires Git, curl, unzip and a SHA-256 utility. It neither initializes Terraform nor provisions infrastructure. Use `$HOME/.local/bin/terraform` instead of `terraform` below if needed.
@@ -22,7 +22,7 @@ The environment-only script installs Terraform in `$HOME/.local/bin`, clones `ma
 Have AWS CLI v2 and authorized credentials available. Confirm the account, permitted region, credential expiry and workspace persistence; never put credentials in HCL. Stop on access errors rather than changing IAM or weakening protections. Storage, versions and requests cost money; billing is delayed and budget alerts do not stop spending.
 
 ```bash
-cd "$HOME/kubernetes-talks/course/infra/labs/aws/terraform-intro"
+cd "$HOME/kubernetes-talks/course/infra/labs/aws/terraform-state"
 aws sts get-caller-identity
 cp terraform.tfvars.example terraform.tfvars
 ```
@@ -63,7 +63,7 @@ Optionally change only `demo_tag` to `updated`, then run `terraform plan -out=pr
 Finish the versioning wait and stop concurrent Terraform operations first. Store backups **outside both Git and this bucket**, on persistent private storage. Replace the backup path below with such a location:
 
 ```bash
-BACKUP_DIR="/absolute/path/to/private-backup/terraform-intro-YOUR-LAB-ID"
+BACKUP_DIR="/absolute/path/to/private-backup/terraform-state-YOUR-LAB-ID"
 mkdir -p "$BACKUP_DIR"
 terraform state pull > "$BACKUP_DIR/before-migration.tfstate"
 terraform output -json > "$BACKUP_DIR/outputs.before.json"
@@ -71,7 +71,7 @@ cp backend.tf.example backend.tf
 cp backend.hcl.example backend.hcl
 ```
 
-Set `backend.hcl` to the exact bucket output, authorized account and region. Replace `YOUR-LAB-ID` in `key = "aws/terraform-intro/YOUR-LAB-ID/terraform.tfstate"` with your unique identifier. Keep `encrypt = true` and `use_lockfile = true`. Backend settings are separate from provider variables and cannot reference resources or tfvars; never add credentials. Securely preserve the root's configuration and backend settings alongside the backup.
+Set `backend.hcl` to the exact bucket output, authorized account and region. Replace `YOUR-LAB-ID` in `key = "aws/terraform-state/YOUR-LAB-ID/terraform.tfstate"` with your unique identifier. Keep `encrypt = true` and `use_lockfile = true`. Backend settings are separate from provider variables and cannot reference resources or tfvars; never add credentials. Securely preserve the root's configuration and backend settings alongside the backup.
 
 ```bash
 terraform init -migrate-state -backend-config=backend.hcl
@@ -80,7 +80,7 @@ diff "$BACKUP_DIR/outputs.before.json" "$BACKUP_DIR/outputs.after.json"
 terraform state list
 terraform state show aws_s3_bucket.state
 terraform plan
-aws s3api head-object --bucket "$STATE_BUCKET" --key aws/terraform-intro/YOUR-LAB-ID/terraform.tfstate --region "$AWS_REGION"
+aws s3api head-object --bucket "$STATE_BUCKET" --key aws/terraform-state/YOUR-LAB-ID/terraform.tfstate --region "$AWS_REGION"
 ```
 
 Replace `YOUR-LAB-ID` in the final command too. Accept the migration prompt only for the intended local-to-S3 destination. Use `-migrate-state`, **not** `-reconfigure` or forced copying. Require unchanged outputs and resource IDs, a no-change plan, and a state object with `ServerSideEncryption: AES256` and a `VersionId`. Stop if Terraform proposes recreating resources.

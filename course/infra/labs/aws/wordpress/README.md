@@ -11,7 +11,7 @@ There is no public EC2 address, SSH, Docker, Kubernetes or deployment wrapper. O
 
 Requirements: Terraform `>=1.10,<2`, AWS CLI v2, `jq`, `curl`, an AWS account/identity allowed to create VPC, EC2, ALB, NAT/EIP, IAM, SSM, RDS and Secrets Manager resources. Optional TLS additionally needs ACM and write access to an existing **public, publicly delegated** Route 53 zone. Account restrictions, quotas and available instance classes still apply.
 
-First complete [Terraform intro](../terraform-intro/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
+First complete [Terraform state backend](../terraform-state/README.md), including migration of its state into the bucket it creates. Reuse that bucket here; this lab does not provision another state bucket. Keep Terraform configuration in `infra/` and application files in `app/`.
 
 **Publish this implementation to the public repository before launching EC2.** Bootstrap checks out `https://github.com/raelga/kubernetes-talks.git`; unpublished local files cannot be used. Prefer a published commit SHA over `main`. Do not put Git credentials in Terraform or user-data. This lab uses independent state, not the state of the EC2-only lab.
 
@@ -49,7 +49,7 @@ All files in `infra/` belong to **one Terraform root and one state**: `network.t
 
 ### S3 state and locking
 
-Edit ignored `backend.hcl`: replace `YOUR-STATE-BUCKET` with the real bucket output from Terraform intro, then set its region and expected account. Use the independent key `aws/wordpress/YOUR-LAB-ID/terraform.tfstate`, replacing `YOUR-LAB-ID` with your unique lab ID. Never reuse the intro or EC2-only state key. Both web and database stages **must keep this same backend file, key, directory and workspace**. Preserve `encrypt = true` and `use_lockfile = true` for native S3 locking; never put credentials in backend configuration.
+Edit ignored `backend.hcl`: replace `YOUR-STATE-BUCKET` with the real bucket output from the Terraform state lab, then set its region and expected account. Use the independent key `aws/wordpress/YOUR-LAB-ID/terraform.tfstate`, replacing `YOUR-LAB-ID` with your unique lab ID. Never reuse the state-bucket lab or EC2-only state key. Both web and database stages **must keep this same backend file, key, directory and workspace**. Preserve `encrypt = true` and `use_lockfile = true` for native S3 locking; never put credentials in backend configuration.
 
 Confirm exact state-key read/write and `.tflock` read/write/delete permissions before initialization. An existing local deployment needs a secure backup and an explicitly reviewed `terraform init -migrate-state -backend-config=backend.hcl`; never force state copying or remove an active lock. The database and application are disposable, but `destroy` does not delete the state bucket. An empty remote state remains a backend consumer.
 
