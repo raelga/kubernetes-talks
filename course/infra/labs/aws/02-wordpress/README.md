@@ -4,7 +4,7 @@ Deploy a public ALB and private WordPress EC2 first, then add private MySQL with
 
 EC2 randomly selects one of the two private subnets. The choice persists across applies; destroying and recreating the stack makes a new selection.
 
-Cloud-init runs [`infra/install.sh`](infra/install.sh) on first boot. SSM runs the same repeatable installer and Terraform waits for success, including in the web-only stage.
+Cloud-init runs [`infra/install.sh`](infra/install.sh) on first boot. SSM uses [`infra/configure.sh.tftpl`](infra/configure.sh.tftpl) to run the same installer and, when enabled, database configuration. Terraform waits for success in both stages.
 
 WordPress is downloaded directly and checked against a pinned SHA-256; WP-CLI is not needed. Downloads have bounded retries. Changing `wordpress_version` also requires its matching `wordpress_sha256`.
 

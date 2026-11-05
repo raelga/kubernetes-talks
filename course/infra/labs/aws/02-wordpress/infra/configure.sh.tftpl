@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+bash <<'INSTALL_WORDPRESS'
+${installer}
+INSTALL_WORDPRESS
+
+%{ if database != null ~}
+php /opt/infra-lab/repository/course/infra/labs/aws/02-wordpress/app/configure.php \
+  --endpoint ${jsonencode(database.endpoint)} \
+  --secret-arn ${jsonencode(database.secret_arn)} \
+  --database ${jsonencode(database.name)} \
+  --region ${jsonencode(database.region)} \
+  --site-url ${jsonencode(database.site_url)}
+%{ endif ~}

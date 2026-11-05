@@ -36,11 +36,7 @@ resource "aws_instance" "app" {
   lifecycle {
     ignore_changes = [ami]
   }
-  user_data = templatefile("${path.module}/install.sh", {
-    repository_ref    = var.repository_ref
-    wordpress_version = var.wordpress_version
-    wordpress_sha256  = var.wordpress_sha256
-  })
+  user_data = local.install_script
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"

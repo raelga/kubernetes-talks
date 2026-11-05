@@ -1,3 +1,19 @@
+locals {
+  install_script = templatefile("${path.module}/install.sh", {
+    repository_ref    = var.repository_ref
+    wordpress_version = var.wordpress_version
+    wordpress_sha256  = var.wordpress_sha256
+  })
+
+  database_config = var.enable_database ? {
+    endpoint   = aws_db_instance.app[0].address
+    secret_arn = aws_db_instance.app[0].master_user_secret[0].secret_arn
+    name       = aws_db_instance.app[0].db_name
+    region     = data.aws_region.current.name
+    site_url   = local.tls_enabled ? "https://${var.domain_name}" : "http://${aws_lb.app.dns_name}"
+  } : null
+}
+
 resource "aws_ssm_association" "configure_wordpress" {
   name = "AWS-RunShellScript"
 
@@ -7,31 +23,15 @@ resource "aws_ssm_association" "configure_wordpress" {
   }
 
   parameters = {
-    commands = join("\n", concat([
-      "set -e",
-      "bash <<'INSTALL_WORDPRESS'",
-      templatefile("${path.module}/install.sh", {
-        repository_ref    = var.repository_ref
-        wordpress_version = var.wordpress_version
-        wordpress_sha256  = var.wordpress_sha256
-      }),
-      "INSTALL_WORDPRESS",
-      ], var.enable_database ? [
-      join(" ", [
-        "php /opt/infra-lab/repository/course/infra/labs/aws/02-wordpress/app/configure.php",
-        "--endpoint ${jsonencode(aws_db_instance.app[0].address)}",
-        "--secret-arn ${jsonencode(aws_db_instance.app[0].master_user_secret[0].secret_arn)}",
-        "--database ${jsonencode(aws_db_instance.app[0].db_name)}",
-        "--region ${jsonencode(data.aws_region.current.name)}",
-        "--site-url ${jsonencode(local.tls_enabled ? "https://${var.domain_name}" : "http://${aws_lb.app.dns_name}")}",
-      ]),
-    ] : []))
+    commands = templatefile("${path.module}/configure.sh.tftpl", {
+      installer = local.install_script
+      database  = local.database_config
+    })
   }
 
   wait_for_success_timeout_seconds = 600
 
   depends_on = [
-    aws_db_instance.app,
     aws_vpc_security_group_ingress_rule.database,
     aws_vpc_security_group_egress_rule.database,
   ]
