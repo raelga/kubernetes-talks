@@ -1,16 +1,7 @@
-variable "account_id" {
-  description = "Authorized AWS account ID; the provider refuses any other account."
-  type        = string
-  nullable    = false
-  validation {
-    condition     = can(regex("^[0-9]{12}$", var.account_id))
-    error_message = "account_id must contain exactly 12 digits."
-  }
-}
-
 variable "lab_id" {
   description = "Unique deployment label, 3–20 lowercase letters, digits or internal hyphens."
   type        = string
+  default     = "ec2-basics"
   nullable    = false
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,18}[a-z0-9]$", var.lab_id))
@@ -18,15 +9,6 @@ variable "lab_id" {
   }
 }
 
-variable "client_cidr" {
-  description = "Your actual public outbound IPv4 address followed by /32."
-  type        = string
-  nullable    = false
-  validation {
-    condition     = can(cidrnetmask(var.client_cidr)) && can(regex("/32$", var.client_cidr))
-    error_message = "client_cidr must be a valid IPv4 /32, never a wider network."
-  }
-}
 
 variable "instance_type" {
   description = "An available x86_64 EC2 instance type compatible with Amazon Linux 2023."

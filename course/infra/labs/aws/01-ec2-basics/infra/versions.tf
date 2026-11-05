@@ -14,8 +14,6 @@ terraform {
 }
 
 provider "aws" {
-  allowed_account_ids = [var.account_id]
-
   default_tags {
     tags = {
       Project = "infra-lab"

@@ -1,16 +1,7 @@
-variable "account_id" {
-  description = "Authorized AWS account; the provider rejects other accounts."
-  type        = string
-
-  validation {
-    condition     = can(regex("^[0-9]{12}$", var.account_id))
-    error_message = "account_id must contain exactly 12 digits."
-  }
-}
-
 variable "lab_id" {
   description = "Unique personal deployment identifier used in names and tags."
   type        = string
+  default     = "terraform-state"
 
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9-]{1,18}[a-z0-9]$", var.lab_id))

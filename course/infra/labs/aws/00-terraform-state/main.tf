@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 data "aws_region" "current" {}
 
 resource "random_id" "bucket_suffix" {
@@ -6,7 +8,7 @@ resource "random_id" "bucket_suffix" {
 }
 
 resource "aws_s3_bucket" "state" {
-  bucket        = var.bucket_name != null ? var.bucket_name : "tfstate-${var.account_id}-${var.lab_id}-${random_id.bucket_suffix[0].hex}"
+  bucket        = var.bucket_name != null ? var.bucket_name : "tfstate-${data.aws_caller_identity.current.account_id}-${var.lab_id}-${random_id.bucket_suffix[0].hex}"
   force_destroy = false
 
   tags = {

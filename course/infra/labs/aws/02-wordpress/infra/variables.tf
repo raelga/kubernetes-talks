@@ -1,28 +1,14 @@
-variable "account_id" {
-  description = "Expected AWS account; the provider refuses any other account."
-  type        = string
-  validation {
-    condition     = can(regex("^[0-9]{12}$", var.account_id))
-    error_message = "account_id must contain exactly 12 digits."
-  }
-}
-
 variable "lab_id" {
-  type = string
+  description = "Optional deployment label, 3–20 lowercase letters, digits or internal hyphens."
+  type        = string
+  default     = "wordpress"
+  nullable    = false
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,18}[a-z0-9]$", var.lab_id))
     error_message = "Use 3–20 lowercase letters, digits or hyphens, starting with a letter and ending with a letter or digit."
   }
 }
 
-variable "client_cidr" {
-  description = "Your current public IPv4 address with /32; the only ALB client."
-  type        = string
-  validation {
-    condition     = can(cidrnetmask(var.client_cidr)) && can(regex("/32$", var.client_cidr))
-    error_message = "client_cidr must be one IPv4 /32."
-  }
-}
 
 variable "ami_id" {
   description = "Persist an official regional Amazon Linux 2023 x86_64 AMI before the first apply; never resolve latest during staged applies."

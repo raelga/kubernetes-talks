@@ -4,6 +4,8 @@ data "aws_availability_zones" "available" {
 
 data "aws_region" "current" {}
 
+data "aws_caller_identity" "current" {}
+
 resource "random_id" "name" {
   byte_length = 3
 }

@@ -14,8 +14,8 @@ output "region" {
 }
 
 output "account_id" {
-  description = "Confirmed account input to recover when resuming this deployment."
-  value       = var.account_id
+  description = "Actual AWS account resolved from the configured credentials."
+  value       = data.aws_caller_identity.current.account_id
 }
 
 output "lab_id" {
