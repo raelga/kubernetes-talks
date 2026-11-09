@@ -1,0 +1,12 @@
+infra/.terraform/
+infra/terraform.tfvars
+infra/*.auto.tfvars
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfplan
+infra/crash.log
+infra/crash.*.log
+app/wp-config.php
+app/public/wp-admin/
+app/public/wp-includes/
+app/public/wp-content/

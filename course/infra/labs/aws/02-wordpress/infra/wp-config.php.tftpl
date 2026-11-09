@@ -1,0 +1,33 @@
+<?php
+// Cron atomically refreshes this root:apache file from Secrets Manager.
+$credentials = json_decode(@file_get_contents('/etc/infra-lab/database.json') ?: '{}', true) ?: [];
+
+define('DB_NAME', $credentials['dbname'] ?? '');
+define('DB_HOST', $credentials['host'] ?? '');
+define('DB_USER', $credentials['username'] ?? '');
+define('DB_PASSWORD', $credentials['password'] ?? '');
+define('DB_CHARSET', 'utf8mb4');
+define('DB_COLLATE', '');
+define('MYSQL_CLIENT_FLAGS', MYSQLI_CLIENT_SSL);
+
+foreach ([
+    'AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY',
+    'AUTH_SALT', 'SECURE_AUTH_SALT', 'LOGGED_IN_SALT', 'NONCE_SALT',
+] as $salt) {
+    define($salt, $credentials['salts'][$salt] ?? '');
+}
+unset($credentials, $salt);
+
+$table_prefix = 'wp_';
+define('DISALLOW_FILE_EDIT', true);
+define('DISALLOW_FILE_MODS', true);
+define('WP_DEBUG', false);
+
+// Only the ALB can reach EC2; honor its original HTTPS scheme.
+if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') {
+    $_SERVER['HTTPS'] = 'on';
+    $_SERVER['SERVER_PORT'] = '443';
+}
+
+define('ABSPATH', '/var/www/html/');
+require_once ABSPATH . 'wp-settings.php';
