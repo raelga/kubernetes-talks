@@ -239,7 +239,7 @@ https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64
 
 The `scripts/` directory has two helpers used while validating this lab:
 
-- `scripts/e2e-lab-test.sh` — runs the whole lab (etcd → apiserver → controller-manager → scheduler → kubelet → service → kube-proxy) non-interactively on the instance. Use it to smoke-test the environment before teaching the lab live; the manual, hands-on walkthrough below is the one to actually follow in class.
+- `scripts/e2e-lab-test.sh` — runs the whole lab (etcd → apiserver → controller-manager → scheduler → kubelet → service → kube-proxy) non-interactively on the instance. Use it to smoke-check the environment; follow the manual walkthrough below to explore each component.
 - `scripts/ensure-docker-for-kubelet.sh` — fallback that downgrades Docker to a version compatible with kubelet v1.16's dockershim. The instance now provisions with the pinned version already, so this is only needed if Docker was manually upgraded afterwards (see [Fifth component: `kubelet`](#fifth-component-kubelet)).
 
 ```bash

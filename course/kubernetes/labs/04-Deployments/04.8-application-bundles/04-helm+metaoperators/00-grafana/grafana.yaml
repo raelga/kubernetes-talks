@@ -4,7 +4,7 @@ kind: Grafana
 metadata:
   labels:
     dashboards: "grafana"
-  name: grafana
+  name: dev
   namespace: monitoring
 spec:
   config:
@@ -17,7 +17,7 @@ spec:
       admin_password: admin
   service:
     spec:
-      type: LoadBalancer
+      type: ClusterIP
       ports:
         - name: grafana-http
           port: 80
