@@ -22,14 +22,16 @@ lab_dir=/opt/infra-lab
 app_dir=/var/www/html
 config_dir=/etc/infra-lab
 
-# Install Apache, PHP and the tools used by WordPress configuration.
+# Install Apache, PHP and the Python runtime used for database provisioning.
 step=packages
 dnf install -y \
-  httpd awscli-2 tar gzip jq cronie util-linux \
+  httpd tar gzip cronie util-linux diffutils python3 python3-pip \
   php8.3 php8.3-cli php8.3-fpm php8.3-mysqlnd \
   php8.3-process php8.3-mbstring php8.3-xml php8.3-gd php8.3-opcache
 
 install -d -m 0755 "$lab_dir" "$app_dir"
+python3 -m venv "$lab_dir/venv"
+"$lab_dir/venv/bin/pip" install 'boto3==1.35.99' 'PyMySQL==1.1.1'
 install -d -m 0750 -o root -g apache "$config_dir"
 
 # Store a native WordPress config outside the document root; it reads the
@@ -52,9 +54,6 @@ chmod 0700 "$fetcher"
 printf '*/1 * * * * root %s >/dev/null 2>&1\n' "$fetcher" > /etc/cron.d/infra-lab-wordpress-secret
 chmod 0644 /etc/cron.d/infra-lab-wordpress-secret
 
-# The app secret is created by deploy.sh after infrastructure is ready.
-# A missing initial version is retried by cron without failing cloud-init.
-"$fetcher" >/dev/null 2>&1 || true
 
 # Trust the AWS RDS certificates for encrypted database connections.
 step=certificates
@@ -63,6 +62,21 @@ chmod 0644 "$config_dir/global-bundle.pem.new"
 mv "$config_dir/global-bundle.pem.new" "$config_dir/global-bundle.pem"
 cp "$config_dir/global-bundle.pem" /etc/pki/ca-trust/source/anchors/rds-global-bundle.pem
 update-ca-trust
+
+# Terraform creates the secret version; IAM, Secrets Manager and RDS may need
+# time to converge. Cron continues retrying if the initial window expires.
+step=database
+database_ready=false
+for attempt in {1..30}; do
+  if "$fetcher" >/dev/null 2>&1; then
+    database_ready=true
+    break
+  fi
+  sleep 10
+done
+if [[ "$database_ready" != true ]]; then
+  echo 'Database provisioning is not ready; cron will continue retrying.' >&2
+fi
 
 
 # Verify the pinned archive before changing any WordPress files.

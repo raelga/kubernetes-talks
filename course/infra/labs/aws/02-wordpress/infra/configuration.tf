@@ -1,7 +1,8 @@
 locals {
-  fetch_credentials = templatefile("${path.module}/fetch-credentials.sh.tftpl", {
-    secret_arn = aws_secretsmanager_secret.application.arn
-    region     = data.aws_region.current.name
+  fetch_credentials = templatefile("${path.module}/bootstrap-credentials.py.tftpl", {
+    secret_arn       = aws_secretsmanager_secret.application.arn
+    admin_secret_arn = aws_db_instance.app.master_user_secret[0].secret_arn
+    region           = data.aws_region.current.name
   })
 
   install_script = templatefile("${path.module}/install.sh", {

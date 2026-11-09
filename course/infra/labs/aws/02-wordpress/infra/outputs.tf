@@ -62,14 +62,14 @@ output "database_identifier" {
   value = aws_db_instance.app.identifier
 }
 output "database_endpoint" {
-  description = "Private RDS hostname used by the MySQL provider and WordPress."
+  description = "Private RDS hostname used by WordPress."
   value       = aws_db_instance.app.address
 }
 output "database_name" {
   value = aws_db_instance.app.db_name
 }
 output "database_secret_arn" {
-  description = "RDS-managed administrator secret ARN; only the database root reads its value ephemerally."
+  description = "RDS-managed administrator secret ARN used by EC2 during database bootstrap."
   value       = aws_db_instance.app.master_user_secret[0].secret_arn
 }
 output "application_secret_arn" {

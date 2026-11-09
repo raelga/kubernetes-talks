@@ -54,6 +54,9 @@ resource "aws_instance" "app" {
     aws_route_table_association.private,
     aws_route_table_association.public,
     aws_vpc_security_group_egress_rule.web,
-    aws_vpc_security_group_egress_rule.dns
+    aws_vpc_security_group_egress_rule.dns,
+    aws_vpc_security_group_ingress_rule.database,
+    aws_vpc_security_group_egress_rule.database,
+    aws_secretsmanager_secret_version.application
   ]
 }

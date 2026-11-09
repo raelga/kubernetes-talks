@@ -1,6 +1,12 @@
 <?php
 // Cron atomically refreshes this root:apache file from Secrets Manager.
 $credentials = json_decode(@file_get_contents('/etc/infra-lab/database.json') ?: '{}', true) ?: [];
+if (empty($credentials['dbname']) || empty($credentials['host'])
+    || empty($credentials['username']) || empty($credentials['password'])
+    || empty($credentials['salts'])) {
+    http_response_code(503);
+    exit('Database configuration is not ready.');
+}
 
 define('DB_NAME', $credentials['dbname'] ?? '');
 define('DB_HOST', $credentials['host'] ?? '');
