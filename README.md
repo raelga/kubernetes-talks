@@ -80,3 +80,7 @@ The main subject of this talk is introducing to the Traefik awesome Cloud Native
     - [Update the `ReplicaSet` pod template](study-jams/k8s/default/replicasets/#update-the-replicaset-pod-template)
     - [Update the `ReplicaSet` `Pod` template with the fixed `ReadinessProbe`](study-jams/k8s/default/replicasets/#update-the-replicaset-pod-template-with-the-fixed-readinessprobe)
     - [Clean up the failing versions and the old ones](study-jams/k8s/default/replicasets/#clean-up-the-failing-versions-and-the-old-ones)
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
