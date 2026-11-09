@@ -2,7 +2,7 @@
 
 Use an instructor-provided or otherwise approved Google Cloud project. The session's live Azure/GCP demonstrations run in instructor accounts; students can follow the [offline comparison](../azure-gcp/README.md) without cloud credentials or resources.
 
-Labs: [00 · Terraform state in Cloud Storage](00-terraform-state/README.md) and [01 · Compute Engine basics and SSH](01-compute-basics/README.md).
+Labs: [00 · Terraform state in Cloud Storage](00-terraform-state/README.md), [01 · Compute Engine basics and SSH](01-compute-basics/README.md), [02 · WordPress and Cloud SQL](02-wordpress/README.md), and [03 · WordPress module](03-wordpress-module/README.md).
 
 ## Install the Google Cloud CLI
 

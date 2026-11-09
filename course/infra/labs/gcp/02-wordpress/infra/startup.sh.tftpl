@@ -1,0 +1,31 @@
+#!/bin/bash
+set -Eeuo pipefail
+umask 077
+
+# This script contains no passwords. The root-only Python bootstrap obtains them
+# directly from Secret Manager using this VM's service account.
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y apache2 php libapache2-mod-php php-mysql php-curl php-gd php-mbstring php-xml php-zip python3-pymysql python3-requests stunnel4 curl ca-certificates
+
+if [ ! -f /var/www/html/wp-settings.php ]; then
+  archive=$(mktemp)
+  trap 'rm -f "$archive"' EXIT
+  curl --fail --show-error --silent --location --proto '=https' --proto-redir '=https' --tlsv1.2 https://wordpress.org/latest.tar.gz --output "$archive"
+  mkdir -p /var/www/html
+  (umask 022; tar -xzf "$archive" -C /var/www/html --strip-components=1)
+  rm -f /var/www/html/index.html "$archive"
+  trap - EXIT
+fi
+
+install -d -o www-data -g www-data -m 775 /var/www/html/wp-content/uploads
+
+install -d -m 700 /opt/wordpress-bootstrap
+printf '%s' '${bootstrap_script}' | base64 -d > /opt/wordpress-bootstrap/bootstrap.py
+chmod 700 /opt/wordpress-bootstrap/bootstrap.py
+/usr/bin/python3 /opt/wordpress-bootstrap/bootstrap.py
+systemctl daemon-reload
+systemctl enable --now wordpress-db-tunnel.service
+systemctl restart wordpress-db-tunnel.service
+systemctl enable --now apache2
+systemctl reload apache2
