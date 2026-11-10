@@ -1,4 +1,3 @@
-variable "state_bucket" { type = string }
 data "terraform_remote_state" "network" {
   backend = "s3"
   config = {
@@ -14,26 +13,6 @@ data "terraform_remote_state" "database" {
     key    = "wordpress/database/terraform.tfstate"
     region = var.aws_region
   }
-}
-variable "name" {
-  type    = string
-  default = "wp-split"
-}
-variable "instance_profile_name" {
-  type    = string
-  default = "LabInstanceProfile"
-}
-variable "instance_type" {
-  type    = string
-  default = "t4g.small"
-}
-variable "wordpress_version" {
-  type    = string
-  default = "7.1.4"
-}
-variable "wordpress_sha256" {
-  type    = string
-  default = "881e53a4681ff2cd911651b11cccdede5ae477ddf0765af5d6a1a8b219a1d835"
 }
 data "aws_region" "current" {}
 data "aws_iam_instance_profile" "app" { name = var.instance_profile_name }
@@ -77,6 +56,11 @@ resource "aws_secretsmanager_secret_version" "application" {
   })
 }
 
+resource "aws_eip" "app" {
+  domain = "vpc"
+  tags   = { Name = var.name }
+}
+
 locals {
   fetch_credentials = templatefile("${path.module}/bootstrap-credentials.py.tftpl", {
     secret_arn       = aws_secretsmanager_secret.application.arn
@@ -87,7 +71,7 @@ locals {
     wordpress_version = var.wordpress_version
     wordpress_sha256  = var.wordpress_sha256
     fetch_credentials = local.fetch_credentials
-    wordpress_config  = file("${path.module}/wp-config.php.tftpl")
+    wordpress_config  = templatefile("${path.module}/wp-config.php.tftpl", { public_ip = aws_eip.app.public_ip })
   })
   user_data_script = templatefile("${path.module}/user-data.sh.tftpl", { installer = local.install_script })
 }
@@ -96,8 +80,9 @@ resource "aws_instance" "app" {
   instance_type               = var.instance_type
   subnet_id                   = data.terraform_remote_state.network.outputs.public_subnet_ids[0]
   associate_public_ip_address = true
-  vpc_security_group_ids      = [data.terraform_remote_state.network.outputs.app_security_group_id]
+  vpc_security_group_ids      = [data.terraform_remote_state.network.outputs.app_security_group_id, data.terraform_remote_state.network.outputs.ssh_security_group_id]
   iam_instance_profile        = data.aws_iam_instance_profile.app.name
+  key_name                    = var.ssh_key_name
   user_data                   = local.user_data_script
   user_data_replace_on_change = true
   depends_on                  = [aws_secretsmanager_secret_version.application]
@@ -114,5 +99,7 @@ resource "aws_instance" "app" {
   }
   tags = { Name = var.name }
 }
-output "public_ip" { value = aws_instance.app.public_ip }
-output "url" { value = "http://${aws_instance.app.public_ip}/" }
+resource "aws_eip_association" "app" {
+  instance_id   = aws_instance.app.id
+  allocation_id = aws_eip.app.id
+}

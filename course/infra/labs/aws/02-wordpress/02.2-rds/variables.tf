@@ -3,7 +3,7 @@ variable "aws_region" {
   default = "us-east-1"
 }
 variable "allowed_http_cidr" {
-  description = "Client IPv4 CIDR allowed to reach the disposable HTTP site."
+  description = "Client IPv4 CIDR allowed to reach the disposable HTTP site and SSH."
   type        = string
   default     = "0.0.0.0/0"
   validation {
@@ -31,4 +31,11 @@ variable "wordpress_sha256" {
 variable "database_instance_class" {
   type    = string
   default = "db.t4g.micro"
+}
+
+variable "ssh_key_name" {
+  description = "Existing EC2 SSH key pair; Academy provides vockey."
+  type        = string
+  default     = "vockey"
+  nullable    = false
 }

@@ -12,6 +12,9 @@ Split the network, private RDS database and application into three states. Stage
 
 - Follow the [shared setup](../README.md) in the same terminal, using your state bucket from lab 00. The default region is `us-east-1`.
 - You need Terraform >= 1.10 and Academy permissions for S3 locking, EC2, RDS and Secrets Manager. `LabInstanceProfile` needs access to the application and RDS master secrets, the applicable KMS key and, for Session Manager, SSM permissions and connectivity.
+- The existing Academy EC2 key pair defaults to `vockey`; obtain its matching PEM from Academy and keep it outside the repository. Set `ssh_key_name` in the WordPress root if the authorized key pair differs. The network root's default `http_cidr` is `0.0.0.0/0`, exposing both HTTP and SSH to the Internet; optionally restrict it to your public IPv4 address as a `/32`.
+  For example, before planning or applying the network, run `export TF_VAR_http_cidr="$(curl -4fsS https://checkip.amazonaws.com)/32"`; update it and reapply the network if your public IP changes.
+- Apply the network root even if it already exists, to publish the SSH security-group output before planning WordPress. SSH uses a separate group attached only to this single instance; the shared app group remains usable by the later Auto Scaling labs.
 - From the `02.4-multi-stack/` directory, deploy in order:
 
 ```sh
@@ -30,7 +33,14 @@ terraform apply
 terraform output -raw url
 ```
 
-- Wait for cloud-init and complete setup. HTTP is open to the Internet and unencrypted: use synthetic data and disposable passwords. If authorized, inspect `/var/log/infra-lab-bootstrap.log` through Session Manager.
+- Wait for cloud-init and complete setup. HTTP is unencrypted: use synthetic data and disposable passwords. To inspect `/var/log/infra-lab-bootstrap.log`, use Session Manager if authorized or SSH from `wordpress/` with your own PEM:
+
+```sh
+chmod 400 /path/to/vockey.pem
+ssh -i /path/to/vockey.pem ec2-user@"$(terraform output -raw public_ip)"
+```
+
+- The allocated Elastic IP supplies the site URL and survives instance replacement while this state and allocation remain intact. Existing installations using a different URL may require a WordPress URL/content migration; replacing or destroying the allocation changes the address.
 - State and retained versions contain secrets. A `terraform_remote_state` reader can access the entire state, not just outputs.
 
 ## Experiment
@@ -50,4 +60,4 @@ cd ../network
 terraform destroy
 ```
 
-- Resolve application destroy failures first. RDS has no backups or final snapshot: destruction deletes its data. Check for billable leftovers and retain the state bucket as directed in lab 00.
+- Resolve application destroy failures first. RDS has no backups or final snapshot: destruction deletes its data. Check for billable leftovers, including Elastic IPs; public IPv4 addresses incur charges even when an Elastic IP is unassociated. Retain the state bucket as directed in lab 00.

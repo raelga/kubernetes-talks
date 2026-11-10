@@ -1,15 +1,3 @@
-variable "name" {
-  type    = string
-  default = "wp-modules"
-}
-variable "http_cidr" {
-  type    = string
-  default = "0.0.0.0/0"
-}
-variable "instance_profile_name" {
-  type    = string
-  default = "LabInstanceProfile"
-}
 module "network" {
   source    = "../../../../modules/aws/network"
   name      = var.name
@@ -27,10 +15,10 @@ module "wordpress" {
   name                  = var.name
   subnet_id             = module.network.public_subnet_ids[0]
   app_security_group_id = module.network.app_security_group_id
+  ssh_security_group_id = module.network.ssh_security_group_id
+  ssh_key_name          = var.ssh_key_name
   secret_arn            = module.database.secret_arn
   master_secret_arn     = module.database.master_secret_arn
   instance_profile_name = var.instance_profile_name
   depends_on            = [module.network, module.database]
 }
-output "url" { value = module.wordpress.url }
-output "database_endpoint" { value = module.database.endpoint }

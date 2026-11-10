@@ -1,4 +1,6 @@
 <?php
+define('WP_HOME', 'http://${public_ip}');
+define('WP_SITEURL', 'http://${public_ip}');
 // Cron atomically refreshes this root:apache file from Secrets Manager.
 $credentials = json_decode(@file_get_contents('/etc/infra-lab/database.json') ?: '{}', true) ?: [];
 if (empty($credentials['dbname']) || empty($credentials['host'])
@@ -29,11 +31,7 @@ define('DISALLOW_FILE_EDIT', true);
 define('DISALLOW_FILE_MODS', true);
 define('WP_DEBUG', false);
 
-// Only the ALB can reach EC2; honor its original HTTPS scheme.
-if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') {
-    $_SERVER['HTTPS'] = 'on';
-    $_SERVER['SERVER_PORT'] = '443';
-}
+// This single-instance lab serves HTTP directly.
 
 define('ABSPATH', '/var/www/html/');
 require_once ABSPATH . 'wp-settings.php';

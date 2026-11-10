@@ -1,13 +1,3 @@
-variable "name" { type = string }
-variable "cidr_block" {
-  type    = string
-  default = "10.53.0.0/16"
-}
-variable "http_cidr" {
-  description = "Client IPv4 CIDR allowed to reach the disposable HTTP site."
-  type        = string
-  default     = "0.0.0.0/0"
-}
 data "aws_availability_zones" "available" { state = "available" }
 resource "aws_vpc" "lab" {
   cidr_block           = var.cidr_block
@@ -53,6 +43,19 @@ resource "aws_security_group" "app" {
   vpc_id      = aws_vpc.lab.id
   tags        = { Name = "${var.name}-app" }
 }
+resource "aws_security_group" "ssh" {
+  name        = "${var.name}-ssh"
+  description = "SSH access for single-instance WordPress"
+  vpc_id      = aws_vpc.lab.id
+  tags        = { Name = "${var.name}-ssh" }
+}
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+  security_group_id = aws_security_group.ssh.id
+  cidr_ipv4         = var.http_cidr
+  ip_protocol       = "tcp"
+  from_port         = 22
+  to_port           = 22
+}
 resource "aws_vpc_security_group_ingress_rule" "http" {
   security_group_id = aws_security_group.app.id
   cidr_ipv4         = var.http_cidr
@@ -65,7 +68,3 @@ resource "aws_vpc_security_group_egress_rule" "internet" {
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 }
-output "vpc_id" { value = aws_vpc.lab.id }
-output "public_subnet_ids" { value = aws_subnet.public[*].id }
-output "private_subnet_ids" { value = aws_subnet.private[*].id }
-output "app_security_group_id" { value = aws_security_group.app.id }
