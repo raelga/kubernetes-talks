@@ -40,6 +40,24 @@ az account show --subscription SUBSCRIPTION_ID --query '{subscription:id,tenant:
 
 Terraform's AzureRM provider and backend need the same authorized identity and subscription. Set `ARM_SUBSCRIPTION_ID` in your terminal to the approved subscription ID, and follow the authentication instructions in each lab. The backend needs Azure Storage data-plane permissions in addition to resource-management permissions. Never put credentials, state, plans or private variables in Git.
 
+## Prepare Storage for Terraform state
+
+Before lab 00, check that the Storage resource provider is registered in the approved subscription:
+
+```sh
+az provider show --namespace Microsoft.Storage --subscription SUBSCRIPTION_ID --query registrationState -o tsv
+```
+
+If it is `NotRegistered`, and you are authorized to register providers, run:
+
+```sh
+az provider register --namespace Microsoft.Storage --subscription SUBSCRIPTION_ID --wait
+```
+
+An enabled subscription can take time to become available to every Azure service. If an API returns `SubscriptionNotFound`, verify the subscription and provider registration rather than switching subscriptions.
+
+The Terraform identity also needs **Blob data-plane access**, such as `Storage Blob Data Contributor` on the state account or an appropriate parent scope. Subscription management roles alone do not necessarily grant Blob access. Ask the subscription administrator to grant the approved role; allow time for permission propagation. Without it, state migration can fail with `403 AuthorizationPermissionMismatch` even if Terraform created the account and container.
+
 ## Labs
 
 - [00 · Terraform state in Azure Storage](00-terraform-state/README.md)
