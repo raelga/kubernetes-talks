@@ -4,9 +4,9 @@
 
 Separate WordPress from its private MySQL RDS database and compare what survives EC2 replacement. The connection verifies the AWS CA; WordPress uses the RDS administrator as a teaching simplification.
 
-![Architecture](diagram.png)
+![Architecture](assets/architecture.png)
 
-[Editable architecture diagram](diagram.drawio). The PNG is a simplified view; the public address is an Elastic IP and SSH is also available.
+[Editable architecture diagram](assets/architecture.drawio). The PNG is a simplified view; the public address is an Elastic IP and SSH is also available.
 
 ## Deploy
 

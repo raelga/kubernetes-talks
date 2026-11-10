@@ -28,6 +28,7 @@ resource "aws_instance" "wordpress" {
     secret_arn        = aws_secretsmanager_secret.db.arn
     db_host           = "localhost"
     local_db          = "true"
+    public_ip         = ""
     wordpress_version = var.wordpress_version
     wordpress_sha256  = var.wordpress_sha256
   })

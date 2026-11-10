@@ -4,9 +4,9 @@
 
 Build two AMIs with Apache, PHP and a verified WordPress archive; switch and roll back the image used by an ASG. Credentials are fetched at boot, not baked into the AMI. Uploads remain ephemeral.
 
-[Editable architecture diagram](diagram.drawio).
+[Editable architecture diagram](assets/architecture.drawio).
 
-![Architecture](diagram.png)
+![Architecture](assets/architecture.png)
 
 ## Install and build
 

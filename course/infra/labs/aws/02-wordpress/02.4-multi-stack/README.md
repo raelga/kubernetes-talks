@@ -6,9 +6,9 @@ Use the same reusable network, MySQL/RDS and WordPress EC2 modules as 02.3, but 
 
 The database root owns one private RDS instance, the `wordpress` database and the 02.4 application secret. The EC2 bootstrap provisions the `wordpress_app` database user. Stages 02.5–02.7 reuse that RDS instance and network, but create their own application databases, users, secrets and independent states; their default `lab_id` values keep WordPress content separate. If overriding `lab_id`, use a different value for each stage.
 
-![Architecture](diagram.png)
+![Architecture](assets/architecture.png)
 
-[Editable architecture diagram](diagram.drawio)
+[Editable architecture diagram](assets/architecture.drawio)
 
 ## Deploy
 

@@ -4,9 +4,9 @@
 
 Reuse network, MySQL RDS and WordPress EC2 modules in one root and state. The local database module uses the [community RDS module](https://registry.terraform.io/modules/terraform-aws-modules/rds/aws/6.12.0), pinned to `6.12.0` and downloaded by `terraform init`.
 
-![Architecture](diagram.png)
+![Architecture](assets/architecture.png)
 
-[Editable architecture diagram](diagram.drawio)
+[Editable architecture diagram](assets/architecture.drawio)
 
 ## Deploy
 

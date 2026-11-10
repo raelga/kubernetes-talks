@@ -4,9 +4,9 @@
 
 Use a public load balancer and one-instance Auto Scaling Group (ASG) with the network and RDS from 02.4. Database records survive replacement; EC2 uploads do not.
 
-[Editable architecture diagram](diagram.drawio).
+[Editable architecture diagram](assets/architecture.drawio).
 
-![Architecture](diagram.png)
+![Architecture](assets/architecture.png)
 
 ## Deploy
 

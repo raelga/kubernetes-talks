@@ -27,3 +27,17 @@ echo "$TF_VAR_state_bucket"
 Confirm the bucket name is displayed. Keep the same terminal for the remaining stages; if you open a new terminal, run these commands again. Each learner uses a dedicated bucket; the lab uses fixed, separate state paths within it.
 
 If you deployed an earlier version using local state or different state keys, clean it up or migrate its state before using these paths. Changing the backend does not move or destroy existing resources.
+
+## Terraform dependency graph
+
+The architecture diagrams show the infrastructure; `terraform graph` shows Terraform's dependency relationships.
+
+1. Install [Graphviz](https://graphviz.org/download/) (`brew install graphviz` on macOS; on Windows, install Graphviz and add `dot` to your PATH).
+2. From a lab directory initialized with the correct AWS credentials and backend, generate the PNG:
+
+   ```sh
+   mkdir -p assets
+   terraform graph | dot -Tpng -o assets/terraform-graph.png
+   ```
+
+For 02.4, run this in `network/`, `database/` or `wordpress/`: each is a separate Terraform root and has its own graph. The command does not deploy infrastructure. Inspect generated graphs before sharing; resource identifiers may reveal infrastructure details.

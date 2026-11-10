@@ -36,6 +36,9 @@ if [ "$local_db" = true ]; then
   mysql < "$work/create.sql"
 else
   curl --fail --silent --show-error --retry 5 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o /etc/pki/tls/certs/rds-global-bundle.pem
+  chmod 0644 /etc/pki/tls/certs/rds-global-bundle.pem
+  install -m 0644 /etc/pki/tls/certs/rds-global-bundle.pem /etc/pki/ca-trust/source/anchors/rds-global-bundle.pem
+  update-ca-trust
 fi
 ready=false
 for attempt in {1..60}; do
@@ -54,9 +57,11 @@ tar -xzf "$work/wordpress.tar.gz" --strip-components=1 --no-same-owner --no-same
 find /var/www/html -type d -exec chmod 0755 {} +
 find /var/www/html -type f -exec chmod 0644 {} +
 install -d -m 0755 -o apache -g apache /var/www/html/wp-content/uploads
-# Use IMDSv2 rather than an untrusted HTTP Host header for the site URL.
-token=$(curl --fail --silent --show-error -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token)
-public_ip=$(curl --fail --silent --show-error -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/public-ipv4)
+public_ip='${public_ip}'
+if [ -z "$public_ip" ]; then
+  token=$(curl --fail --silent --show-error -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token)
+  public_ip=$(curl --fail --silent --show-error -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/public-ipv4)
+fi
 python3 - "$work/secret.json" "$db_host" "$public_ip" "$local_db" <<'PYTHON'
 import json, pathlib, secrets, sys
 s = json.loads(pathlib.Path(sys.argv[1]).read_text())
@@ -72,8 +77,5 @@ pathlib.Path('/var/www/wp-config.php').write_text('\n'.join(lines) + '\n')
 PYTHON
 chown root:apache /var/www/wp-config.php
 chmod 0640 /var/www/wp-config.php
-if [ "$local_db" != true ]; then
-  printf 'mysqlnd.ssl_ca=/etc/pki/tls/certs/rds-global-bundle.pem\n' > /etc/php.d/99-lab-rds.ini
-fi
 systemctl enable --now amazon-ssm-agent php-fpm httpd
 echo 'BOOTSTRAP READY: database reachable and Apache started. Complete WordPress setup in the browser.'

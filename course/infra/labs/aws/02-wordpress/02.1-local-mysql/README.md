@@ -4,9 +4,9 @@
 
 WordPress and MariaDB share one instance and its root volume. See what happens when the instance is replaced.
 
-![Architecture](diagram.png)
+![Architecture](assets/architecture.png)
 
-[Editable architecture diagram](diagram.drawio)
+[Editable architecture diagram](assets/architecture.drawio)
 
 ## Deploy
 

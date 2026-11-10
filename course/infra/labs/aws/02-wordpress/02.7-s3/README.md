@@ -4,9 +4,9 @@
 
 Keep uploads when EC2 is replaced. This application reuses the network and RDS from 02.4, uses a public ALB and one-instance ASG, and stores new WordPress media in a private S3 bucket with [S3 Uploads](https://github.com/humanmade/S3-Uploads). Posts and metadata remain in RDS. Signed URLs expire, but anyone holding one can access it until then.
 
-[Editable architecture diagram](diagram.drawio).
+[Editable architecture diagram](assets/architecture.drawio).
 
-![Architecture](diagram.png)
+![Architecture](assets/architecture.png)
 
 ## Deploy
 
