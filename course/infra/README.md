@@ -9,6 +9,7 @@ Provision resources, inspect the application separately, then remove the deploym
 | [AWS: WordPress](labs/aws/02-wordpress/README.md) | One Terraform stack: public ALB, private EC2, NAT and private RDS MySQL | EC2 bootstraps a database-scoped app user using Secrets Manager; Terraform state contains the application secret |
 | [AWS: WordPress module](labs/aws/03-wordpress-module/README.md) | WordPress stack encapsulated in a local Terraform module | Separate state from the standalone lab |
 | [Azure and GCP](labs/azure-gcp/README.md) | Optional independent provider deployments | Offline response comparison and a small HTTP service |
+| [Azure: CLI and labs](labs/azure/README.md) | Azure onboarding, state backend, VM, and WordPress | Optional instructor-account demonstration |
 | [GCP: CLI and project setup](labs/gcp/README.md) | Install the CLI and select an approved project | No deployment required |
 | [GCP: WordPress module](labs/gcp/03-wordpress-module/README.md) | WordPress and Cloud SQL in a local Terraform module | Separate state from the standalone lab |
 
@@ -25,7 +26,7 @@ EC2 basics keeps web ports 80/443 public and starts SSH public; a follow-up vari
 - Check the AWS account and region. Use one bucket per learner and one deployment of each lab per bucket.
 - Review every plan. Keep databases private, restrict SSH to your IP after the exercise, and never put credentials in Git, user-data or command output.
 - EC2, public IPv4 and storage incur charges. WordPress also adds ALB, NAT and RDS charges; this is not a highly available production design.
-- Destroy the WordPress stack with `terraform -chdir=infra destroy` from its lab directory. RDS deletion removes the SQL user with the database. Keep the shared state bucket for the other labs.
+- Destroy the WordPress stack with `terraform destroy` from its lab directory. RDS deletion removes the SQL user with the database. Keep the shared state bucket for the other labs.
 - Keep state, plans, private variables, credentials and real captures outside Git. WordPress state and saved plans contain its generated application password and salts, even when marked sensitive: restrict access to encrypted state, its version history and backups. Do not delete shared DNS zones, backends or unrelated resources.
 
 Fixtures are synthetic and do not prove live cloud correctness. Offline checks never deploy resources. Reviewed dependency lockfiles may be committed.

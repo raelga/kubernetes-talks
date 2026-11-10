@@ -17,7 +17,7 @@ This is a short-lived teaching environment, not a production design: there is no
 From the repository root, replace the bucket name (without `gs://`) and CIDR in the following commands:
 
 ```sh
-cd course/infra/labs/gcp/02-wordpress/infra
+cd course/infra/labs/gcp/02-wordpress
 terraform init -backend-config="bucket=STATE_BUCKET_NAME"
 terraform plan -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
 terraform apply -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"

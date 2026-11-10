@@ -16,10 +16,10 @@ From the repository root:
 cd course/infra/labs/aws/02-wordpress
 # If not already exported by the state lab:
 export STATE_BUCKET="$(terraform -chdir=../00-terraform-state/remote output -raw state_bucket_name)"
-terraform -chdir=infra init -backend-config="bucket=$STATE_BUCKET"
-terraform -chdir=infra plan
-terraform -chdir=infra apply
-terraform -chdir=infra output application_url
+terraform init -backend-config="bucket=$STATE_BUCKET"
+terraform plan
+terraform apply
+terraform output application_url
 ```
 
 For a non-default region add `-backend-config="region=$TF_VAR_aws_region"` to `init`. Review the plan before applying. Open the application URL and complete the WordPress setup in the browser; the WordPress administrator login is separate from the database user. Bootstrap runs asynchronously after Terraform creates EC2, so wait for the ALB target to become healthy. The ALB health check uses `/wp-login.php`.
@@ -35,7 +35,7 @@ Terraform creates an application secret version with a generated database passwo
 Inspect the private database and security groups without printing secret resources:
 
 ```sh
-terraform -chdir=infra state show aws_db_instance.app
+terraform state show aws_db_instance.app
 ```
 
 Do not rotate the application secret independently in Secrets Manager: Terraform owns its version and the database user must be updated consistently. A fresh secret and SQL-user password can interrupt service and new salts invalidate existing WordPress login cookies.
@@ -49,8 +49,8 @@ The first apply creates a new Terraform-managed application secret version and p
 ## Cleanup
 
 ```sh
-terraform -chdir=infra plan -destroy
-terraform -chdir=infra destroy
+terraform plan -destroy
+terraform destroy
 ```
 
 Review and confirm the deletion plan. Destroying RDS also removes its SQL user, database contents and automated backups; no final database snapshot is taken. EC2 uploads and the application secret and its versions are deleted. The shared state bucket, Academy IAM resources and any existing Route 53 zone remain. ALB, NAT Gateway, EC2 and RDS incur charges until destroyed. Retained S3 state versions and saved plans can still contain credentials and must be handled under your retention policy.

@@ -13,13 +13,7 @@ Terraform creates a Debian VM, a VPC and subnet, and a firewall for SSH and HTTP
 
 ## 1. Authenticate and initialize
 
-Follow [project setup](../README.md) to select and verify the approved account and project. CLI authentication and Application Default Credentials (ADC) are separate. For this instructor demonstration, use your approved identity for both and verify the project; do not share credentials or browser links:
-
-```sh
-gcloud auth list
-gcloud config get-value project
-gcloud auth application-default login
-```
+Complete the [Google Cloud bootstrap](../README.md#sign-in-for-terraform) in this terminal. Verify the active account and project before continuing. Terraform uses the project set in `GOOGLE_CLOUD_PROJECT`; repeat the bootstrap project step if you change projects.
 
 From the repository root, enter the lab directory and initialize with the state bucket name from the state lab. Substitute the actual bucket name; do not include `gs://`. The backend uses ADC as well as the provider.
 
@@ -32,13 +26,13 @@ If changing the bucket for an existing working directory, follow Terraform's bac
 
 ## 2. Plan and deploy
 
-Replace `PROJECT_ID` and `YOUR_PUBLIC_IP/32` with your approved project and public IP. The default is one standard (non-preemptible) `e2-micro` in Oregon: region `us-west1`, zone `us-west1-b`. If changing the location, pass matching region and zone variables to every command.
+Replace `YOUR_PUBLIC_IP/32` with your public IP. The default is one standard (non-preemptible) `e2-micro` in Oregon: region `us-west1`, zone `us-west1-b`. If changing the location, pass matching region and zone variables to every command.
 
 Google's [Compute Engine Free Tier](https://cloud.google.com/free/docs/free-cloud-features#compute) has eligibility and usage limits. A qualifying VM does not make the whole lab free: disk, external IP, network traffic and other usage can still incur charges. Check current pricing and billing.
 
 ```sh
-terraform plan -var="project_id=PROJECT_ID" -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
-terraform apply -var="project_id=PROJECT_ID" -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
+terraform plan -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
+terraform apply -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
 ```
 
 Review the plan before confirming. The demo's fixed resource names require an unused lab namespace in the project. Once apply completes, print the URL and open it from the allowed network:
@@ -51,10 +45,10 @@ Startup can take several minutes after Terraform reports creation. The page shou
 
 ## 3. Connect and inspect
 
-Use OS Login rather than manually sharing SSH private keys. `gcloud compute ssh` creates or uses a local SSH key, associates the public key with the authenticated OS Login identity and connects to the external IP. Confirm the account and project, and verify the host key fingerprint through a trusted channel before accepting an unfamiliar key. Do not use `--ssh-flag` options that disable host-key checking. On Windows, run this in PowerShell with OpenSSH installed; on macOS use Terminal. Substitute your project ID and, if changed, the selected zone:
+Use OS Login rather than manually sharing SSH private keys. `gcloud compute ssh` creates or uses a local SSH key and associates its public key with your OS Login identity. Verify the active project and host key fingerprint before connecting. On Windows, use PowerShell with OpenSSH; on macOS, use Terminal. If you changed the zone, use that zone below:
 
 ```sh
-gcloud compute ssh compute-basics-vm --project=PROJECT_ID --zone=us-west1-b
+gcloud compute ssh compute-basics-vm --zone=us-west1-b
 ```
 
 Inside the VM:
@@ -73,7 +67,7 @@ If the page is unavailable, check startup logs and `journalctl -u compute-basics
 Back in the local Terraform directory, destroy with the same variables (including any region/zone overrides), review the plan and confirm:
 
 ```sh
-terraform destroy -var="project_id=PROJECT_ID" -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
+terraform destroy -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
 ```
 
 Confirm in the console that the lab VM, its disk, external IP, firewall, subnet and network are gone. The shared state bucket is deliberately **not** destroyed; retain it according to the [state lab](../00-terraform-state/README.md). Review Cloud Billing costs and filters and the approved budgets/alerts, including VM, disk, external IP and network traffic. Billing can lag, and budgets do not automatically stop spending. Delete only resources created for this exercise; never delete the shared project or billing account.

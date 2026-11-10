@@ -1,5 +1,5 @@
 module "wordpress_stack" {
-  source = "../../../../modules/aws/wordpress-stack"
+  source = "../../../modules/aws/wordpress-stack"
 
   instance_profile_name   = var.instance_profile_name
   lab_id                  = var.lab_id

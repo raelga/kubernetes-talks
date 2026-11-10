@@ -1,0 +1,83 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+export DEBIAN_FRONTEND=noninteractive
+work=$(mktemp -d /run/wp-bootstrap.XXXXXX)
+trap 'rm -rf "$work"' EXIT
+
+apt-get update
+apt-get install -y apache2 php libapache2-mod-php php-mysql php-curl php-gd php-mbstring php-xml php-zip mysql-client curl jq ca-certificates python3
+systemctl stop apache2
+
+# The VM identity requests a short-lived token; neither it nor a secret is in custom data.
+curl --fail --silent --show-error --retry 12 --retry-delay 10 \
+  -H Metadata:true \
+  'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fvault.azure.net&client_id=${identity_client_id}' \
+  | jq -er .access_token > "$work/token"
+printf 'header = "Authorization: Bearer %s"\n' "$(cat "$work/token")" > "$work/curl.conf"
+for name in db-admin db-app wp-salts; do
+  # Access-policy propagation can lag VM creation.
+  for attempt in $(seq 1 30); do
+    if curl --fail --silent --show-error --config "$work/curl.conf" \
+      '${vault_uri}secrets/'"$name"'?api-version=7.4' > "$work/response"; then
+      jq -er .value "$work/response" > "$work/$name"
+      break
+    fi
+    sleep 10
+  done
+  test -s "$work/$name"
+done
+rm -f "$work/token" "$work/curl.conf" "$work/response"
+
+# Passwords are alphanumeric and stay in root-only files/stdin, never process arguments.
+printf '[client]\nuser=wpadmin\npassword=%s\nhost=${db_host}\nssl-ca=/etc/ssl/certs/ca-certificates.crt\nssl-mode=VERIFY_IDENTITY\n' "$(cat "$work/db-admin")" > "$work/mysql.cnf"
+app_password=$(cat "$work/db-app")
+for attempt in $(seq 1 30); do
+  if mysql --defaults-extra-file="$work/mysql.cnf" -e 'SELECT 1' > /dev/null 2>&1; then
+    break
+  fi
+  sleep 10
+done
+mysql --defaults-extra-file="$work/mysql.cnf" <<SQL
+CREATE DATABASE IF NOT EXISTS wordpress CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'wordpress'@'%' IDENTIFIED BY '$app_password' REQUIRE SSL;
+ALTER USER 'wordpress'@'%' IDENTIFIED BY '$app_password' REQUIRE SSL;
+GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpress'@'%';
+SQL
+unset app_password
+rm -f "$work/db-admin" "$work/mysql.cnf"
+
+curl --fail --silent --show-error --location --retry 5 https://wordpress.org/latest.tar.gz -o "$work/wordpress.tar.gz"
+tar -xzf "$work/wordpress.tar.gz" -C "$work"
+cp -a "$work/wordpress/." /var/www/html/
+rm -f /var/www/html/index.html
+# Keep the application credential and salts out of cloud-init output and process arguments.
+python3 - "$work" <<'PY'
+import json
+import pathlib
+import re
+import sys
+
+work = pathlib.Path(sys.argv[1])
+root = pathlib.Path('/var/www/html')
+config = (root / 'wp-config-sample.php').read_text()
+values = {
+    'DB_NAME': 'wordpress',
+    'DB_USER': 'wordpress',
+    'DB_PASSWORD': (work / 'db-app').read_text().strip(),
+    'DB_HOST': '${db_host}',
+}
+values.update(json.loads((work / 'wp-salts').read_text()))
+for name, value in values.items():
+    # Generated values are alphanumeric; the hostname is Azure-generated.
+    config, count = re.subn(r"define\(\s*'" + name + r"'\s*,\s*'[^']*'\s*\);", "define( '" + name + "', '" + value + "' );", config)
+    if count != 1:
+        raise RuntimeError('Unexpected WordPress configuration template: ' + name)
+config = config.replace("/* That's all, stop editing! Happy publishing. */", "define( 'MYSQL_CLIENT_FLAGS', MYSQLI_CLIENT_SSL );\n\n/* That's all, stop editing! Happy publishing. */")
+(root / 'wp-config.php').write_text(config)
+PY
+chown root:www-data /var/www/html/wp-config.php
+chmod 640 /var/www/html/wp-config.php
+mkdir -p /var/www/html/wp-content/uploads
+chown www-data:www-data /var/www/html/wp-content/uploads
+systemctl enable --now apache2

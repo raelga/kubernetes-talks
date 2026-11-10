@@ -1,5 +1,5 @@
 module "wordpress_stack" {
-  source = "../../../../modules/gcp/wordpress-stack"
+  source = "../../../modules/gcp/wordpress-stack"
 
   name_prefix         = var.name_prefix
   region              = var.region

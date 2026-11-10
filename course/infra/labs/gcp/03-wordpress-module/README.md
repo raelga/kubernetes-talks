@@ -16,7 +16,7 @@ The stack creates a Debian VM with an external IP, a dedicated VPC and firewall,
 From the repository root, replace the bucket, state prefix, resource prefix and CIDR with values specific to this deployment (the bucket name has no `gs://`):
 
 ```sh
-cd course/infra/labs/gcp/03-wordpress-module/infra
+cd course/infra/labs/gcp/03-wordpress-module
 terraform init -backend-config="bucket=STATE_BUCKET_NAME" -backend-config="prefix=gcp/wordpress-module/DEPLOYMENT_ID"
 terraform plan -var="name_prefix=YOUR_UNIQUE_PREFIX" -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
 terraform apply -var="name_prefix=YOUR_UNIQUE_PREFIX" -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"
@@ -41,7 +41,7 @@ Terraform generates database passwords and WordPress salts, stores them in Secre
 
 ## Destroy and review costs
 
-From the same initialized `infra` directory, use the same prefix, CIDR and any project/region/zone overrides used at apply:
+From the same initialized lab directory, use the same prefix, CIDR and any project/region/zone overrides used at apply:
 
 ```sh
 terraform destroy -var="name_prefix=YOUR_UNIQUE_PREFIX" -var="allowed_source_cidr=YOUR_PUBLIC_IP/32"

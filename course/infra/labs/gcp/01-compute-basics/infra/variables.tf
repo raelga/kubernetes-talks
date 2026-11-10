@@ -1,6 +1,7 @@
 variable "project_id" {
   description = "Approved Google Cloud project ID."
   type        = string
+  default     = null
 }
 
 variable "region" {
