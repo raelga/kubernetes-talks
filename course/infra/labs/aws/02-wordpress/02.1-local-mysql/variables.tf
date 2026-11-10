@@ -28,3 +28,10 @@ variable "wordpress_sha256" {
   type    = string
   default = "881e53a4681ff2cd911651b11cccdede5ae477ddf0765af5d6a1a8b219a1d835"
 }
+
+variable "ssh_key_name" {
+  description = "Existing EC2 SSH key pair; Academy provides vockey."
+  type        = string
+  default     = "vockey"
+  nullable    = false
+}

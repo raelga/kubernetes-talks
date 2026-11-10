@@ -19,8 +19,9 @@ resource "aws_instance" "wordpress" {
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public.id
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.web.id]
+  vpc_security_group_ids      = [aws_security_group.web.id, aws_security_group.ssh.id]
   iam_instance_profile        = var.instance_profile_name
+  key_name                    = var.ssh_key_name
   user_data_replace_on_change = true
   user_data = templatefile("${path.module}/bootstrap.sh.tftpl", {
     region            = var.aws_region
