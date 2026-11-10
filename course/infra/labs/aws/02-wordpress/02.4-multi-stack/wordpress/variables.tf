@@ -5,7 +5,7 @@ variable "aws_region" {
 }
 variable "name" {
   type    = string
-  default = "wp-split"
+  default = "wp-multi-stack"
 }
 variable "instance_profile_name" {
   type    = string

@@ -1,15 +1,3 @@
-variable "name" { type = string }
-variable "vpc_id" { type = string }
-variable "private_subnet_ids" { type = list(string) }
-variable "app_security_group_id" { type = string }
-variable "database_instance_class" {
-  type    = string
-  default = "db.t4g.micro"
-}
-variable "mysql_engine_version" {
-  type    = string
-  default = "8.4.11"
-}
 data "aws_rds_engine_version" "mysql" {
   engine  = "mysql"
   version = var.mysql_engine_version
@@ -75,10 +63,3 @@ resource "aws_secretsmanager_secret_version" "application" {
     salts    = { for name, value in random_password.salt : name => value.result }
   })
 }
-output "endpoint" { value = module.database.db_instance_address }
-output "security_group_id" { value = aws_security_group.database.id }
-output "secret_arn" {
-  value      = aws_secretsmanager_secret.application.arn
-  depends_on = [aws_secretsmanager_secret_version.application]
-}
-output "master_secret_arn" { value = module.database.db_instance_master_user_secret_arn }

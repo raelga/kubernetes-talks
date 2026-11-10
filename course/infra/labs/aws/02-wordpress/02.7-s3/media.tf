@@ -21,6 +21,3 @@ resource "awscc_s3_bucket" "media" {
   }
 }
 
-output "media_bucket" {
-  value = awscc_s3_bucket.media.bucket_name
-}

@@ -5,7 +5,7 @@ Follow the stages in order. Stages 02.4–02.7 share one VPC and RDS instance; k
 1. [WordPress and MySQL on EC2](02.1-local-mysql/README.md): observe loss of database and files when the instance is replaced.
 2. [Move MySQL to RDS](02.2-rds/README.md): EC2 and RDS share one Terraform state; the database survives replacement.
 3. [Introduce modules](02.3-modules/README.md): reuse the network, MySQL and EC2 configurations.
-4. [Multiple Terraform stacks](02.4-multi-stack/README.md): deploy shared network and database infrastructure for the following stages.
+4. [Multiple Terraform stacks](02.4-multi-stack/README.md): reuse the modules in separate network, shared RDS and application states; later stages use their own application databases.
 5. [Replace EC2 with an Auto Scaling group](02.5-asg/README.md): a manual WordPress update disappears when a replacement is launched.
 6. [Build versioned AMIs](02.6-ami/README.md): use Packer to build and roll out pinned WordPress versions.
 7. [Move uploads to S3](02.7-s3/README.md): test whether media and database content survive replacement.

@@ -77,3 +77,6 @@ output "database_secret_arn" {
 output "application_secret_arn" {
   value = module.wordpress_stack.application_secret_arn
 }
+output "media_bucket" {
+  value = awscc_s3_bucket.media.bucket_name
+}
