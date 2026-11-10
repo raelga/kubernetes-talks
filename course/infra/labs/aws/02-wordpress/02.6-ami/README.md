@@ -13,14 +13,15 @@ Build two AMIs with Apache, PHP and a verified WordPress archive; switch and rol
 - macOS: install [Homebrew](https://brew.sh/), then run `brew tap hashicorp/tap` and `brew install hashicorp/tap/packer`.
 - Windows: download the AMD64 ZIP from [Packer](https://developer.hashicorp.com/packer/install), extract `packer.exe` into a directory on your `PATH` and open a new PowerShell window. Check with `packer version`. The commands below use a shell; adapt variable assignments for PowerShell.
 - Complete the [shared setup](../README.md) and deploy the network and database in [02.4](../02.4-multi-stack/README.md) first. You need Terraform >= 1.10, AWS CLI, `jq` and Academy permissions to create and clean up the EC2 builder, temporary key and security group, snapshot and AMI. The builder uses a public subnet from 02.4. Temporary SSH must use your machine's public IP `/32`, never the whole Internet.
-- From this directory, replace the SSH CIDR with your public IP:
+- From this directory, look up your public IP and the subnet:
 
 ```sh
 export REGION=us-east-1
 export SUBNET_ID="$(terraform -chdir=../02.4-multi-stack/network output -json public_subnet_ids | jq -r '.[0]')"
+export SSH_CIDR="$(curl -4fsS https://checkip.amazonaws.com)/32"
 packer init .
-packer build -var "region=$REGION" -var "subnet_id=$SUBNET_ID" -var 'ssh_cidr=YOUR_PUBLIC_IP/32' -var 'wordpress_version=6.7.1' -var 'wordpress_sha256=33529cd638c845007e8e0d26c91d60c9c16b822c849c8deead03d0c851a26deb' .
-packer build -var "region=$REGION" -var "subnet_id=$SUBNET_ID" -var 'ssh_cidr=YOUR_PUBLIC_IP/32' -var 'wordpress_version=6.7.2' -var 'wordpress_sha256=cfd9c83cfa9dda0351898ea9b73f58995c817994a5424be18777f83e886a3cf6' .
+packer build -var "region=$REGION" -var "subnet_id=$SUBNET_ID" -var "ssh_cidr=$SSH_CIDR" -var 'wordpress_version=6.7.1' -var 'wordpress_sha256=33529cd638c845007e8e0d26c91d60c9c16b822c849c8deead03d0c851a26deb' .
+packer build -var "region=$REGION" -var "subnet_id=$SUBNET_ID" -var "ssh_cidr=$SSH_CIDR" -var 'wordpress_version=6.7.2' -var 'wordpress_sha256=cfd9c83cfa9dda0351898ea9b73f58995c817994a5424be18777f83e886a3cf6' .
 ```
 
 - Record both AMI IDs produced by Packer, not the base AMI. If a build fails, check temporary resources and charges.
@@ -30,8 +31,8 @@ packer build -var "region=$REGION" -var "subnet_id=$SUBNET_ID" -var 'ssh_cidr=YO
 - Complete the [shared setup](../README.md) and deploy the network and database from [02.4](../02.4-multi-stack/README.md). Use `us-east-1` for both Packer and Terraform. Enter the real AMI IDs:
 
 ```sh
-export AMI_V1=ami-PACKER_6_7_1_ID
-export AMI_V2=ami-PACKER_6_7_2_ID
+export AMI_V1=ami-02d0c0993ba59bed4
+export AMI_V2=ami-0a1ed8e69cf2091ff
 export TF_VAR_ami_id="$AMI_V1"
 terraform init -backend-config="bucket=$TF_VAR_state_bucket"
 terraform plan
