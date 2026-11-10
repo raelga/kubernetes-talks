@@ -191,6 +191,7 @@ resource "azurerm_linux_virtual_machine" "web" {
   resource_group_name   = azurerm_resource_group.lab.name
   location              = azurerm_resource_group.lab.location
   size                  = var.vm_size
+  zone                  = var.zone
   admin_username        = "azureuser"
   network_interface_ids = [azurerm_network_interface.web.id]
   admin_ssh_key {

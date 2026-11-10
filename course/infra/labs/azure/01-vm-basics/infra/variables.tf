@@ -9,6 +9,18 @@ variable "location" {
   default     = "westeurope"
 }
 
+variable "vm_size" {
+  description = "VM size available to the subscription in the selected region and zone."
+  type        = string
+  default     = "Standard_D2as_v7"
+}
+
+variable "zone" {
+  description = "Availability zone for the VM."
+  type        = string
+  default     = "3"
+}
+
 variable "allowed_source_cidr" {
   description = "Public IPv4 CIDR allowed to connect to SSH and HTTP; use your current IP as /32."
   type        = string

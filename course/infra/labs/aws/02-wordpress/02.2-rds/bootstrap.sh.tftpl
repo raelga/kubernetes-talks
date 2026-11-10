@@ -1,0 +1,79 @@
+#!/bin/bash
+set -Eeuo pipefail
+umask 077
+exec > >(tee -a /var/log/wordpress-bootstrap.log /dev/console) 2>&1
+trap 'echo "BOOTSTRAP FAILED at line $LINENO; see /var/log/wordpress-bootstrap.log" >&2' ERR
+region='${region}'
+secret_arn='${secret_arn}'
+db_host='${db_host}'
+local_db='${local_db}'
+version='${wordpress_version}'
+digest='${wordpress_sha256}'
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+# The profile reads the secret at runtime; neither the password nor salts are
+# placed in user data or the EC2 console log.
+dnf install -y httpd php8.3 php8.3-cli php8.3-fpm php8.3-mysqlnd php8.3-mbstring php8.3-xml php8.3-gd tar gzip mariadb105
+if [ "$local_db" = true ]; then
+  dnf install -y mariadb105-server
+  systemctl enable --now mariadb
+fi
+for attempt in {1..30}; do
+  if aws secretsmanager get-secret-value --region "$region" --secret-id "$secret_arn" --query SecretString --output text > "$work/secret.json"; then break; fi
+  if [ "$attempt" -eq 30 ]; then echo 'Unable to read secret; check instance profile permissions.' >&2; exit 1; fi
+  sleep 10
+done
+# Generated files are root-only; never print the credentials.
+python3 - "$work/secret.json" "$work" <<'PYTHON'
+import json, pathlib, sys
+secret = json.loads(pathlib.Path(sys.argv[1]).read_text())
+work = pathlib.Path(sys.argv[2])
+(work / 'client.cnf').write_text('[client]\nuser=' + secret['username'] + '\npassword=' + secret['password'] + '\n')
+(work / 'create.sql').write_text("CREATE DATABASE IF NOT EXISTS wordpress;\nCREATE USER IF NOT EXISTS '" + secret['username'] + "'@'localhost' IDENTIFIED BY '" + secret['password'] + "';\nGRANT ALL PRIVILEGES ON wordpress.* TO '" + secret['username'] + "'@'localhost';\n")
+PYTHON
+if [ "$local_db" = true ]; then
+  mysql < "$work/create.sql"
+else
+  curl --fail --silent --show-error --retry 5 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o /etc/pki/tls/certs/rds-global-bundle.pem
+  chmod 0644 /etc/pki/tls/certs/rds-global-bundle.pem
+  install -m 0644 /etc/pki/tls/certs/rds-global-bundle.pem /etc/pki/ca-trust/source/anchors/rds-global-bundle.pem
+  update-ca-trust
+fi
+ready=false
+for attempt in {1..60}; do
+  if [ "$local_db" = true ]; then
+    mysql --defaults-extra-file="$work/client.cnf" -h "$db_host" wordpress -e 'SELECT 1' >/dev/null 2>&1 && ready=true
+  else
+    mysql --defaults-extra-file="$work/client.cnf" --ssl-ca=/etc/pki/tls/certs/rds-global-bundle.pem --ssl-verify-server-cert -h "$db_host" wordpress -e 'SELECT 1' >/dev/null 2>&1 && ready=true
+  fi
+  [ "$ready" = true ] && break
+  sleep 10
+done
+[ "$ready" = true ] || { echo 'Database unavailable or TLS verification failed.' >&2; exit 1; }
+curl --fail --silent --show-error --retry 5 "https://wordpress.org/wordpress-$version.tar.gz" -o "$work/wordpress.tar.gz"
+echo "$digest  $work/wordpress.tar.gz" | sha256sum --check
+tar -xzf "$work/wordpress.tar.gz" --strip-components=1 --no-same-owner --no-same-permissions -C /var/www/html
+find /var/www/html -type d -exec chmod 0755 {} +
+find /var/www/html -type f -exec chmod 0644 {} +
+install -d -m 0755 -o apache -g apache /var/www/html/wp-content/uploads
+# Use IMDSv2 rather than an untrusted HTTP Host header for the site URL.
+token=$(curl --fail --silent --show-error -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token)
+public_ip=$(curl --fail --silent --show-error -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/public-ipv4)
+python3 - "$work/secret.json" "$db_host" "$public_ip" "$local_db" <<'PYTHON'
+import json, pathlib, secrets, sys
+s = json.loads(pathlib.Path(sys.argv[1]).read_text())
+def php(s):
+    return "'" + s.replace('\\', '\\' * 2).replace("'", "\\'") + "'"
+lines = ['<?php', "define('DB_NAME', 'wordpress');", "define('DB_USER', " + php(s['username']) + ");", "define('DB_PASSWORD', " + php(s['password']) + ");", "define('DB_HOST', " + php(sys.argv[2]) + ");", "define('DB_CHARSET', 'utf8mb4');", "define('DB_COLLATE', '');", "define('WP_HOME', " + php('http://' + sys.argv[3]) + ");", "define('WP_SITEURL', WP_HOME);"]
+if sys.argv[4] != 'true':
+    lines.append("define('MYSQL_CLIENT_FLAGS', MYSQLI_CLIENT_SSL | MYSQLI_CLIENT_SSL_VERIFY_SERVER_CERT);")
+for name in ['AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY', 'AUTH_SALT', 'SECURE_AUTH_SALT', 'LOGGED_IN_SALT', 'NONCE_SALT']:
+    lines.append('define(' + php(name) + ', ' + php(secrets.token_hex(32)) + ');')
+lines += ["$table_prefix = 'wp_';", "define('WP_DEBUG', false);", "define('DISALLOW_FILE_EDIT', true);", "if (!defined('ABSPATH')) define('ABSPATH', __DIR__ . '/html/');", "require_once ABSPATH . 'wp-settings.php';"]
+pathlib.Path('/var/www/wp-config.php').write_text('\n'.join(lines) + '\n')
+PYTHON
+chown root:apache /var/www/wp-config.php
+chmod 0640 /var/www/wp-config.php
+systemctl enable --now amazon-ssm-agent php-fpm httpd
+echo 'BOOTSTRAP READY: database reachable and Apache started. Complete WordPress setup in the browser.'

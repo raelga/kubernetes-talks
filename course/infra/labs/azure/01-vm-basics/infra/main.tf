@@ -78,7 +78,8 @@ resource "azurerm_linux_virtual_machine" "lab" {
   name                            = "vm-basics"
   resource_group_name             = azurerm_resource_group.lab.name
   location                        = azurerm_resource_group.lab.location
-  size                            = "Standard_B1s"
+  size                            = var.vm_size
+  zone                            = var.zone
   admin_username                  = "labuser"
   disable_password_authentication = true
   network_interface_ids           = [azurerm_network_interface.lab.id]

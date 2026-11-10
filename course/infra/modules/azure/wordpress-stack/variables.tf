@@ -13,3 +13,7 @@ variable "admin_cidr" {
 variable "vm_size" {
   type = string
 }
+
+variable "zone" {
+  type = string
+}

@@ -56,7 +56,7 @@ az provider register --namespace Microsoft.Storage --subscription SUBSCRIPTION_I
 
 An enabled subscription can take time to become available to every Azure service. If an API returns `SubscriptionNotFound`, verify the subscription and provider registration rather than switching subscriptions.
 
-The Terraform identity also needs **Blob data-plane access**, such as `Storage Blob Data Contributor` on the state account or an appropriate parent scope. Subscription management roles alone do not necessarily grant Blob access. Ask the subscription administrator to grant the approved role; allow time for permission propagation. Without it, state migration can fail with `403 AuthorizationPermissionMismatch` even if Terraform created the account and container.
+The Terraform identity also needs **Blob data-plane access**. Lab 00 grants its current identity `Storage Blob Data Contributor` on the new state account, so the identity needs permission to create that role assignment. RBAC propagation can take time; a temporary `403 AuthorizationPermissionMismatch` can require waiting before retrying. Other identities using the backend need their own approved data access.
 
 ## Labs
 

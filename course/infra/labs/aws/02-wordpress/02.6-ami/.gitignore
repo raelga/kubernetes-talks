@@ -1,0 +1,15 @@
+/.terraform/
+/.terraform-*/
+/terraform.tfvars
+/*.auto.tfvars
+/*.tfstate
+/*.tfstate.*
+/*.tfplan
+/crash.log
+/crash.*.log
+infra/.terraform/
+app/wp-config.php
+app/public/wp-admin/
+app/public/wp-includes/
+app/public/wp-content/
+/packer_cache/

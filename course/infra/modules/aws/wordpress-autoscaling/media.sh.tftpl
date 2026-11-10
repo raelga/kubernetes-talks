@@ -1,0 +1,20 @@
+# S3 Uploads is loaded as a must-use plugin on every replacement instance.
+step=media
+dnf install -y unzip
+install -d -m 0755 /opt/infra-lab/media "$app_dir/wp-content/mu-plugins"
+install -d -m 0700 /opt/infra-lab/composer-home
+download https://getcomposer.org/download/2.8.12/composer.phar /opt/infra-lab/composer.phar
+echo 'f446ea719708bb85fcbf4ef18def5d0515f1f9b4d703f6d820c9c1656e10a2f2  /opt/infra-lab/composer.phar' | sha256sum --check
+cd /opt/infra-lab/media
+COMPOSER_HOME=/opt/infra-lab/composer-home COMPOSER_ALLOW_SUPERUSER=1 php /opt/infra-lab/composer.phar require --no-interaction --update-no-dev --no-plugins 'humanmade/s3-uploads:3.0.13'
+cat > "$app_dir/wp-content/mu-plugins/s3-media.php" <<'MEDIA_PHP'
+<?php
+define('S3_UPLOADS_BUCKET', '${bucket}');
+define('S3_UPLOADS_REGION', '${region}');
+define('S3_UPLOADS_USE_INSTANCE_PROFILE', true);
+define('S3_UPLOADS_OBJECT_ACL', 'private');
+add_filter('s3_uploads_is_attachment_private', '__return_true');
+require_once '/opt/infra-lab/media/vendor/autoload.php';
+require_once '/opt/infra-lab/media/vendor/humanmade/s3-uploads/s3-uploads.php';
+MEDIA_PHP
+chmod 0644 "$app_dir/wp-content/mu-plugins/s3-media.php"

@@ -6,20 +6,20 @@ Provision resources, inspect the application separately, then remove the deploym
 | --- | --- | --- |
 | [AWS: Terraform state backend](labs/aws/00-terraform-state/README.md) | Create the shared private S3 state bucket; migrate its own state from local to S3 | No application |
 | [AWS: EC2 basics](labs/aws/01-ec2-basics/README.md) | One public EC2 in the default VPC, a security group and user-data | Apache serves the checked-out static page |
-| [AWS: WordPress](labs/aws/02-wordpress/README.md) | One Terraform stack: public ALB, private EC2, NAT and private RDS MySQL | EC2 bootstraps a database-scoped app user using Secrets Manager; Terraform state contains the application secret |
-| [AWS: WordPress module](labs/aws/03-wordpress-module/README.md) | WordPress stack encapsulated in a local Terraform module | Separate state from the standalone lab |
+| [AWS: WordPress progression](labs/aws/02-wordpress/README.md) | EC2, RDS, separate states, modules, Auto Scaling, AMIs and S3 | Follow one application from local state to replaceable instances |
 | [Azure and GCP](labs/azure-gcp/README.md) | Optional independent provider deployments | Offline response comparison and a small HTTP service |
 | [Azure: CLI and labs](labs/azure/README.md) | Azure onboarding, state backend, VM, and WordPress | Optional instructor-account demonstration |
 | [GCP: CLI and project setup](labs/gcp/README.md) | Install the CLI and select an approved project | No deployment required |
 | [GCP: WordPress module](labs/gcp/03-wordpress-module/README.md) | WordPress and Cloud SQL in a local Terraform module | Separate state from the standalone lab |
+| [GCP: WordPress managed group](labs/gcp/04-wordpress-mig/README.md) | One-instance managed group, stable load balancer and Cloud SQL | Compare VM replacement with the single-instance module |
 
-EC2 basics separates `infra/` from its static `app/`. WordPress installs the official application directly under `/var/www/html`; EC2 bootstraps a restricted MySQL user and a cron job refreshes the application credentials from Secrets Manager. No SSH, SSM tunnel or public MySQL ingress is required.
+EC2 basics separates `infra/` from its static `app/`. The WordPress progression starts with a local database and introduces RDS, separate Terraform states, modules, Auto Scaling, AMIs and S3 in stages.
 
-Start with the state bucket lab: create an unversioned bucket in `local/`, copy state to `remote/`, migrate, then apply versioning and deletion protection. The lab uses Cloud Control for Academy compatibility. EC2 and WordPress reuse the bucket. Backends have fixed keys; initialization needs only the bucket name. Credentials come from AWS configuration; `aws_region` defaults to `us-east-1`.
+The state bucket lab creates a shared S3 backend with versioning and deletion protection. WordPress stages specify whether they use local state or this backend; follow each stage's instructions. Credentials come from AWS configuration.
 
-For another region, set `TF_VAR_aws_region` before deployment and add `-backend-config="region=$TF_VAR_aws_region"` to backend initialization. S3 backends cannot reference Terraform variables directly.
+For a different AWS region, follow the variables and backend initialization instructions in the relevant stage.
 
-EC2 basics keeps web ports 80/443 public and starts SSH public; a follow-up variable restricts SSH only to your IP. The basic app serves HTTP, not HTTPS. WordPress adds the public ALB → private EC2 → private RDS chain and optional ACM HTTPS. Use demo data only.
+EC2 basics serves HTTP and starts SSH public before restricting it to your IP. The WordPress stages also use HTTP for the exercises: restrict access where instructed and use disposable data only.
 
 ## Run safely
 

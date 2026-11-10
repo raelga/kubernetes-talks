@@ -5,6 +5,7 @@ module "wordpress_stack" {
   ssh_public_key = var.ssh_public_key
   admin_cidr     = var.admin_cidr
   vm_size        = var.vm_size
+  zone           = var.zone
 }
 
 output "wordpress_url" {

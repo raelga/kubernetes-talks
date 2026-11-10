@@ -5,7 +5,7 @@ This optional live lab creates a resource group, Storage account and private Blo
 ## Before you start
 
 - Install Terraform >= 1.10 and < 2.0, and complete the [Azure onboarding](../README.md#sign-in-and-select-a-subscription). Use an approved subscription and verify both its ID and tenant. Never put subscription-specific private configuration, credentials or state in Git.
-- Obtain authorization for the intended region, resource group creation and Storage resources. `Microsoft.Storage` must already be registered. This lab does not create role assignments or change organization policy. The identity needs management permissions for the resources **and** Azure Blob data permissions, such as Storage Blob Data Contributor, at an appropriate scope that covers the new account. Management Contributor alone does not grant Blob data access. Have an administrator arrange approved access beforehand; role propagation can take time.
+- Obtain authorization to create Storage resources and an account-scoped role assignment. `Microsoft.Storage` must already be registered. Terraform grants its current identity **Storage Blob Data Contributor** on the new account; the identity needs `Microsoft.Authorization/roleAssignments/write`. RBAC propagation can take time, so a temporary 403 may require waiting before retrying.
 - AzureRM uses Microsoft Entra ID for Storage operations (`storage_use_azuread = true`). The backend also uses Entra ID (`use_azuread_auth = true`); shared account keys are disabled. Use the authorized interactive Azure CLI identity from onboarding, or an approved federated OIDC workload identity. For OIDC, configure the provider and backend with the same identity using `ARM_USE_OIDC=true`, `ARM_CLIENT_ID`, `ARM_TENANT_ID`, `ARM_SUBSCRIPTION_ID` and a short-lived OIDC token supplied by your CI environment as described in the [AzureRM backend authentication documentation](https://developer.hashicorp.com/terraform/language/backend/azurerm). Do not put tokens in backend arguments or files.
 - The account name gets a random suffix and must be globally unique. The default region is `westeurope`; choose an approved region if different. Storage encrypts data at rest by default; the private container and disabled shared keys do not replace least-privilege RBAC, network controls, or private handling of local state. This lab leaves the public Storage endpoint enabled: restrict connectivity according to your organization's policy before storing sensitive state, and ensure your approved execution environment can reach it.
 
@@ -23,7 +23,7 @@ terraform init
 terraform plan
 ```
 
-The plan should create one resource group, one account, one private container and the random suffix. Confirm the subscription and region before applying:
+The plan should create one resource group, one Storage account, one private container, an account-scoped Blob role assignment, and the random suffix. Confirm the subscription and region before applying:
 
 ```sh
 terraform apply

@@ -8,7 +8,7 @@ Un único estado Terraform crea un grupo de recursos, VNet con subredes web y de
 
 - Terraform 1.10+ y autenticación Azure del onboarding del curso, en el tenant y la suscripción autorizados. El proveedor necesita la suscripción explícita; no se guarda ninguna credencial en el repositorio. El operador necesita permisos para crear los recursos y gestionar políticas y secretos del Key Vault.
 - Un grupo de recursos, cuenta de almacenamiento y contenedor **existentes** para el backend `azurerm` (véase `../00-terraform-state`). Acceso al blob mediante Microsoft Entra ID y permisos de datos adecuados, como Storage Blob Data Contributor. El backend usa la clave independiente `azure/wordpress/terraform.tfstate`. No colocar el backend dentro del grupo de recursos que crea este laboratorio.
-- Una clave SSH pública, tu IP pública IPv4 en formato CIDR (preferiblemente `/32`) y una región con disponibilidad de `Standard_B2s` y MySQL `B_Standard_B1ms`. La red debe permitir acceder al backend y al endpoint de datos de Key Vault. La VM necesita salida HTTPS para paquetes, WordPress y Key Vault.
+- Una clave SSH pública, tu IP pública IPv4 en formato CIDR (preferiblemente `/32`) y disponibilidad de `Standard_D2as_v7` en la zona 3 y MySQL `B_Standard_B1ms` en la región seleccionada. Comprueba cuotas y costes; `vm_size` y `zone` son configurables. La VM necesita salida HTTPS para paquetes, WordPress y Key Vault.
 - Confirmar el coste y los límites de la cuenta antes de aplicar. Esta práctica crea recursos facturables aunque no se visite la web.
 
 ## Uso

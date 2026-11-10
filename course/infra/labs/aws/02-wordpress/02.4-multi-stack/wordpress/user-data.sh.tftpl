@@ -1,0 +1,9 @@
+#!/bin/bash
+set -Eeuo pipefail
+
+install -d -m 0700 /opt/infra-lab
+cat > /opt/infra-lab/install.sh <<'INSTALL_WORDPRESS'
+${installer}
+INSTALL_WORDPRESS
+chmod 0700 /opt/infra-lab/install.sh
+exec /opt/infra-lab/install.sh

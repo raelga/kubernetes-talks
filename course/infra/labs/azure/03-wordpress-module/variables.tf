@@ -25,5 +25,10 @@ variable "admin_cidr" {
 
 variable "vm_size" {
   type    = string
-  default = "Standard_B2s"
+  default = "Standard_D2as_v7"
+}
+
+variable "zone" {
+  type    = string
+  default = "3"
 }
