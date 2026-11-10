@@ -21,7 +21,7 @@ macOS:
 
 ```sh
 export AZURE_CONFIG_DIR="$(mktemp -d)"
-az login --tenant TENANT_ID
+az login
 ```
 
 Windows PowerShell:
@@ -29,10 +29,10 @@ Windows PowerShell:
 ```powershell
 $env:AZURE_CONFIG_DIR = Join-Path $env:TEMP ("azure-lab-" + [guid]::NewGuid())
 az config set core.enable_broker_on_windows=false
-az login --tenant TENANT_ID
+az login
 ```
 
-Replace `TENANT_ID` and follow your organization's authentication policy. Verify the tenant and subscription before any deployment:
+To sign in to a specific tenant, use `az login --tenant TENANT_ID`. Follow your organization's authentication policy. Verify the tenant and subscription before any deployment:
 
 ```sh
 az account show --subscription SUBSCRIPTION_ID --query '{subscription:id,tenant:tenantId,name:name}' -o json
