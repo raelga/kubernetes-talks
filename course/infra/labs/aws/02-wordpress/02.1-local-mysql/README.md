@@ -4,6 +4,10 @@
 
 WordPress and MariaDB share one instance and its root volume. See what happens when the instance is replaced.
 
+![Architecture](diagram.png)
+
+[Editable architecture diagram](diagram.drawio)
+
 ## Deploy
 
 - Follow the [shared setup and safety guidance](../README.md) in the same terminal. You need Terraform >= 1.10 and Academy permissions for S3 locking, VPC, EC2 and Secrets Manager.

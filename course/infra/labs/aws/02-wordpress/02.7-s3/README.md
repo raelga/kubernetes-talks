@@ -4,6 +4,10 @@
 
 Keep uploads when EC2 is replaced. This application reuses the network and RDS from 02.4, uses a public ALB and one-instance ASG, and stores new WordPress media in a private S3 bucket with [S3 Uploads](https://github.com/humanmade/S3-Uploads). Posts and metadata remain in RDS. Signed URLs expire, but anyone holding one can access it until then.
 
+[Editable architecture diagram](diagram.drawio).
+
+![Architecture](diagram.png)
+
 ## Deploy
 
 - Complete the [shared setup](../README.md), deploy the network and database in [02.4](../02.4-multi-stack/README.md) and build the 6.7.2 AMI in [02.6](../02.6-ami/README.md). You need Terraform >= 1.10, AWS CLI and Academy permissions for Cloud Control, S3, EC2, ALB and secrets.

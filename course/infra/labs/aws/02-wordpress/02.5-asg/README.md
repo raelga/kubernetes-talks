@@ -4,6 +4,10 @@
 
 Use a public load balancer and one-instance Auto Scaling Group (ASG) with the network and RDS from 02.4. Database records survive replacement; EC2 uploads do not.
 
+[Editable architecture diagram](diagram.drawio).
+
+![Architecture](diagram.png)
+
 ## Deploy
 
 - Complete the [shared setup](../README.md) and deploy the network and database in [02.4](../02.4-multi-stack/README.md). You need Terraform >= 1.10, AWS CLI and Academy permissions for ALB, EC2, RDS and Secrets Manager.

@@ -4,6 +4,10 @@
 
 Separate WordPress from its private MySQL RDS database and compare what survives EC2 replacement. The connection verifies the AWS CA; WordPress uses the RDS administrator as a teaching simplification.
 
+![Architecture](diagram.png)
+
+[Editable architecture diagram](diagram.drawio)
+
 ## Deploy
 
 - Follow the [shared setup and safety guidance](../README.md) in the same terminal. You need Terraform >= 1.10 and Academy permissions for S3 locking, VPC, EC2, RDS and Secrets Manager.

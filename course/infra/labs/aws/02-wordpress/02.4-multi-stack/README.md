@@ -4,6 +4,10 @@
 
 Split the network, private RDS database and application into three states. Stages 02.5–02.7 reuse the network and database with their own application states.
 
+![Architecture](diagram.png)
+
+[Editable architecture diagram](diagram.drawio)
+
 ## Deploy
 
 - Follow the [shared setup](../README.md) in the same terminal, using your state bucket from lab 00. The default region is `us-east-1`.

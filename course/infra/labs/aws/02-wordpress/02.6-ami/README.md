@@ -4,6 +4,10 @@
 
 Build two AMIs with Apache, PHP and a verified WordPress archive; switch and roll back the image used by an ASG. Credentials are fetched at boot, not baked into the AMI. Uploads remain ephemeral.
 
+[Editable architecture diagram](diagram.drawio).
+
+![Architecture](diagram.png)
+
 ## Install and build
 
 - macOS: install [Homebrew](https://brew.sh/), then run `brew tap hashicorp/tap` and `brew install hashicorp/tap/packer`.
