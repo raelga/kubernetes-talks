@@ -1,6 +1,6 @@
 # Azure VM basics: networking, SSH and a web page
 
-The live Azure demonstration runs in an **instructor account**. Students can follow the [offline Azure/GCP comparison](../../azure-gcp/README.md) without cloud credentials; deployment in a separately approved account is optional. This exercise creates billable resources, including a public IP. HTTP is unencrypted: do not enter or serve sensitive data.
+The live Azure demonstration runs in an **instructor account**; deployment in a separately approved account is optional. This exercise creates billable resources, including a public IP. HTTP is unencrypted: do not enter or serve sensitive data.
 
 Terraform creates a resource group, virtual network, subnet, network security group (NSG), public IP, network interface and one Ubuntu VM. Cloud-init starts a small HTTP server on port 8080. The NSG permits TCP 22 and 8080 from the selected public IPv4 range and explicitly denies those ports from other sources, including the virtual network. Azure's other default NSG rules remain in place. This is a teaching example, not a production deployment.
 

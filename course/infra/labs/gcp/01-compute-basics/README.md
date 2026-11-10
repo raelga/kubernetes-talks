@@ -1,6 +1,6 @@
 # Compute Engine basics: VM, startup and firewall
 
-This lab creates billable resources in an approved project. For the course's offline alternative, use the [Azure/GCP comparison](../../azure-gcp/README.md).
+This lab creates billable resources in an approved project.
 
 Terraform creates a Debian VM, a VPC and subnet, and a firewall for SSH and HTTP from your chosen IP. A startup script serves a demo page on port 8080. The VM has a public IP; HTTP is unencrypted, so use no sensitive data.
 

@@ -1,6 +1,6 @@
 # Terraform: bootstrap a Cloud Storage state backend
 
-This lab creates a private Cloud Storage bucket with Terraform, then migrates its state into the bucket. The bucket also holds state for [Compute basics](../01-compute-basics/README.md). For the course's offline alternative, use the [transfer exercise](../../azure-gcp/README.md).
+This lab creates a private Cloud Storage bucket with Terraform, then migrates its state into the bucket. The bucket also holds state for [Compute basics](../01-compute-basics/README.md).
 
 ## Before you start
 

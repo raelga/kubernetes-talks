@@ -1,6 +1,6 @@
 # WordPress on Compute Engine with private Cloud SQL
 
-This optional lab creates **billable resources** in an approved GCP project. For an offline alternative, use the [Azure/GCP transfer exercise](../../azure-gcp/README.md). It deploys one Debian `e2-micro` VM, WordPress and a private MySQL Cloud SQL instance in Oregon (`us-west1`, VM zone `us-west1-b`). Terraform creates a dedicated VPC, subnet, private services access peering and firewall. The VM has an external IPv4 address for package downloads and SSH; Cloud SQL has **no public IP**. The firewall allows SSH and HTTP only from the chosen IPv4 CIDR.
+This optional lab creates **billable resources** in an approved GCP project. It deploys one Debian `e2-micro` VM, WordPress and a private MySQL Cloud SQL instance in Oregon (`us-west1`, VM zone `us-west1-b`). Terraform creates a dedicated VPC, subnet, private services access peering and firewall. The VM has an external IPv4 address for package downloads and SSH; Cloud SQL has **no public IP**. The firewall allows SSH and HTTP only from the chosen IPv4 CIDR.
 
 This is a short-lived teaching environment, not a production design: there is no high availability, backup, HTTPS, domain name, recovery strategy or managed WordPress lifecycle. Cloud SQL is billable even if a VM qualifies for the Compute Engine Free Tier. Do not store real or sensitive content in this installation.
 

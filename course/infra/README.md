@@ -7,11 +7,9 @@ Provision resources, inspect the application separately, then remove the deploym
 | [AWS: Terraform state backend](labs/aws/00-terraform-state/README.md) | Create the shared private S3 state bucket; migrate its own state from local to S3 | No application |
 | [AWS: EC2 basics](labs/aws/01-ec2-basics/README.md) | One public EC2 in the default VPC, a security group and user-data | Apache serves the checked-out static page |
 | [AWS: WordPress progression](labs/aws/02-wordpress/README.md) | EC2, RDS, separate states, modules, Auto Scaling, AMIs and S3 | Follow one application from local state to replaceable instances |
-| [Azure and GCP](labs/azure-gcp/README.md) | Optional independent provider deployments | Offline response comparison and a small HTTP service |
 | [Azure: CLI and labs](labs/azure/README.md) | Azure onboarding, state backend, VM, and WordPress | Optional instructor-account demonstration |
 | [GCP: CLI and project setup](labs/gcp/README.md) | Install the CLI and select an approved project | No deployment required |
 | [GCP: WordPress module](labs/gcp/03-wordpress-module/README.md) | WordPress and Cloud SQL in a local Terraform module | Separate state from the standalone lab |
-| [GCP: WordPress managed group](labs/gcp/04-wordpress-mig/README.md) | One-instance managed group, stable load balancer and Cloud SQL | Compare VM replacement with the single-instance module |
 
 EC2 basics separates `infra/` from its static `app/`. The WordPress progression starts with a local database and introduces RDS, separate Terraform states, modules, Auto Scaling, AMIs and S3 in stages.
 

@@ -1,6 +1,6 @@
 # Terraform: bootstrap an Azure Storage state backend
 
-This optional live lab creates a resource group, Storage account and private Blob container with local Terraform state, then migrates that state to the container. Azure demonstrations use instructor accounts; students can instead complete the [offline comparison](../../azure-gcp/README.md) without deploying anything. The backend is shared by the Azure labs, but **each root module must use its own state key**.
+This optional live lab creates a resource group, Storage account and private Blob container with local Terraform state, then migrates that state to the container. Azure demonstrations use instructor accounts. The backend is shared by the Azure labs, but **each root module must use its own state key**.
 
 ## Before you start
 

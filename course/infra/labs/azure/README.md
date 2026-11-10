@@ -1,6 +1,6 @@
 # Azure: CLI and subscription setup
 
-These labs use an approved Azure subscription. The course's Azure demonstration runs in an instructor account; students can use the [offline comparison](../azure-gcp/README.md) without a cloud account.
+These labs use an approved Azure subscription. The course's Azure demonstration runs in an instructor account.
 
 ## Install the Azure CLI
 
