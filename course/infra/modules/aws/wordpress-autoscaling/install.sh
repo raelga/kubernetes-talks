@@ -92,7 +92,10 @@ tar -xzf "$archive" --strip-components=1 --no-same-owner --no-same-permissions \
   --exclude=wordpress/wp-content/uploads -C "$app_dir"
 rm "$archive"
 
-# WordPress core remains root-owned; Apache may write only uploads.
+# The drift experiment deliberately permits local dashboard updates.
+if ${allow_dashboard_updates}; then
+  chown -R apache:apache "$app_dir"
+fi
 install -d -m 0755 -o apache -g apache "$app_dir/wp-content/uploads"
 
 ${media_setup}

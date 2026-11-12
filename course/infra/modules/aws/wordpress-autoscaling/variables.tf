@@ -4,6 +4,12 @@ variable "instance_profile_name" {
   default     = "LabInstanceProfile"
 }
 
+variable "allow_dashboard_updates" {
+  description = "Allow WordPress core updates on the instance for the version-drift experiment."
+  type        = bool
+  default     = false
+}
+
 variable "lab_id" {
   description = "Optional deployment label, 3–20 lowercase letters, digits or internal hyphens."
   type        = string

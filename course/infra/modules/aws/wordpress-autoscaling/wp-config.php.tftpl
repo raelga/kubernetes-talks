@@ -26,7 +26,10 @@ unset($credentials, $salt);
 
 $table_prefix = 'wp_';
 define('DISALLOW_FILE_EDIT', true);
-define('DISALLOW_FILE_MODS', true);
+define('DISALLOW_FILE_MODS', ${allow_dashboard_updates ? "false" : "true"});
+%{ if allow_dashboard_updates ~}
+define('FS_METHOD', 'direct');
+%{ endif ~}
 define('WP_DEBUG', false);
 
 // Only the ALB can reach EC2; honor its original HTTPS scheme.

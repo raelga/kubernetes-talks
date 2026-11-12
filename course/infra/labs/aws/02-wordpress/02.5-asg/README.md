@@ -22,6 +22,7 @@ terraform output -raw application_url
 ```
 
 - Version 6.7.1 is old and vulnerable; HTTP is public and unencrypted. Use an authorized isolated environment, synthetic data and disposable passwords.
+- This lab deliberately lets the web server modify WordPress files to demonstrate version drift. Do not use this configuration in production.
 - Wait for a healthy ALB target, open the URL and complete setup. Create a post and check the version in the dashboard.
 
 ## Experiment
