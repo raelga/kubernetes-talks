@@ -1,7 +1,6 @@
 #!/bin/bash
 # User configuration
 hostnamectl set-hostname ${name}
-curl -sq https://github.com/${github_user}.keys | tee -a /home/${system_user}/.ssh/authorized_keys
 echo "${tls_public_key}" | tee -a /home/${system_user}/.ssh/authorized_keys
 # PS1 with line break (user@host:path on first line, prompt on second)
 echo 'PS1='"'"'\n\[\e[38;5;245m\]┌─ \[\e[1;32m\]\u\[\e[0m\]@\[\e[1;34m\]\h\[\e[0m\]:\[\e[1;33m\]\w\[\e[0m\]\n\[\e[38;5;245m\]└─\[\e[0m\] \$ '"'"'' >> /home/${system_user}/.bashrc

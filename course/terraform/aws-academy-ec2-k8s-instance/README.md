@@ -13,7 +13,7 @@ curl -sqL https://bit.ly/k8s-academy-ec2-klab-start | bash
 https://us-east-1.console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:instanceState=running
 
 ```
-tf init && tf apply --var "github_user=YOUR_GH_USER_ID"
+terraform init && terraform apply
 ```
 
 The instance doesn't uses the LabRole instance profile to avoid TLS issues with EKS.

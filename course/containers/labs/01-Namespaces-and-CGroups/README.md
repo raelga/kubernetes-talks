@@ -1,184 +1,178 @@
-# Container Primitives
+# Linux Namespaces and Cgroups
 
-This lab introduces the foundational primitives used to implement containers in Linux: **Namespaces** and **Control Groups (cgroups)**.
+Explore namespaces first, then cgroups, and finally combine them.
 
----
+## Before you start
 
-## Namespaces
+Use the course's [AWS Academy EC2 instance](../../../terraform/aws-academy-ec2-instance/README.md), with `sudo` and Python 3. Run these commands on the EC2 instance, not your laptop.
 
-Namespaces provide isolation for processes. By default, any process inherits its parent's namespace. However, using the `unshare` command, we can create processes in isolated namespaces.
+## 1. Namespaces
 
-### `unshare` - Run Program with Unshared Namespaces
+Linux namespaces give processes separate views of particular kernel resources. For example, a PID namespace isolates the process IDs a process can see. A namespace does not itself limit memory.
+
+### `unshare`: run a program in new namespaces
+
+Open the manual:
 
 ```bash
 man unshare
 ```
 
-Excerpt from the man page:
+The manual describes `unshare` as running a program with namespaces unshared from its parent.
 
-```
-UNSHARE(1)                                                 User Commands                                                UNSHARE(1)
+### Example: isolate the PID namespace
 
-NAME
-       unshare - run program with some namespaces unshared from parent
-```
-
-### Example: Isolating the PID Namespace
-
-Run a process with an isolated PID and mount namespace:
+First, run `ps aux` on the host to see its processes. Then start an isolated shell:
 
 ```bash
 sudo unshare --fork --pid --mount-proc bash
 ```
 
-Inside the new shell:
+- `--pid` creates a new PID namespace for child processes.
+- `--fork` starts Bash as a child, so it enters that new PID namespace and becomes PID 1.
+- `--mount-proc` creates a mount namespace and mounts a fresh `/proc` for the new PID namespace. Tools such as `ps` read `/proc` to show processes.
+
+Inside the new shell, run:
 
 ```bash
-# ps aux
-USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
-root         1  0.0  0.0   8968  4044 pts/0    S    10:44   0:00 bash
-root         9  0.0  0.0  10620  3272 pts/0    R+   10:45   0:00 ps aux
+ps aux
 ```
 
-Notice that the `bash` process is PID 1 — the first process in this isolated namespace.
+Bash is PID 1 in the new PID namespace; other host processes are not visible.
 
-### Without PID Namespace Isolation
+For example:
+
+```text
+USER   PID COMMAND
+root     1 bash
+root     9 ps aux
+```
+
+PIDs vary. Compare this with the host process list, then run `exit` to return to the host shell.
+
+### Example: without PID namespace isolation
+
+Create a mount namespace but keep the host PID namespace:
 
 ```bash
 sudo unshare --fork --mount-proc bash
+ps aux
+exit
 ```
 
-Now, the process is not isolated in the PID namespace:
+Here `ps aux` shows the host's processes because `--pid` was not specified.
+
+## 2. Cgroups
+
+After the cgroups slides, try the memory controller on its own. A cgroup accounts for and limits resources used by a group of processes; it does not create a PID namespace.
+
+These commands use **cgroup v1** on the Academy instance. Cgroup v2 uses different paths and commands.
 
 ```bash
-# ps aux | head -n5
-USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
-root         1  0.0  0.0 169580 12820 ?        Ss   06:34   0:02 /sbin/init
-root         2  0.0  0.0      0     0 ?        S    06:34   0:00 [kthreadd]
-root         3  0.0  0.0      0     0 ?        I<   06:34   0:00 [rcu_gp]
-root         4  0.0  0.0      0     0 ?        I<   06:34   0:00 [rcu_par_gp]
-
-# ps
-    PID TTY          TIME CMD
-  26078 pts/0    00:00:00 sudo
-  26079 pts/0    00:00:00 unshare
-  26080 pts/0    00:00:00 bash
-  26114 pts/0    00:00:00 ps
+sudo apt-get update && sudo apt-get install -y cgroup-tools
 ```
 
----
+### Create a memory cgroup
 
-## Control Groups (cgroups)
-
-Control groups allow resource limitation and accounting for groups of processes.
-
-### Installing cgroup tools
-
-```bash
-sudo apt-get install cgroup-tools
-```
-
-### Creating a Memory cgroup
+From the host shell, create a cgroup called `upc` under the memory controller:
 
 ```bash
 sudo cgcreate -g memory:upc
 ```
 
-This creates a new directory with tunables at:
-
-```bash
-ls /sys/fs/cgroup/memory/upc/
-```
-
-Sample output:
-
-```
-cgroup.procs                     memory.limit_in_bytes            memory.usage_in_bytes
-memory.failcnt                  memory.max_usage_in_bytes        tasks
-memory.kmem.limit_in_bytes      memory.oom_control
-...
-```
-
-### Setting a Memory Limit
-
-Set a 25MB memory limit:
+Set its memory limit to 25,000,000 bytes (25 MB):
 
 ```bash
 sudo sh -c 'echo 25000000 > /sys/fs/cgroup/memory/upc/memory.limit_in_bytes'
 ```
 
-### Running a Process in the cgroup
+`sudo sh -c` runs both `echo` and the `>` redirection as root, so the shell can write to the cgroup control file.
+
+Read the limit back:
 
 ```bash
-sudo cgexec -g memory:upc bash
+cat /sys/fs/cgroup/memory/upc/memory.limit_in_bytes
 ```
 
-Run a memory-intensive command to test the limit:
+Explore the control files with `ls /sys/fs/cgroup/memory/upc/`. For example, `memory.limit_in_bytes` sets the limit, `memory.usage_in_bytes` reports current usage and `memory.failcnt` counts failed charges.
+
+The reported value can differ slightly because the kernel rounds to memory pages. The limit applies to the **whole cgroup**, including the runtime and other processes, not just the allocated array.
+
+### Test the limit
+
+Run two processes in the cgroup, without creating a namespace:
 
 ```bash
-echo {1..1000000000}
+sudo cgexec -g memory:upc python3 -c 'x = bytearray(20_000_000)'
+sudo cgexec -g memory:upc python3 -c 'x = bytearray(40_000_000)'
 ```
 
-That command will consume a lot of memory. If it exceeds the limit, you will see:
+On the Academy instance, the first completed and the second was killed. The threshold depends on the runtime and other memory already charged to the group; a process can also handle an allocation failure rather than be killed.
 
-```
-Killed
-```
+Alternatively, start an interactive shell with `sudo cgexec -g memory:upc bash`. Run `ps aux` there: the shell shares the host PID namespace even though its memory is limited. Run `exit` to return to the host.
 
-The process is terminated due to OOM (Out Of Memory). Check logs:
+On this Ubuntu instance, the kernel may log OOM events in `/var/log/syslog`:
 
 ```bash
-sudo tail -n1 /var/log/syslog
+sudo grep -i 'out of memory\|killed process' /var/log/syslog
 ```
 
-Example output:
+Log availability and messages depend on the system configuration.
 
-```
-Jun 21 11:14:06 box kernel: [  170.336256] Memory cgroup out of memory: Killed process 18407 (bash) total-vm:7840348kB, ...
-```
-
----
-
-## Combining cgroups and namespaces
-
-You can isolate a process using both cgroups and namespaces:
+## 3. Combine isolation and limits
 
 ```bash
 sudo cgexec -g memory:upc unshare -uinpUrf --mount-proc --pid sh -c "/bin/hostname upc && bash"
 ```
 
-Now inside the shell, test isolation and hostname:
+The combined short flags configure `unshare`:
 
-```bash
-echo Hello from a Linux Container
-```
+| Flag | Effect |
+| --- | --- |
+| `-u` | New UTS namespace for hostname and domain name |
+| `-i` | New IPC namespace for interprocess communication resources |
+| `-n` | New network namespace with its own network stack |
+| `-p` | New PID namespace for child processes (also specified by `--pid`) |
+| `-U` | New user namespace with separate user and group ID mappings |
+| `-r` | Map the current user and group to root inside the new user namespace |
+| `-f` | Fork before running the command |
+| `--mount-proc` | Create a mount namespace and mount `/proc` for the PID view |
 
-Expected output:
-
-```
-Hello from a Linux Container
-```
+Inside the isolated shell:
 
 ```bash
 hostname
+ps aux
+python3 -c 'x = bytearray(20_000_000)'
+python3 -c 'x = bytearray(40_000_000)'
+ps aux
 ```
 
-Expected output:
+- The hostname is `upc`. The first `sh -c` process is PID 1; Bash is its child.
+- On the Academy instance, the 20 MB allocation completed and the 40 MB process was killed. The exact threshold depends on memory already charged to the cgroup.
+- The shell survives when the Python child is killed. A process may instead handle an allocation failure itself; `Killed` is not guaranteed in every environment.
 
-```
-upc
-```
+### Observe memory from another terminal
 
----
+Connect to the same EC2 instance in a second terminal. While the isolated shell remains open, check:
 
-## Summary
-
-- **Namespaces** isolate process views of the system (e.g., PIDs, mount points, networking).
-- **cgroups** restrict resource usage (e.g., memory, CPU).
-- These primitives are the foundation of containers.
-
----
-
+```bash
+cat /sys/fs/cgroup/memory/upc/memory.limit_in_bytes
+cat /sys/fs/cgroup/memory/upc/memory.usage_in_bytes
+cat /sys/fs/cgroup/memory/upc/memory.failcnt
 ```
 
+Repeat the 40 MB allocation in the isolated shell, then read `memory.failcnt` again. It counts failed memory charges, **not** OOM kills.
+
+### Inspect mounts
+
+Inside the isolated shell, run `mount`. A mount namespace provides a separate view of mounts, but it does **not** by itself create a separate root filesystem: inherited host mounts remain visible. The next Docker filesystem lab explores image layers and container filesystems.
+
+## Clean up
+
+Exit the isolated shell, then from the host shell delete the cgroup:
+
+```bash
+exit
+sudo cgdelete -g memory:upc
 ```

@@ -77,7 +77,7 @@ resource "tls_private_key" "terraform" {
 
 resource "local_file" "private_key_file" {
   content         = tls_private_key.terraform.private_key_pem
-  filename        = pathexpand("~/.ssh-upc/k8s-terraform.pem")
+  filename        = pathexpand("~/.ssh-upc/terraform-k8s.pem")
   file_permission = "0600"
 }
 
@@ -108,7 +108,6 @@ resource "aws_instance" "this" {
     {
       name           = var.name,
       system_user    = var.system_user,
-      github_user    = var.github_user
       tls_public_key = tls_private_key.terraform.public_key_openssh
     }
   )
