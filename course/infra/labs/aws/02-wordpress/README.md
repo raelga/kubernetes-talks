@@ -24,7 +24,7 @@ export TF_VAR_state_bucket="$(terraform -chdir=../00-terraform-state/remote outp
 echo "$TF_VAR_state_bucket"
 ```
 
-Confirm the bucket name is displayed. Keep the same terminal for the remaining stages; if you open a new terminal, run these commands again. Each learner uses a dedicated bucket; the lab uses fixed, separate state paths within it.
+Confirm the bucket name is displayed. Keep the same terminal for the remaining stages; if you open a new terminal, run these commands again. Each learner uses a dedicated bucket. Stages 02.6 and 02.7 share their application state; other stacks use separate paths.
 
 If you deployed an earlier version using local state or different state keys, clean it up or migrate its state before using these paths. Changing the backend does not move or destroy existing resources.
 

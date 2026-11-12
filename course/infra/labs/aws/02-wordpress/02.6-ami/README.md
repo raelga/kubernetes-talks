@@ -58,6 +58,6 @@ terraform apply
 
 ## Clean up
 
-- Run `terraform plan -destroy` and `terraform destroy` here. The database and user remain on RDS until an administrator removes them or RDS is destroyed.
+- Continue to 02.7 without destroying this application. After 02.7, destroy it from that directory. If stopping here, run `terraform plan -destroy` and `terraform destroy` here.
 - Keep the 6.7.2 AMI for 02.7. When finished with both stages, deregister the AMIs and delete their snapshots after checking that nothing else uses them. Check for leftover builders, temporary keys and security groups.
 - Destroy all applications before the database and then the network, following [02.4](../02.4-multi-stack/README.md). Keep the state bucket and check for billable leftovers.

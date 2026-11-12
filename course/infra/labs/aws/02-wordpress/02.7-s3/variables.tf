@@ -1,5 +1,5 @@
 variable "ami_id" {
-  description = "WordPress AMI built in lab 10 for the selected version and checksum."
+  description = "Packer-built AMI from 02.6 for the selected version and checksum."
   type        = string
 }
 
@@ -19,7 +19,7 @@ variable "instance_profile_name" {
 variable "lab_id" {
   description = "Optional deployment label, 3–20 lowercase letters, digits or internal hyphens."
   type        = string
-  default     = "wp-s3"
+  default     = "wp-ami"
   nullable    = false
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,18}[a-z0-9]$", var.lab_id))
@@ -38,7 +38,7 @@ variable "instance_type" {
 variable "wordpress_version" {
   description = "Exact stable WordPress release; override wordpress_sha256 together with this value."
   type        = string
-  default     = "7.1.4"
+  default     = "6.7.2"
   validation {
     condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.wordpress_version))
     error_message = "Pin a stable three-component WordPress version."
@@ -48,7 +48,7 @@ variable "wordpress_version" {
 variable "wordpress_sha256" {
   description = "SHA-256 of the official WordPress release tarball."
   type        = string
-  default     = "881e53a4681ff2cd911651b11cccdede5ae477ddf0765af5d6a1a8b219a1d835"
+  default     = "cfd9c83cfa9dda0351898ea9b73f58995c817994a5424be18777f83e886a3cf6"
   validation {
     condition     = can(regex("^[a-f0-9]{64}$", var.wordpress_sha256))
     error_message = "Use the lowercase SHA-256 digest of the selected WordPress archive."
