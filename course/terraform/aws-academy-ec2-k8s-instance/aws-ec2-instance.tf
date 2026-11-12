@@ -78,11 +78,10 @@ output "host" {
 }
 
 output "ssh_cmd" {
-  value = format(
-    "ssh -o StrictHostKeyChecking=no -i %s %s@%s",
+  value = nonsensitive(format(
+    "ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i %s %s@%s",
     module.ec2.terraform_private_key_path, module.ec2.system_user, module.ec2.public_ip
-  )
-  sensitive = true
+  ))
 }
 
 output "ssh_host" {

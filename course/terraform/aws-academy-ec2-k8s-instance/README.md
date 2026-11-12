@@ -17,6 +17,8 @@ terraform output -raw ssh_cmd
 
 By default, SSH, application ports and NodePorts are open to the internet (`0.0.0.0/0`). To restrict access to your current public IPv4, set `export TF_VAR_ingress_cidr="$(curl -4fsS https://checkip.amazonaws.com)/32"` before applying. If your IP changes, update it and apply again; use your workstation's IP, not the CloudShell IP.
 
+The instance uses a pinned Amazon Linux 2023 minimal AMI in `us-east-1`, so new AMI releases do not replace it automatically.
+
 The local Terraform state contains the generated private SSH key. Keep the state and its backups private, and never commit or share them. By default, the instance has no IAM profile; configure temporary Academy credentials separately when needed.
 
 Docker starts automatically after reboot. If bootstrap fails, inspect `sudo cat /var/log/upc-bootstrap.log` and `sudo cloud-init status --long`.

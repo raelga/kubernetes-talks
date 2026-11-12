@@ -1,25 +1,3 @@
-data "aws_ami" "latest" {
-  most_recent = true
-
-  filter {
-    name   = "owner-alias"
-    values = ["amazon"]
-  }
-
-  filter {
-    name   = "name"
-    values = ["al2023-ami-*"]
-  }
-
-  filter {
-    name   = "architecture"
-    values = ["x86_64"]
-  }
-
-  owners = ["137112412989"] # AWS
-
-}
-
 resource "aws_security_group" "instance-sg" {
   vpc_id = var.vpc
 
@@ -79,7 +57,7 @@ resource "aws_eip" "this" {
 }
 
 resource "aws_instance" "this" {
-  ami                    = var.ami != "" ? var.ami : data.aws_ami.latest.id
+  ami                    = var.ami
   instance_type          = var.instance_type
   iam_instance_profile   = var.instance_profile_name
   subnet_id              = var.subnet

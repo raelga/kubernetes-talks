@@ -43,7 +43,7 @@ variable "ingress_cidr" {
 variable "ami" {
   description = "EC2 instance AMI"
   type        = string
-  default     = ""
+  default     = "ami-0578dec6d4f318cd9"
 }
 
 variable "instance_type" {
