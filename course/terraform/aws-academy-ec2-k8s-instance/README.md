@@ -38,7 +38,9 @@ On the instance, authenticate Docker in the same region:
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com"
 ```
 
-The login token expires after 12 hours. Empty the repository before destroying the stack. Keep `-var="ecr=true"` (or `TF_VAR_ecr=true`) for subsequent plans and applies while using the repository; reverting to `false` removes the profile and plans to delete the repository.
+The login token expires after 12 hours. Run `terraform destroy -var="ecr=true"` to clean up. **This permanently deletes the lab repository and all images in it**, including images pushed outside Terraform.
+
+Keep `-var="ecr=true"` (or `TF_VAR_ecr=true`) for subsequent plans and applies while using the repository; reverting to `false` removes the profile and plans to delete the repository.
 
 ## 1. Clone the repo
 

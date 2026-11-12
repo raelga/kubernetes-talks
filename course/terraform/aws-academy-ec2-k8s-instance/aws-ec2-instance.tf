@@ -42,7 +42,7 @@ variable "ecr" {
 resource "aws_ecr_repository" "lab" {
   count        = var.ecr ? 1 : 0
   name         = "k8s-lab-${random_id.id.hex}"
-  force_delete = false
+  force_delete = true
 }
 
 resource "random_integer" "subnet_id" {

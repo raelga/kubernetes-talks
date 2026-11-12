@@ -58,12 +58,11 @@ You should see `Hello World` and `OK`. Removing the local tag forces Docker to f
 
 ## Clean up
 
-Delete the test image from ECR before destroying the Terraform stack. Check the repository name first:
+From the Terraform directory on the machine where you deployed the instance:
 
 ```bash
-echo "${REPOSITORY#*/}"
-aws ecr batch-delete-image --region us-east-1 \
-  --repository-name "${REPOSITORY#*/}" --image-ids imageTag=v1
+terraform plan -destroy -var="ecr=true"
+terraform destroy -var="ecr=true"
 ```
 
-The repository cannot be deleted while it contains other images. Keep `-var="ecr=true"` for Terraform plans and applies while using it. Registry storage and the instance can incur charges.
+**This permanently deletes the repository and all images in it**, including images pushed outside Terraform. Keep `-var="ecr=true"` for plans and applies while using the repository. Registry storage and the instance can incur charges.
