@@ -44,4 +44,8 @@ build {
     ]
     script = "build-image.sh"
   }
+
+  post-processor "manifest" {
+    output = "manifest-${var.wordpress_version}.json"
+  }
 }

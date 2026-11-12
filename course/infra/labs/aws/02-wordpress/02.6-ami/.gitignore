@@ -13,3 +13,4 @@ app/public/wp-admin/
 app/public/wp-includes/
 app/public/wp-content/
 /packer_cache/
+/manifest-*.json

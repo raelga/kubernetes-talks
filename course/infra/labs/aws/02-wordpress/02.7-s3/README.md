@@ -12,10 +12,12 @@ Keep uploads when EC2 is replaced. This application reuses the network and RDS f
 
 - Complete the [shared setup](../README.md), deploy the network and database in [02.4](../02.4-multi-stack/README.md) and build the 6.7.2 AMI in [02.6](../02.6-ami/README.md). You need Terraform >= 1.10, AWS CLI and Academy permissions for Cloud Control, S3, EC2, ALB and secrets.
 - `LabInstanceProfile` needs SSM and read access to the application and RDS master secrets. State and retained versions contain secrets. Version 6.7.2 is old and vulnerable; HTTP is public and unencrypted. Use an authorized isolated environment, synthetic data and disposable passwords.
-- From this directory, enter the real Packer-built 6.7.2 AMI ID:
+- From this directory, read the latest 6.7.2 AMI ID from the Packer manifest:
+- If `jq` reports an error or the AMI ID is empty, stop and rebuild 6.7.2 in 02.6 before deploying.
 
 ```sh
-export TF_VAR_ami_id=ami-PACKER_6_7_2_ID
+TF_VAR_ami_id="$(jq -er '.builds[-1].artifact_id | split(":") | last | select(test("^ami-[0-9a-f]+$"))' ../02.6-ami/manifest-6.7.2.json)"
+export TF_VAR_ami_id
 export TF_VAR_wordpress_version=6.7.2
 export TF_VAR_wordpress_sha256=cfd9c83cfa9dda0351898ea9b73f58995c817994a5424be18777f83e886a3cf6
 terraform init -backend-config="bucket=$TF_VAR_state_bucket"

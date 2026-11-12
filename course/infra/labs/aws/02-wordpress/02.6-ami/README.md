@@ -24,15 +24,16 @@ packer build -var "region=$REGION" -var "subnet_id=$SUBNET_ID" -var "ssh_cidr=$S
 packer build -var "region=$REGION" -var "subnet_id=$SUBNET_ID" -var "ssh_cidr=$SSH_CIDR" -var 'wordpress_version=6.7.2' -var 'wordpress_sha256=cfd9c83cfa9dda0351898ea9b73f58995c817994a5424be18777f83e886a3cf6' .
 ```
 
-- Record both AMI IDs produced by Packer, not the base AMI. If a build fails, check temporary resources and charges.
+- Each build records its AMI ID in `manifest-<version>.json`. The files are local and ignored by Git. If a build fails, check temporary resources and charges.
 
 ## Deploy and experiment
 
-- Complete the [shared setup](../README.md) and deploy the network and database from [02.4](../02.4-multi-stack/README.md). Use `us-east-1` for both Packer and Terraform. Enter the real AMI IDs:
+- Complete the [shared setup](../README.md) and deploy the network and database from [02.4](../02.4-multi-stack/README.md). Use `us-east-1` for both Packer and Terraform. Read the latest AMI ID for each version from its manifest:
+- If `jq` reports an error or an AMI ID is empty, stop and rebuild the missing version before deploying.
 
 ```sh
-export AMI_V1=ami-02d0c0993ba59bed4
-export AMI_V2=ami-0a1ed8e69cf2091ff
+AMI_V1="$(jq -er '.builds[-1].artifact_id | split(":") | last | select(test("^ami-[0-9a-f]+$"))' manifest-6.7.1.json)"
+AMI_V2="$(jq -er '.builds[-1].artifact_id | split(":") | last | select(test("^ami-[0-9a-f]+$"))' manifest-6.7.2.json)"
 export TF_VAR_ami_id="$AMI_V1"
 terraform init -backend-config="bucket=$TF_VAR_state_bucket"
 terraform plan
