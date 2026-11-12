@@ -30,7 +30,7 @@ resource "aws_security_group" "instance-sg" {
       from_port   = ingress.value
       to_port     = ingress.value
       protocol    = "TCP"
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr_blocks = [var.ingress_cidr]
     }
   }
 
@@ -39,7 +39,7 @@ resource "aws_security_group" "instance-sg" {
     from_port   = 30000
     to_port     = 32767
     protocol    = "TCP"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.ingress_cidr]
   }
 
   egress {
@@ -54,14 +54,6 @@ resource "aws_security_group" "instance-sg" {
   }
 }
 
-data "aws_iam_role" "this" {
-  name = var.instance_role
-}
-
-resource "aws_iam_instance_profile" "this" {
-  name = format("%s-%s", var.instance_role, var.name)
-  role = data.aws_iam_role.this.name
-}
 
 data "aws_key_pair" "managed" {
   count              = var.managed_ssh_key_name != "" ? 1 : 0
@@ -87,9 +79,9 @@ resource "aws_eip" "this" {
 }
 
 resource "aws_instance" "this" {
-  ami           = var.ami != "" ? var.ami : data.aws_ami.latest.id
-  instance_type = var.instance_type
-  #iam_instance_profile   = aws_iam_instance_profile.this.name
+  ami                    = var.ami != "" ? var.ami : data.aws_ami.latest.id
+  instance_type          = var.instance_type
+  iam_instance_profile   = var.instance_profile_name
   subnet_id              = var.subnet
   vpc_security_group_ids = [aws_security_group.instance-sg.id]
 

@@ -1,33 +1,40 @@
 #!/bin/bash
-# User configuration
+set -Eeuo pipefail
+exec > >(tee -a /var/log/upc-bootstrap.log) 2>&1
+trap 'echo "Bootstrap failed at line $LINENO" >&2' ERR
+
 hostnamectl set-hostname ${name}
-echo "${tls_public_key}" | tee -a /home/${system_user}/.ssh/authorized_keys
-# PS1 with line break (user@host:path on first line, prompt on second)
-echo 'PS1='"'"'\n\[\e[38;5;245m\]┌─ \[\e[1;32m\]\u\[\e[0m\]@\[\e[1;34m\]\h\[\e[0m\]:\[\e[1;33m\]\w\[\e[0m\]\n\[\e[38;5;245m\]└─\[\e[0m\] \$ '"'"'' >> /home/${system_user}/.bashrc
-# Package installation
-yum install --assumeyes tree yum-utils git unzip nano vim openssl jq
-# Terraform
-yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo &&
-  yum install --assumeyes terraform &&
-  echo 'alias tf=terraform' | tee -a /etc/profile.d/aliases.sh
-# Docker
-yum install --assumeyes docker &&
-  service docker start &&
-  usermod -aG docker ${system_user}
-# kubectl
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" &&
-  install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl &&
-  echo 'alias k=/usr/local/bin/kubectl' | tee -a /etc/profile.d/aliases.sh
-# kind
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.21.0/kind-linux-amd64 &&
-  install -o root -g root -m 0755 kind /usr/local/bin/kind
-#
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 >/tmp/get_helm.sh &&
-  chmod 700 /tmp/get_helm.sh && /tmp/get_helm.sh && rm /tmp/get_helm.sh
+echo "${tls_public_key}" >> /home/${system_user}/.ssh/authorized_keys
 
-# Repository
-git clone --depth=1 https://github.com/raelga/kubernetes-talks.git /home/${system_user}/kubernetes-talks &&
-  chown -R ${system_user}:${system_user} /home/${system_user}/kubernetes-talks
+# Install dependencies and start Docker on this and subsequent boots.
+yum install --assumeyes tree yum-utils git unzip nano vim openssl jq tar docker
+systemctl enable --now docker
+usermod -aG docker ${system_user}
 
-# Reboot
+yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+yum install --assumeyes terraform
+printf 'alias tf=terraform\nalias k=kubectl\n' > /etc/profile.d/aliases.sh
+
+# Pin downloads and verify them against the publisher's checksums.
+workdir=$(mktemp -d)
+trap 'rm -rf "$workdir"' EXIT
+cd "$workdir"
+curl -fsSLo kubectl https://dl.k8s.io/release/v1.29.1/bin/linux/amd64/kubectl
+curl -fsSLo kubectl.sha256 https://dl.k8s.io/release/v1.29.1/bin/linux/amd64/kubectl.sha256
+printf '%s  kubectl\n' "$(cat kubectl.sha256)" | sha256sum -c -
+install -m 0755 kubectl /usr/local/bin/kubectl
+
+curl -fsSLo kind-linux-amd64 https://kind.sigs.k8s.io/dl/v0.21.0/kind-linux-amd64
+curl -fsSLo kind.sha256 https://kind.sigs.k8s.io/dl/v0.21.0/kind-linux-amd64.sha256sum
+sha256sum -c kind.sha256
+install -m 0755 kind-linux-amd64 /usr/local/bin/kind
+
+curl -fsSLO https://get.helm.sh/helm-v3.17.3-linux-amd64.tar.gz
+curl -fsSLO https://get.helm.sh/helm-v3.17.3-linux-amd64.tar.gz.sha256sum
+sha256sum -c helm-v3.17.3-linux-amd64.tar.gz.sha256sum
+tar -xzf helm-v3.17.3-linux-amd64.tar.gz
+install -m 0755 linux-amd64/helm /usr/local/bin/helm
+
+git clone --depth=1 https://github.com/raelga/kubernetes-talks.git /home/${system_user}/kubernetes-talks
+chown -R ${system_user}:${system_user} /home/${system_user}/kubernetes-talks
 shutdown -f now --reboot

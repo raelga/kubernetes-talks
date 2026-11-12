@@ -19,10 +19,25 @@ variable "subnet" {
   type        = string
 }
 
+
+variable "instance_profile_name" {
+  description = "Existing instance profile, or null for no profile."
+  type        = string
+  default     = null
+}
 variable "tcp_allowed_ingress" {
   description = "EC2 SG TCP ingress open ports"
   type        = list(any)
   default     = [22, 8080, 8888, 9999]
+}
+
+variable "ingress_cidr" {
+  description = "Public IPv4 CIDR allowed to reach the lab."
+  type        = string
+  validation {
+    condition     = can(cidrnetmask(var.ingress_cidr))
+    error_message = "Provide a valid IPv4 CIDR."
+  }
 }
 
 variable "ami" {
@@ -37,11 +52,6 @@ variable "instance_type" {
   default     = "t3a.large"
 }
 
-variable "instance_role" {
-  description = "EC2 "
-  type        = string
-  default     = "LabRole"
-}
 
 variable "system_default_user" {
   description = "EC2 instance default user"

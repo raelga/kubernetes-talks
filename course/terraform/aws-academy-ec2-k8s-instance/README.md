@@ -1,6 +1,4 @@
-# Notes
-
-# Notes
+# AWS Academy Kubernetes EC2 instance
 
 ## AutoDeploy using AWS Academy Learner Lab or CloudShell console
 
@@ -10,13 +8,35 @@ curl -sqL https://bit.ly/k8s-academy-ec2-klab-start | bash
 
 ## 0. Create the stack in AWS (Terminal 1)
 
-https://us-east-1.console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:instanceState=running
+From this directory, initialize and deploy:
 
-```
+```bash
 terraform init && terraform apply
+terraform output -raw ssh_cmd
 ```
 
-The instance doesn't uses the LabRole instance profile to avoid TLS issues with EKS.
+By default, SSH, application ports and NodePorts are open to the internet (`0.0.0.0/0`). To restrict access to your current public IPv4, set `export TF_VAR_ingress_cidr="$(curl -4fsS https://checkip.amazonaws.com)/32"` before applying. If your IP changes, update it and apply again; use your workstation's IP, not the CloudShell IP.
+
+The local Terraform state contains the generated private SSH key. Keep the state and its backups private, and never commit or share them. By default, the instance has no IAM profile; configure temporary Academy credentials separately when needed.
+
+Docker starts automatically after reboot. If bootstrap fails, inspect `sudo cat /var/log/upc-bootstrap.log` and `sudo cloud-init status --long`.
+
+### Optional: ECR repository
+
+To create a private repository and attach the existing `LabInstanceProfile`, use:
+
+```bash
+terraform apply -var="ecr=true"
+terraform output -raw ecr_repository_url
+```
+
+On the instance, authenticate Docker in the same region:
+
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com"
+```
+
+The login token expires after 12 hours. Empty the repository before destroying the stack. Keep `-var="ecr=true"` (or `TF_VAR_ecr=true`) for subsequent plans and applies while using the repository; reverting to `false` removes the profile and plans to delete the repository.
 
 ## 1. Clone the repo
 
