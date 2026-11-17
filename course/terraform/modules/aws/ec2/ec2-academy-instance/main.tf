@@ -105,6 +105,10 @@ sudo apt update && sudo apt -y install make apt-transport-https ca-certificates 
 # Docker: pinned to 20.10.x because kubelet v1.16 (dockershim) is incompatible with docker.io 24.x/26.x on Ubuntu 20.04.
 sudo apt -y install --allow-downgrades docker.io=20.10.21-0ubuntu1~20.04.2
 sudo apt-mark hold docker.io
+# Docker Compose v2 for the container labs.
+curl -fsSL https://github.com/docker/compose/releases/download/v2.39.3/docker-compose-linux-x86_64 -o /tmp/docker-compose-linux-x86_64
+echo '065836e21bce25674d2876dc64321ac707808fcd120e1c3ba700b0ce5ce8ff16  /tmp/docker-compose-linux-x86_64' | sha256sum -c - && install -D -m 0755 /tmp/docker-compose-linux-x86_64 /usr/local/lib/docker/cli-plugins/docker-compose
+rm -f /tmp/docker-compose-linux-x86_64
 usermod -aG docker ${var.system_user}
 # Terraform installation
 wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg

@@ -42,7 +42,7 @@ CMD ["/bin/echo", "Hello World!"]
 2. **Run the container:**
 
    ```bash
-   docker run hello-world:v1
+   docker run --rm hello-world:v1
    ```
 
    Expected output: `Hello World!`
@@ -85,7 +85,7 @@ CMD ["/bin/cat", "/hello.txt"]
 2. **Run the container:**
 
    ```bash
-   docker run hello-world:v2
+   docker run --rm hello-world:v2
    ```
 
    Output: `Hello World from a file!`
@@ -126,10 +126,36 @@ CMD ["/bin/cat", "/hello.txt"]
 2. **Run the container:**
 
    ```bash
-   docker run hello-world:v3
+   docker run --rm hello-world:v3
    ```
 
    Output: `Hello World from a file!`
+
+## Container files versus volumes
+
+Create a file in a container's writable layer, then remove the container:
+
+```bash
+docker run --name filesystem-demo hello-world:v3 sh -c 'echo hello > /tmp/note'
+docker rm filesystem-demo
+docker run --rm hello-world:v3 sh -c 'cat /tmp/note || echo "File is gone"'
+```
+
+The new container starts from the image; it does not inherit the removed container's writable layer.
+
+Now store the file in a named volume:
+
+```bash
+docker volume create filesystem-demo-data
+docker run --rm -v filesystem-demo-data:/data hello-world:v3 sh -c 'echo hello > /data/note'
+docker run --rm -v filesystem-demo-data:/data hello-world:v3 cat /data/note
+```
+
+The second container reads `hello`: the volume exists independently of either container. Remove this disposable volume when finished:
+
+```bash
+docker volume rm filesystem-demo-data
+```
 
 ---
 
@@ -193,10 +219,14 @@ Docker uses the overlay2 storage driver to manage image layers efficiently. Each
 
 ## Cleanup
 
-```bash
-# Remove all created images
-docker rmi hello-world:v1 hello-world:v2 hello-world:v3
+The examples use `--rm` to remove their containers when they exit. Remove only
+the images built for this lab:
 
-# Remove unused layers
-docker system prune
+```bash
+docker rmi hello-world:v1 hello-world:v2 hello-world:v3
 ```
+
+If you previously ran a container without `--rm`, identify it with
+`docker ps -a` and remove that specific container with `docker rm <container-id>`
+before removing its image. Shared build cache and unrelated Docker resources are
+left untouched.

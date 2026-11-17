@@ -1,0 +1,4 @@
+services:
+  frontend:
+    environment:
+      BACKEND_URL: http://servicio-inexistente:8000

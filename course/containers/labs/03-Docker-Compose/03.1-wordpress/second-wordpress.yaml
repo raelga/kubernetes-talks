@@ -49,7 +49,7 @@ services:
       - WORDPRESS_DB_PASSWORD=wordpress
       - WORDPRESS_DB_NAME=wordpress
     
-    # Wait for database to be ready before starting
+    # Start the database container first; this does not wait for readiness
     depends_on:
       - db2
 

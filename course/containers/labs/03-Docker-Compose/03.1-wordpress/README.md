@@ -2,181 +2,99 @@
 
 ## Learning Objectives
 
-By the end of this lab, you will be able to:
-- Understand Docker Compose fundamentals and multi-container orchestration
-- Deploy WordPress applications with separate databases using Docker Compose
-- Run multiple isolated WordPress instances on different ports
-- Manage container lifecycles and inspect running services
-- Understand volume persistence and container networking
+- Deploy and inspect two isolated WordPress and MariaDB environments with Docker Compose.
+- Explore service networking, port mappings, and persistent volumes.
+- Manage each project's lifecycle independently.
 
 ## Prerequisites
 
-- Docker installed and running
-- Docker Compose V2 installed
-- Basic understanding of containers and web applications
-- Terminal/command line access
+- Docker running and Docker Compose V2 installed (`sudo apt install docker-compose-v2` if needed on a compatible Ubuntu host).
+- Terminal access and a basic understanding of containers and web applications.
+- Run all commands below from this directory, `03.1-wordpress`.
 
-## Overview
+Docker Compose defines multi-container applications in YAML. See the [Compose documentation](https://docs.docker.com/compose/).
 
-Docker Compose is a tool for defining and running multi-container applications. It uses YAML files to configure application services, making it easy to deploy complex applications with multiple interconnected containers.
+### Security and browser access
 
-**Documentation:** https://docs.docker.com/compose/
+The YAML files contain **public, weak, hard-coded database credentials** intended only for this disposable lab. Environment variables can be inspected by users with Docker access. Do not reuse these passwords or commit real credentials; use strong, unique credentials and an appropriate secret manager for real deployments. MariaDB initialization variables only apply to a new database volume: changing the YAML does not change credentials in an existing database.
 
-### Installation (if needed)
+The published ports bind to the host interfaces, so other machines that can reach them may see the WordPress setup wizard and claim an unconfigured site. Configure the admin accounts promptly, use unique passwords, and restrict access to trusted clients. These examples do not provide HTTPS and are not production deployments.
 
-```bash
-sudo apt install docker-compose-v2
-```
+- **Local Docker host:** browse to `http://localhost` and `http://localhost:81` on that same machine.
+- **Remote EC2 host:** `localhost` on your laptop refers to your laptop, not EC2. Use `http://<EC2-public-IP-or-DNS>` and `http://<EC2-public-IP-or-DNS>:81` from your browser. The instance needs a reachable public address, routing, and inbound TCP ports 80 and 81 permitted by its security group and any host/network firewall. Restrict inbound rules to your own public IP rather than opening them to the world, and remove the rules after the lab. If the instance has no public address, use an approved tunnel or other private access method instead. Follow the permissions and cleanup rules of your assigned environment.
 
-## Lab Exercises
+## Exercise 1: First WordPress Project
 
-### Exercise 1: Deploy First WordPress Instance
+1. Inspect `docker-compose.yaml`: it defines `db` and `wordpress`, with host port 80 and named database and WordPress volumes.
 
-1. **Examine the Docker Compose configuration:**
    ```bash
    cat docker-compose.yaml
-   ```
-   
-   Notice the two services defined:
-   - `db`: MariaDB database container
-   - `wordpress`: WordPress application container
-
-2. **Start the WordPress environment:**
-   ```bash
-   docker compose up -d
-   ```
-   
-   The `-d` flag runs containers in detached mode (background).
-
-3. **Verify the deployment:**
-   ```bash
-   docker ps
-   ```
-   
-   Expected output:
-   ```
-   CONTAINER ID   IMAGE                  COMMAND                  CREATED         STATUS         PORTS                               NAMES
-   bd1090b9d8dc   wordpress:latest       "docker-entrypoint.s…"   6 minutes ago   Up 5 minutes   0.0.0.0:80->80/tcp, :::80->80/tcp   wordpress-wordpress-1
-   c06947ad222e   mariadb:10.6.4-focal   "docker-entrypoint.s…"   6 minutes ago   Up 5 minutes   3306/tcp, 33060/tcp                 wordpress-db-1
+   docker compose -p wp-first -f docker-compose.yaml up -d
+   docker compose -p wp-first -f docker-compose.yaml ps
    ```
 
-4. **Access WordPress:**
-   - Open your browser and navigate to `http://localhost`
-   - Complete the WordPress setup wizard
-   - Create an admin account and log in
+2. Open the first URL for your host above, complete the WordPress setup wizard, and create an admin account. Database initialization can take time: `depends_on` starts the database container first but does not wait for it to be ready.
 
-### Exercise 2: Deploy Second WordPress Instance
+## Exercise 2: Second WordPress Project
 
-1. **Examine the second configuration:**
+1. Inspect `second-wordpress.yaml`: it defines `db2` and `wordpress2`, host port 81, and separate named volumes.
+
    ```bash
    cat second-wordpress.yaml
-   ```
-   
-   Notice the differences:
-   - Different service names (`db2`, `wordpress2`)
-   - Different port mapping (81:80)
-   - Separate volumes to avoid conflicts
-
-2. **Deploy the second instance:**
-   ```bash
-   docker compose -f second-wordpress.yaml up -d
+   docker compose -p wp-second -f second-wordpress.yaml up -d
+   docker compose -p wp-second -f second-wordpress.yaml ps
    ```
 
-3. **Verify both instances are running:**
-   ```bash
-   docker ps
-   ```
-   
-   Expected output:
-   ```
-   CONTAINER ID   IMAGE                  COMMAND                  CREATED          STATUS          PORTS                               NAMES
-   7fa15fede63a   wordpress:latest       "docker-entrypoint.s…"   5 minutes ago    Up 5 minutes    0.0.0.0:81->80/tcp, :::81->80/tcp   wordpress-wordpress2-1
-   f7637486e1c0   mariadb:10.6.4-focal   "docker-entrypoint.s…"   5 minutes ago    Up 5 minutes    3306/tcp, 33060/tcp                 wordpress-db2-1
-   bd1090b9d8dc   wordpress:latest       "docker-entrypoint.s…"   20 minutes ago   Up 12 minutes   0.0.0.0:80->80/tcp, :::80->80/tcp   wordpress-wordpress-1
-   c06947ad222e   mariadb:10.6.4-focal   "docker-entrypoint.s…"   20 minutes ago   Up 12 minutes   3306/tcp, 33060/tcp                 wordpress-db-1
-   ```
+2. Open the second URL for your host and complete its separate setup. It has its own database and WordPress files.
 
-4. **Access the second WordPress instance:**
-   - Open your browser and navigate to `http://localhost:81`
-   - Notice this is a completely separate WordPress installation
+The explicit project names `wp-first` and `wp-second` give the two configurations independent Compose networks, containers, and project-scoped volumes. Always use the same `-p` and `-f` pair when managing each project; using only `-f` in the same directory would normally select the same default project name and could treat the other project's services as orphans.
 
-### Exercise 3: Explore and Inspect
+## Exercise 3: Explore and Inspect
 
-1. **View container logs:**
-   ```bash
-   docker compose logs wordpress
-   docker compose logs db
-   ```
-
-2. **Check Docker networks:**
-   ```bash
-   docker network ls
-   ```
-
-3. **Inspect volumes:**
-   ```bash
-   docker volume ls
-   ```
-
-4. **View detailed service information:**
-   ```bash
-   docker compose ps
-   docker compose top
-   ```
-
-## Verification Steps
-
-✅ **Check that both WordPress sites are accessible:**
-- Site 1: `http://localhost` (should show WordPress)
-- Site 2: `http://localhost:81` (should show WordPress)
-
-✅ **Verify container status:**
 ```bash
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+# Logs for each project's actual service names
+docker compose -p wp-first -f docker-compose.yaml logs wordpress db
+docker compose -p wp-second -f second-wordpress.yaml logs wordpress2 db2
+
+# Project-specific service status and processes
+docker compose -p wp-first -f docker-compose.yaml ps
+docker compose -p wp-first -f docker-compose.yaml top
+docker compose -p wp-second -f second-wordpress.yaml ps
+docker compose -p wp-second -f second-wordpress.yaml top
+
+docker network ls
+docker volume ls
 ```
 
-✅ **Confirm data persistence:**
-- Create a post in the first WordPress site
-- Restart the containers: `docker compose restart`
-- Verify the post is still there
+Confirm both sites are accessible on their respective ports. Create a post on the first site, restart only that project's containers, and confirm the post remains:
+
+```bash
+docker compose -p wp-first -f docker-compose.yaml restart
+```
+
+Named volumes retain data across container restarts and ordinary `down` operations.
 
 ## Cleanup
 
-When you're finished with the lab:
+Stop and remove both projects' containers and networks while preserving their data:
 
 ```bash
-# Stop and remove first WordPress instance
-docker compose down
-
-# Stop and remove second WordPress instance  
-docker compose -f second-wordpress.yaml down
-
-# Optional: Remove volumes (this will delete all WordPress data)
-docker compose down -v
-docker compose -f second-wordpress.yaml down -v
+docker compose -p wp-first -f docker-compose.yaml down
+docker compose -p wp-second -f second-wordpress.yaml down
 ```
+
+To also **permanently delete both projects' WordPress files and databases**, use `down -v` for each project instead. This also works after the ordinary `down` commands above:
+
+```bash
+docker compose -p wp-first -f docker-compose.yaml down -v
+docker compose -p wp-second -f second-wordpress.yaml down -v
+```
+
+Remove any temporary EC2 security-group rules you added and clean up the lab host according to your environment's instructions.
 
 ## Troubleshooting
 
-**Issue: Port already in use**
-```
-Error: bind: address already in use
-```
-**Solution:** Check what's using the port and stop it, or modify the port mapping in the compose file.
-
-**Issue: Cannot connect to database**
-```
-Error establishing a database connection
-```
-**Solution:** Wait a few more seconds for the database to fully initialize, or check container logs for database errors.
-
-**Issue: Containers not starting**
-**Solution:** Check logs with `docker compose logs` and ensure Docker has enough resources allocated.
-
-## Key Concepts Learned
-
-- **Multi-container orchestration:** Using Docker Compose to manage related services
-- **Service isolation:** Running multiple instances without conflicts
-- **Volume persistence:** Data survives container restarts
-- **Container networking:** Services can communicate using service names
-- **Port mapping:** Exposing services on different host ports
+- **Port already in use:** identify the conflicting process or container and stop it, or change the host-side port mapping and use the new port in the browser and firewall rules.
+- **Cannot reach the site:** check the correct local or EC2 address and port, project status, security-group ingress, routing, and host firewall. Do not use laptop `localhost` for an application running on EC2.
+- **Database connection error:** allow time for initialization and inspect the relevant project logs. Existing database volumes retain their original credentials.
+- **Containers fail to start:** inspect the appropriate project's logs and available Docker resources.

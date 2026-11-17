@@ -15,6 +15,10 @@ This lab demonstrates building and running two versions of a Go "Hello World" ap
 - Basic knowledge of Docker commands
 - Text editor or IDE
 
+The builder uses `golang:1.24.13-alpine`. Its [Docker Hub tag metadata](https://hub.docker.com/v2/repositories/library/golang/tags/1.24.13-alpine)
+lists both `linux/amd64` and `linux/arm64`. Docker selects the image for the
+target platform; the versioned tag is not an immutable digest.
+
 ## 🌍 Environment Setup
 
 Set your Docker repository (customize for your Docker Hub account):
