@@ -27,6 +27,22 @@ data "aws_subnet" "default" {
   id       = each.value
 }
 
+variable "ecr" {
+  description = "Create a private ECR repository for the container labs."
+  type        = bool
+  default     = false
+}
+
+resource "aws_ecr_repository" "lab" {
+  count        = var.ecr ? 1 : 0
+  name         = "container-lab-${random_id.id.hex}"
+  force_delete = true
+}
+
+output "ecr_repository_url" {
+  value = var.ecr ? aws_ecr_repository.lab[0].repository_url : null
+}
+
 resource "random_integer" "subnet_id" {
   min = 0
   max = 2

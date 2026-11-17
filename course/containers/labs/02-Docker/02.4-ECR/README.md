@@ -4,7 +4,7 @@ Build a Docker image, publish it to a private Amazon Elastic Container Registry 
 
 ## Before you start
 
-- Deploy the [Academy Kubernetes instance](../../../../terraform/aws-academy-ec2-k8s-instance/README.md) with `terraform apply -var="ecr=true"`. This creates the repository and attaches `LabInstanceProfile` to the instance.
+- Deploy the [Academy EC2 instance](../../../../terraform/aws-academy-ec2-instance/README.md) with `terraform apply -var="ecr=true"`. This creates the repository; the instance already uses `LabInstanceProfile`.
 - On the machine where you ran Terraform, get the repository URL:
 
   ```bash
