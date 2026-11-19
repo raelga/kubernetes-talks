@@ -286,6 +286,23 @@ kind load image-archive hello-world-go.tar
 
 ### Access cluster services
 
+Kind nodes run as Docker containers. A `ClusterIP` Service is reachable inside the cluster; use port forwarding for access from the EC2 host. A `NodePort` also needs a host-to-node port mapping configured when creating the kind cluster. `LoadBalancer` Services require an implementation such as MetalLB, and Ingress requires an Ingress controller and a route to it.
+
+For example, with the `ecr-hello` deployment from the ECR exercise running, create a Service and forward it on the EC2 instance:
+
+```bash
+kubectl expose deployment ecr-hello --port=80 --target-port=9999
+kubectl port-forward service/ecr-hello 8080:80
+```
+
+In a second EC2 terminal, run `curl http://localhost:8080/health`. Port forwarding listens on localhost by default. To access it from your laptop, keep the port-forward running and create an SSH tunnel from the laptop using the same key as the Terraform `ssh_cmd`:
+
+```bash
+ssh -o IdentitiesOnly=yes -i /path/to/terraform-k8s.pem -L 8080:localhost:8080 ec2-user@<EC2_IP>
+```
+
+Open `http://localhost:8080/health` on the laptop. Stop the tunnel and port-forward with Ctrl-C, then remove the Service and deployment with `kubectl delete service ecr-hello` and `kubectl delete deployment ecr-hello`.
+
 #### Port forwarding
 
 ```bash
