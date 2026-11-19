@@ -21,16 +21,11 @@ From this directory, create the repository and display its URL:
 ```bash
 terraform apply -var="ecr=true"
 terraform output -raw ecr_repository_url
+terraform output -raw ecr_login_cmd
 terraform output -raw ssh_cmd
 ```
 
-Connect to the instance and authenticate Docker using its existing `LabInstanceProfile`:
-
-```bash
-aws ecr get-login-password --region us-east-1 |
-  docker login --username AWS --password-stdin \
-    "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com"
-```
+Connect to the instance and run the `ecr_login_cmd` output there to authenticate Docker using its existing `LabInstanceProfile`.
 
 Run login and Docker commands as the same user. The login token expires after 12 hours. Follow the [ECR lab](../../containers/labs/02-Docker/02.6-ECR/README.md) to build, push and pull an image.
 

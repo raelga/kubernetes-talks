@@ -32,13 +32,10 @@ To create a private repository and attach the existing `LabInstanceProfile`, use
 ```bash
 terraform apply -var="ecr=true"
 terraform output -raw ecr_repository_url
+terraform output -raw ecr_login_cmd
 ```
 
-On the instance, authenticate Docker in the same region:
-
-```bash
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com"
-```
+Run the `ecr_login_cmd` output on the instance to authenticate Docker.
 
 The login token expires after 12 hours. Run `terraform destroy -var="ecr=true"` to clean up. **This permanently deletes the lab repository and all images in it**, including images pushed outside Terraform.
 
