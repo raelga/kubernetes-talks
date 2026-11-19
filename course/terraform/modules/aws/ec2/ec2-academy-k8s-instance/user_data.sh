@@ -7,7 +7,7 @@ hostnamectl set-hostname ${name}
 echo "${tls_public_key}" >> /home/${system_user}/.ssh/authorized_keys
 
 # Install dependencies and start Docker on this and subsequent boots.
-yum install --assumeyes tree yum-utils git unzip nano vim openssl jq tar docker
+yum install --assumeyes tree yum-utils git unzip nano vim openssl jq tar docker make
 systemctl enable --now docker
 usermod -aG docker ${system_user}
 
@@ -19,6 +19,10 @@ printf 'alias tf=terraform\nalias k=kubectl\n' > /etc/profile.d/aliases.sh
 workdir=$(mktemp -d)
 trap 'rm -rf "$workdir"' EXIT
 cd "$workdir"
+curl -fsSLo docker-compose https://github.com/docker/compose/releases/download/v2.39.3/docker-compose-linux-x86_64
+printf '%s  docker-compose\n' '065836e21bce25674d2876dc64321ac707808fcd120e1c3ba700b0ce5ce8ff16' | sha256sum -c -
+install -D -m 0755 docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
+
 curl -fsSLo kubectl https://dl.k8s.io/release/v1.29.1/bin/linux/amd64/kubectl
 curl -fsSLo kubectl.sha256 https://dl.k8s.io/release/v1.29.1/bin/linux/amd64/kubectl.sha256
 printf '%s  kubectl\n' "$(cat kubectl.sha256)" | sha256sum -c -

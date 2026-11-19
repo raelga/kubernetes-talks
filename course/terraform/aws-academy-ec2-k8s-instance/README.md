@@ -19,6 +19,8 @@ By default, SSH, application ports and NodePorts are open to the internet (`0.0.
 
 The instance uses a pinned Amazon Linux 2023 minimal AMI in `us-east-1`, so new AMI releases do not replace it automatically.
 
+The bootstrap installs Docker, Docker Compose v2 and `make` for the container labs. Existing instances need to be reprovisioned for these bootstrap changes to take effect.
+
 The local Terraform state contains the generated private SSH key. Keep the state and its backups private, and never commit or share them. By default, the instance has no IAM profile; configure temporary Academy credentials separately when needed.
 
 Docker starts automatically after reboot. If bootstrap fails, inspect `sudo cat /var/log/upc-bootstrap.log` and `sudo cloud-init status --long`.
