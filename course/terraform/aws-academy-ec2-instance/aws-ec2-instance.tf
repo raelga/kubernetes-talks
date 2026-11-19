@@ -45,7 +45,7 @@ output "ecr_repository_url" {
 
 output "ecr_login_cmd" {
   description = "Run on the instance to authenticate Docker to ECR."
-  value       = var.ecr ? "aws ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin ${split("/", aws_ecr_repository.lab[0].repository_url)[0]}" : null
+  value       = var.ecr ? "aws ecr get-login-password --region ${data.aws_region.current.region} | docker login --username AWS --password-stdin ${split("/", aws_ecr_repository.lab[0].repository_url)[0]}" : null
 }
 
 resource "random_integer" "subnet_id" {
