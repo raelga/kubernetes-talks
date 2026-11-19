@@ -25,7 +25,7 @@ The service listens on `:9999` and has no health endpoint; `/` doubles as a quic
 ## 🛠️ Build the image
 
 ```bash
-cd 02.5-isolation
+cd 02.3-isolation
 docker build -t isolation-demo:v1 .
 ```
 

@@ -32,6 +32,6 @@ aws ecr get-login-password --region us-east-1 |
     "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com"
 ```
 
-Run login and Docker commands as the same user. The login token expires after 12 hours. Follow the [ECR lab](../../containers/labs/02-Docker/02.4-ECR/README.md) to build, push and pull an image.
+Run login and Docker commands as the same user. The login token expires after 12 hours. Follow the [ECR lab](../../containers/labs/02-Docker/02.6-ECR/README.md) to build, push and pull an image.
 
 Keep `-var="ecr=true"` for subsequent plans and applies while using the repository. **`terraform destroy -var="ecr=true"` permanently deletes the repository and all of its images.**

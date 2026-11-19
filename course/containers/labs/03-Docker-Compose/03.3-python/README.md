@@ -86,4 +86,4 @@ Do not accept the answer without checking it: identify the line of code supporti
 docker compose down
 ```
 
-This preserves the volume and notes. Only if you want to delete **all data for this Compose project**, run `docker compose down -v`; do not use this option if you need to keep the data. Image building and publishing are covered separately in [ECR](../../02-Docker/02.4-ECR/README.md).
+This preserves the volume and notes. Only if you want to delete **all data for this Compose project**, run `docker compose down -v`; do not use this option if you need to keep the data. Image building and publishing are covered separately in [ECR](../../02-Docker/02.6-ECR/README.md).
