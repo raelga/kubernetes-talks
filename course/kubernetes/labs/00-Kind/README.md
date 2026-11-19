@@ -257,11 +257,11 @@ On the EC2 instance, set `REPOSITORY` to your ECR repository URL, authenticate D
 ```bash
 export REPOSITORY="ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/REPOSITORY_NAME"
 docker pull "$REPOSITORY:v1"
-kind load docker-image "$REPOSITORY:v1"
-kubectl create deployment ecr-hello --image="$REPOSITORY:v1"
-kubectl patch deployment ecr-hello --type=merge -p '{"spec":{"template":{"spec":{"containers":[{"name":"ecr-hello","imagePullPolicy":"Never"}]}}}}'
+docker tag "$REPOSITORY:v1" ecr-hello:v1
+kind load docker-image ecr-hello:v1
+kubectl apply -f ecr-hello.yaml
 kubectl rollout status deployment/ecr-hello --timeout=120s
-kubectl port-forward deployment/ecr-hello 18080:9999 &
+kubectl port-forward service/ecr-hello 18080:80 &
 ```
 
 In the same terminal, check the application and clean up:
@@ -269,10 +269,10 @@ In the same terminal, check the application and clean up:
 ```bash
 curl --retry 10 --retry-connrefused --retry-delay 1 -f http://localhost:18080/health
 kill %1
-kubectl delete deployment ecr-hello
+kubectl delete -f ecr-hello.yaml
 ```
 
-`imagePullPolicy: Never` makes the node use the image loaded into kind. For a named cluster, add `--name` to `kind load docker-image` and select its kubectl context first. Loading an image does not grant the node access to the ECR registry.
+The local `ecr-hello:v1` tag refers to the image pulled from your ECR repository; it does not push or modify the remote image. `imagePullPolicy: Never` makes the node use the image loaded into kind. For a named cluster, add `--name` to `kind load docker-image` and select its kubectl context first. Loading an image does not grant the node access to the ECR registry.
 
 #### Load from archive
 
@@ -288,10 +288,9 @@ kind load image-archive hello-world-go.tar
 
 Kind nodes run as Docker containers. A `ClusterIP` Service is reachable inside the cluster; use port forwarding for access from the EC2 host. A `NodePort` also needs a host-to-node port mapping configured when creating the kind cluster. `LoadBalancer` Services require an implementation such as MetalLB, and Ingress requires an Ingress controller and a route to it.
 
-For example, with the `ecr-hello` deployment from the ECR exercise running, create a Service and forward it on the EC2 instance:
+For example, apply `ecr-hello.yaml` as described in the ECR exercise above, then forward its Service on the EC2 instance:
 
 ```bash
-kubectl expose deployment ecr-hello --port=80 --target-port=9999
 kubectl port-forward service/ecr-hello 8080:80
 ```
 

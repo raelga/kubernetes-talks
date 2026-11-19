@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecr-hello
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecr-hello
+  template:
+    metadata:
+      labels:
+        app: ecr-hello
+    spec:
+      containers:
+        - name: ecr-hello
+          image: ecr-hello:v1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9999
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecr-hello
+spec:
+  selector:
+    app: ecr-hello
+  ports:
+    - port: 80
+      targetPort: 9999
