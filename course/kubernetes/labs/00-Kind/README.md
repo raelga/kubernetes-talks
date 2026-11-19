@@ -260,7 +260,7 @@ docker pull "$REPOSITORY:v1"
 docker tag "$REPOSITORY:v1" ecr-hello:v1
 kind load docker-image ecr-hello:v1
 kubectl apply -f ecr-hello.yaml
-kubectl rollout status deployment/ecr-hello --timeout=120s
+kubectl wait --for=condition=Ready pod/ecr-hello --timeout=120s
 kubectl port-forward service/ecr-hello 18080:80 &
 ```
 
@@ -300,7 +300,7 @@ In a second EC2 terminal, run `curl http://localhost:8080/health`. Port forwardi
 ssh -o IdentitiesOnly=yes -i /path/to/terraform-k8s.pem -L 8080:localhost:8080 ec2-user@<EC2_IP>
 ```
 
-Open `http://localhost:8080/health` on the laptop. Stop the tunnel and port-forward with Ctrl-C, then remove the Service and deployment with `kubectl delete service ecr-hello` and `kubectl delete deployment ecr-hello`.
+Open `http://localhost:8080/health` on the laptop. Stop the tunnel and port-forward with Ctrl-C, then remove the Pod and Service with `kubectl delete -f ecr-hello.yaml`.
 
 #### Port forwarding
 
