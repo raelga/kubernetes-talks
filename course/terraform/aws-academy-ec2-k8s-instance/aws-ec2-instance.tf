@@ -72,6 +72,11 @@ output "ecr_login_cmd" {
   value       = var.ecr ? "aws ecr get-login-password --region ${data.aws_region.current.region} | docker login --username AWS --password-stdin ${split("/", aws_ecr_repository.lab[0].repository_url)[0]}" : null
 }
 
+output "ecr_export_cmds" {
+  description = "Run on the instance to set the ECR lab variables."
+  value       = var.ecr ? "export REPOSITORY=\"${aws_ecr_repository.lab[0].repository_url}\"\nexport REGISTRY=\"$${REPOSITORY%%/*}\"" : null
+}
+
 output "username" {
   value = module.ec2.system_user
 }

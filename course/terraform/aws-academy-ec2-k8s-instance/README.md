@@ -33,9 +33,10 @@ To create a private repository and attach the existing `LabInstanceProfile`, use
 terraform apply -var="ecr=true"
 terraform output -raw ecr_repository_url
 terraform output -raw ecr_login_cmd
+terraform output -raw ecr_export_cmds
 ```
 
-Run the `ecr_login_cmd` output on the instance to authenticate Docker.
+Run the `ecr_export_cmds` and `ecr_login_cmd` outputs on the instance to configure the lab and authenticate Docker.
 
 The login token expires after 12 hours. Run `terraform destroy -var="ecr=true"` to clean up. **This permanently deletes the lab repository and all images in it**, including images pushed outside Terraform.
 

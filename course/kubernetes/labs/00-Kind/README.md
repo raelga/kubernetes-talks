@@ -248,6 +248,32 @@ containers:
   imagePullPolicy: Never  # Required for locally loaded images
 ```
 
+#### Run the image from the ECR lab
+
+This exercise reuses the Go image pushed in the [ECR lab](../../../containers/labs/02-Docker/02.6-ECR/README.md). It pulls the image on the EC2 host and loads it into kind; the Kubernetes node does not need ECR credentials. The ECR repository and its `v1` image must still exist.
+
+On the EC2 instance, set `REPOSITORY` to your ECR repository URL, authenticate Docker using the ECR lab instructions, and use the default `kind` cluster:
+
+```bash
+export REPOSITORY="ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/REPOSITORY_NAME"
+docker pull "$REPOSITORY:v1"
+kind load docker-image "$REPOSITORY:v1"
+kubectl create deployment ecr-hello --image="$REPOSITORY:v1"
+kubectl patch deployment ecr-hello --type=merge -p '{"spec":{"template":{"spec":{"containers":[{"name":"ecr-hello","imagePullPolicy":"Never"}]}}}}'
+kubectl rollout status deployment/ecr-hello --timeout=120s
+kubectl port-forward deployment/ecr-hello 18080:9999 &
+```
+
+In the same terminal, check the application and clean up:
+
+```bash
+curl --retry 10 --retry-connrefused --retry-delay 1 -f http://localhost:18080/health
+kill %1
+kubectl delete deployment ecr-hello
+```
+
+`imagePullPolicy: Never` makes the node use the image loaded into kind. For a named cluster, add `--name` to `kind load docker-image` and select its kubectl context first. Loading an image does not grant the node access to the ECR registry.
+
 #### Load from archive
 
 ```bash
