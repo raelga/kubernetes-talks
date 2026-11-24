@@ -112,13 +112,13 @@ Thanks for using kind! 😊
 
 ### WordPress and MariaDB: from Compose to kind
 
-Run the same [WordPress Compose example](../../../containers/labs/03-Docker-Compose/03.1-wordpress/) on the EC2 instance, but describe its components as Kubernetes objects. The [manifest](wordpress.yaml) creates two Pods, two Services and two PersistentVolumeClaims. The database Service provides the hostname `wordpress-db`; the WordPress Service exposes port 80 inside the cluster. The claims use kind's default StorageClass.
+Run the same [WordPress Compose example](../../../containers/labs/03-Docker-Compose/03.1-wordpress/) on the EC2 instance using Kubernetes. The [manifest](wordpress.yaml) creates one Pod with WordPress and MariaDB containers and two PersistentVolumeClaims. The containers share the Pod network, so WordPress reaches MariaDB at `127.0.0.1:3306`.
 
 | Docker Compose | Kubernetes in kind |
 | --- | --- |
-| WordPress and MariaDB services | Two Pods running the same images |
-| Compose network and service names | Cluster networking and the `wordpress-db` Service |
-| Published port | `wordpress` Service plus `kubectl port-forward` |
+| WordPress and MariaDB services | Two containers in one Pod |
+| Compose network and service names | Shared Pod network and `localhost` |
+| Published port | `kubectl port-forward` to the Pod |
 | Named volumes | PersistentVolumeClaims |
 
 First observe the node container and the Kubernetes node:
@@ -130,7 +130,7 @@ kubectl get nodes
 
 The kind node is a Docker container; the WordPress and MariaDB containers run inside that node through its container runtime.
 
-The images come from public registries, so this exercise does not need ECR or registry credentials. The passwords in the manifest are disposable lab examples, **not production secrets**. The Pods are deliberately standalone for this introduction: Kubernetes will not create a replacement Pod if one is deleted.
+The images come from public registries, so this exercise does not need ECR or registry credentials. The passwords in the manifest are disposable lab examples, **not production secrets**. The Pod is standalone: Kubernetes will not create a replacement if it is deleted.
 
 On the EC2 instance, go to the kind lab directory and inspect the manifest:
 
@@ -144,18 +144,17 @@ With the cluster running and its kubectl context selected, create and inspect th
 ```bash
 until kubectl get serviceaccount default >/dev/null 2>&1; do sleep 2; done
 kubectl apply -f wordpress.yaml
-kubectl get pods,services,pvc
-kubectl wait --for=condition=Ready pod/wordpress-db pod/wordpress --timeout=300s
-kubectl get pods -o wide
-kubectl get services,pvc
+kubectl get pod wordpress -o wide
+kubectl wait --for=condition=Ready pod/wordpress --timeout=300s
+kubectl get pvc
 ```
 
 The first command waits for Kubernetes to create the default ServiceAccount, which may not exist immediately after cluster creation. Stop it with Ctrl-C if the cluster is unavailable.
 
-Once both Pods are running, forward the WordPress Service. MariaDB may still need time to initialize before the installer is ready.
+Once both containers are running, forward the Pod. MariaDB may still need time to initialize before the installer is ready.
 
 ```bash
-kubectl port-forward service/wordpress 8080:80
+kubectl port-forward pod/wordpress 8080:80
 ```
 
 Keep the port-forward terminal open. In a second terminal on the EC2 instance, check the server:
