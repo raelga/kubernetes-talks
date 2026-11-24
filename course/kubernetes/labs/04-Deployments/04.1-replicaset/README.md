@@ -70,15 +70,15 @@ kubectl apply -f service.yaml
 service/cats created
 ```
 
-The Service is of type `LoadBalancer`. On a cloud provider this would get an external IP, but on **Kind** there is no cloud load balancer, so `EXTERNAL-IP` stays `<pending>`:
+The Service uses `ClusterIP`, so it works inside kind without a cloud load balancer:
 
 ```sh
 kubectl get svc cats
 ```
 
 ```
-NAME   TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
-cats   LoadBalancer   10.96.141.244   <pending>     80:31996/TCP   5s
+NAME   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+cats   ClusterIP   10.96.141.244   <none>        80/TCP    5s
 ```
 
 To reach the app locally, use `kubectl port-forward`:
@@ -97,7 +97,15 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
 200
 ```
 
-Press `Ctrl+C` to stop the port-forward.
+Keep the port-forward running while accessing the application.
+
+On a remote EC2 instance, forward port 8080 through SSH from your laptop before opening the URL in your laptop browser:
+
+```sh
+ssh -o IdentitiesOnly=yes -i /path/to/terraform-k8s.pem -L 8080:localhost:8080 ec2-user@<EC2_IP>
+```
+
+Keep the SSH tunnel and `kubectl port-forward` running. Port-forward selects one backing Pod; it does not demonstrate balancing every browser request across replicas. If that Pod is removed, restart the port-forward.
 
 ## Selector overlap
 

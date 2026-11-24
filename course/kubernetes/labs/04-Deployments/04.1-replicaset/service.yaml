@@ -11,4 +11,4 @@ spec:
       targetPort: http-server
   selector:
     app: cats
-  type: LoadBalancer
+  type: ClusterIP
