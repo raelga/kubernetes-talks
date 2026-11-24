@@ -110,6 +110,74 @@ kubectl cluster-info --context kind-kind
 Thanks for using kind! 😊
 ```
 
+### WordPress and MariaDB: from Compose to kind
+
+Run the same [WordPress Compose example](../../../containers/labs/03-Docker-Compose/03.1-wordpress/) on the EC2 instance, but describe its components as Kubernetes objects. The [manifest](wordpress.yaml) creates two Pods, two Services and two PersistentVolumeClaims. The database Service provides the hostname `wordpress-db`; the WordPress Service exposes port 80 inside the cluster. The claims use kind's default StorageClass.
+
+| Docker Compose | Kubernetes in kind |
+| --- | --- |
+| WordPress and MariaDB services | Two Pods running the same images |
+| Compose network and service names | Cluster networking and the `wordpress-db` Service |
+| Published port | `wordpress` Service plus `kubectl port-forward` |
+| Named volumes | PersistentVolumeClaims |
+
+First observe the node container and the Kubernetes node:
+
+```bash
+docker ps
+kubectl get nodes
+```
+
+The kind node is a Docker container; the WordPress and MariaDB containers run inside that node through its container runtime.
+
+The images come from public registries, so this exercise does not need ECR or registry credentials. The passwords in the manifest are disposable lab examples, **not production secrets**. The Pods are deliberately standalone for this introduction: Kubernetes will not create a replacement Pod if one is deleted.
+
+On the EC2 instance, go to the kind lab directory and inspect the manifest:
+
+```bash
+cd ~/kubernetes-talks/course/kubernetes/labs/00-Kind
+cat wordpress.yaml
+```
+
+With the cluster running and its kubectl context selected, create and inspect the objects:
+
+```bash
+until kubectl get serviceaccount default >/dev/null 2>&1; do sleep 2; done
+kubectl apply -f wordpress.yaml
+kubectl get pods,services,pvc
+kubectl wait --for=condition=Ready pod/wordpress-db pod/wordpress --timeout=300s
+kubectl get pods -o wide
+kubectl get services,pvc
+```
+
+The first command waits for Kubernetes to create the default ServiceAccount, which may not exist immediately after cluster creation. Stop it with Ctrl-C if the cluster is unavailable.
+
+Once both Pods are running, forward the WordPress Service. MariaDB may still need time to initialize before the installer is ready.
+
+```bash
+kubectl port-forward service/wordpress 8080:80
+```
+
+Keep the port-forward terminal open. In a second terminal on the EC2 instance, check the server:
+
+```bash
+curl -I http://localhost:8080/
+```
+
+To open the WordPress installer on your laptop, create a tunnel in a laptop terminal using the key and EC2 address from the Terraform SSH output:
+
+```bash
+ssh -o IdentitiesOnly=yes -i /path/to/terraform-k8s.pem -L 8080:localhost:8080 ec2-user@<EC2_IP>
+```
+
+Then open `http://localhost:8080/` on the laptop. If port 8080 is already in use on either machine, choose a free local port and adjust the corresponding command. Stop the tunnel and port-forward with Ctrl-C.
+
+To remove the exercise, run the following from the lab directory. **This deletes both claims and their WordPress and database data.** Deleting the kind cluster also removes its local storage.
+
+```bash
+kubectl delete -f wordpress.yaml
+```
+
 ### Advanced cluster options
 
 #### Create cluster with custom name
