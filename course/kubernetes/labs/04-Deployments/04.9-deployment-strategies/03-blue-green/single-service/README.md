@@ -58,6 +58,14 @@ Switch the public Service to green:
 ```sh
 kubectl patch service my-app \
   -p '{"spec":{"selector":{"version":"v2.0.0"}}}'
+```
+
+On Kind, stop the `service/my-app` port-forward with Ctrl+C and start it again
+after the Service endpoints have switched. A port-forward targets a selected
+Pod, so an existing connection does not follow Service selector changes.
+Then verify:
+
+```sh
 curl "$APP_URL"
 ```
 
@@ -66,6 +74,11 @@ Rollback is the inverse selector change:
 ```sh
 kubectl patch service my-app \
   -p '{"spec":{"selector":{"version":"v1.0.0"}}}'
+```
+
+On Kind, restart the `service/my-app` port-forward again before checking:
+
+```sh
 curl "$APP_URL"
 ```
 

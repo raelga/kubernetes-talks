@@ -50,6 +50,12 @@ Apply version 2:
 ```sh
 kubectl apply -f app-v2.yaml
 kubectl rollout status deployment/my-app --timeout=300s
+```
+
+On Kind, restart the port-forward after the rollout: the old forward targets a
+v1 Pod that has been terminated. Then run:
+
+```sh
 curl "$APP_URL"
 ```
 

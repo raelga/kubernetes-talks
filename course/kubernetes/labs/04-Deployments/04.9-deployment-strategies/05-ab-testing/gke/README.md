@@ -6,6 +6,10 @@ native ingress controller (host/path based routing).
 > If you want a finer grained control over traffic
 shifting, check the [istio](../istio) example.
 
+This variant requires the GKE ingress controller and a GKE load balancer; Kind
+alone does not provision it. For a local Kind exercise, use the
+[Istio variant](../istio/) instead.
+
 ## Steps to follow
 
 1. version 1 is serving traffic
@@ -91,7 +95,7 @@ curl "http://$(kubectl get ingress my-app \
     -o jsonpath="{.status.loadBalancer.ingress[*]['ip']}")" --header 'Host: v2.my-app.rael.io'
 ```
 
-### Once your are ready, you can switch the traffic to the new version by patching the service to send traffic to all pods with label version=v2.0.0
+### Once you are ready, switch the Ingress to the v2 Service
 
 ! Show the curl terminal before patching
 
@@ -111,10 +115,10 @@ kubectl apply -f ingress-v1.yaml
 kubectl delete deploy my-app-v1
 ```
 
-### If everything is working as expected, you can then delete the v2.0.0 termporary load balancer
+### Remove the v1 Service after promotion
 
 ```
-kubectl delete svc my-app-v2
+kubectl delete svc my-app-v1
 ```
 
 ### Check the remaining resources
@@ -126,5 +130,5 @@ kubectl get services,deployments,pods
 ### Cleanup
 
 ```bash
-kubectl delete all -l app=my-app
+kubectl delete -f ingress-v2.yaml -f app-v1.yaml -f app-v2.yaml --ignore-not-found
 ```

@@ -2,7 +2,7 @@
 
 ## Network sharing
 
-This command creates a pod with two containers, one running Nginx and the other.
+This command creates a pod with two containers, one running Nginx and the other a shell.
 
 ```sh
 kubectl apply -f 01-nginx-and-shell-network.yaml
@@ -139,7 +139,7 @@ NAME        READY   STATUS    RESTARTS   AGE
 pod-multi   2/2     Running   0          5s
 ```
 
-The content container writes the date to `/html/index.html` every second. We can verify by curling the nginx container:
+The content container writes the date to `/html/index.html` every second. We can inspect the shared file:
 
 ```sh
 kubectl exec pod-multi --container content -- cat /html/index.html

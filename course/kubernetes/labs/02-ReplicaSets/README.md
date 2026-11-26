@@ -51,6 +51,8 @@ This lab provides hands-on experience with Kubernetes ReplicaSets, covering crea
 - Basic understanding of Kubernetes Pods
 - Familiarity with YAML syntax
 
+Run this lab in a dedicated namespace: its cleanup commands and broad `app=cats` selector affect matching Pods. Examples are illustrative; allow the controllers to reconcile between steps, and stop watches with Ctrl-C. `kubectl diff` returns status 1 when differences exist. The 50-replica step may leave Pods Pending depending on cluster capacity.
+
 ## Learning Objectives
 
 By the end of this lab, you will be able to:
@@ -428,6 +430,7 @@ First, delete the ReplicaSet and create 5 standalone pods with the `app: cats` l
 
 ```bash
 kubectl delete rs cats-gatet
+kubectl delete pods -l app=cats --ignore-not-found
 kubectl apply -f 203_simple-rs-pods.yaml
 ```
 
@@ -454,13 +457,13 @@ cats-gatet-pod-4   <none>
 cats-gatet-pod-5   <none>
 ```
 
-Now create the ReplicaSet with 3 replicas:
+Now create the ReplicaSet with 5 replicas:
 
 ```bash
 kubectl apply -f 201_simple-rs-5.yaml && kubectl get pods -l app=cats -w
 ```
 
-The ReplicaSet adopts all 5 existing pods and doesn't need to create new ones (5 available >= 5 desired). If we had set `replicas: 3`, it would adopt 3 and terminate 2.
+The ReplicaSet adopts all 5 existing unowned Pods and doesn't need to create new ones. With three desired replicas it can adopt matching Pods and delete the excess; the particular Pods removed are not guaranteed.
 
 ```bash
 kubectl get pods -l app=cats -o custom-columns=NAME:.metadata.name,OWNER:.metadata.ownerReferences[0].kind
@@ -485,6 +488,7 @@ Create the first ReplicaSet with 3 replicas using `app: cats`:
 
 ```bash
 kubectl delete rs cats-gatet
+kubectl delete pods -l app=cats --ignore-not-found
 kubectl apply -f 210_simple-rs-overlap-a.yaml && kubectl wait --for=condition=Ready pod -l app=cats --timeout=60s
 ```
 
@@ -525,9 +529,17 @@ This is an important distinction: **label selectors find pods, but ownership det
 Clean up before the next section:
 
 ```bash
-kubectl delete rs cats-gatet-broad cats-also
+kubectl delete rs cats-broad cats-also
+kubectl delete pods -l app=cats --ignore-not-found
 ```
 
+
+Recreate the broad ReplicaSet and let it settle before the selector examples:
+
+```bash
+kubectl apply -f 201_simple-rs-5.yaml
+kubectl get rs cats-gatet -w
+```
 ## 3 - Selectors and Pods
 
 ### Deploy some **blue** pods
@@ -550,7 +562,7 @@ spec:
 ```
 
 ```bash
-kubectl apply -f 301_cats-liam-pods.yaml && kubectl get pods -w
+kubectl apply -f 301_simple-blue-pods.yaml && kubectl get pods -w
 pod/cats-liam-pod-1 created
 pod/cats-liam-pod-2 created
 pod/cats-liam-pod-3 created
@@ -632,7 +644,7 @@ We can see that the `ReplicaSet` terminated those *Pods*:
 ### Deploy a **blue** `ReplicaSet`
 
 ```bash
-kubectl apply -f 302_cats-liam-rs.yaml && kubectl get pods -w
+kubectl apply -f 302_simple-blue-rs.yaml && kubectl get pods -w
 replicaset.apps/cats-liam created
 NAME                READY   STATUS              RESTARTS   AGE
 cats-liam-cff2b   0/1     Pending             0          0s
@@ -703,7 +715,7 @@ spec:
 This new *Pods*, have a color label. Will be deleted?
 
 ```bash
-kubectl apply -f 303_cats-red-pods.yaml && kubectl get pods -w
+kubectl apply -f 303_simple-red-pods.yaml && kubectl get pods -w
 pod/cats-red-pod-1 created
 NAME                READY   STATUS        RESTARTS   AGE
 cats-liam-cff2b   1/1     Running       0          75s
@@ -752,15 +764,15 @@ Let's try to update the `cats-gatet` `ReplicaSet`:
 
 ```diff
 kubectl diff -f 304_simple-rs-nocolor-update.yaml 
-The ReplicaSet "cats-gatet" is invalid: spec.selector: Invalid value: v1.LabelSelector{MatchLabels:map[string]string{"app":"cats"}, MatchExpressions:[]v1.LabelSelectorRequirement{v1.LabelSelectorRequirement{Key:"color", Operator:"DoesNotExist", Values:[]string(nil)}}}: field is immutable
+The ReplicaSet "cats-gatet" is invalid: spec.selector: field is immutable
 ```
 
-`ReplicaSets` are defined by the `.spec.selectors` and are immutable.
+The ReplicaSet's `.spec.selector` is immutable.
 
 Let's create a new `ReplicaSet` then:
 
 ```
-kubectl apply -f 305_cats-nocolor-rs.yaml
+kubectl apply -f 305_simple-nocolor-rs.yaml
 replicaset.apps/cats-nocolor created
 ```
 
@@ -775,7 +787,7 @@ cats-nocolor   5         5         5       16s
 Let's create some orange `Pods`:
 
 ```
-kubectl apply -f 306_cats-lia-pods.yaml && kubectl get pods -w -l cat=lia
+kubectl apply -f 306_simple-orange-pods.yaml && kubectl get pods -w -l cat=lia
 pod/cats-lia-pod-1 created
 pod/cats-lia-pod-2 created
 pod/cats-lia-pod-3 created
@@ -788,7 +800,7 @@ cats-lia-pod-3   0/1     Terminating   0          0s
 They are still getting deleted by the `rs/cats-gatet` controller.
 
 ```
-kubectl describe rs cats-gatet | grep orange        
+kubectl describe rs cats-gatet | grep cats-lia
   Normal  SuccessfulDelete  33s (x3 over 89s)  replicaset-controller  Deleted pod: cats-lia-pod-1
   Normal  SuccessfulDelete  33s (x3 over 89s)  replicaset-controller  Deleted pod: cats-lia-pod-2
   Normal  SuccessfulDelete  33s (x3 over 89s)  replicaset-controller  Deleted pod: cats-lia-pod-3
@@ -808,10 +820,11 @@ cats-liam      5         5         5       12m
 cats-nocolor   5         5         5       3m32s
 ```
 
-Let's create again the orange `Pods`.
+Delete any remaining or terminating orange Pods before creating them again:
 
 ```
-kubectl apply -f 306_cats-lia-pods.yaml && kubectl get pods -w -l cat=lia
+kubectl delete pods -l cat=lia --ignore-not-found
+kubectl apply -f 306_simple-orange-pods.yaml && kubectl get pods -w -l cat=lia
 pod/cats-lia-pod-1 created
 pod/cats-lia-pod-2 created
 pod/cats-lia-pod-3 created
@@ -845,7 +858,7 @@ cats-lia-pod-3    1/1     Running   0          10s
 ### Let's acquire those fancy orange `pods`
 
 ```bash
-kubectl apply -f 307_cats-lia-rs.yaml
+kubectl apply -f 307_simple-orange-rs.yaml
 replicaset.apps/cats-lia created
 ```
 
@@ -863,7 +876,7 @@ cats-lia-vkclj   1/1     Running   0          23s
 As you can see, the `ReplicaSet` only created the required pods to have 6 replicas:
 
 ```
-kubectl describe rs cats-gatet-orange | grep SuccessfulCreate
+kubectl describe rs cats-lia | grep SuccessfulCreate
   Normal  SuccessfulCreate  67s   replicaset-controller  Created pod: cats-lia-mlh9h
   Normal  SuccessfulCreate  67s   replicaset-controller  Created pod: cats-lia-k72nq
   Normal  SuccessfulCreate  67s   replicaset-controller  Created pod: cats-lia-vkclj
@@ -872,7 +885,7 @@ kubectl describe rs cats-gatet-orange | grep SuccessfulCreate
 ### Remove a pod from the orange replicaset
 
 ```
-kubectl patch pod cats-lia-pod-1 --type='json' --patch='[{"op":"replace", "path":"/metadata/labels/color", "value":"pink"}]' && kubectl get pods -w -l cat=lia
+kubectl patch pod cats-lia-pod-1 --type='json' --patch='[{"op":"replace", "path":"/metadata/labels/cat", "value":"pink"}]' && kubectl get pods -w -l cat=lia
 pod/cats-lia-pod-1 patched
 NAME                  READY   STATUS              RESTARTS   AGE
 cats-lia-5s295   1/1     Running             0          4m2s
@@ -887,7 +900,7 @@ cats-lia-6nd67   1/1     Running             0          2s
 The `cats-lia-pod-1` is no longer part of the `ReplicaSet` and the `cats-lia-6nd67` has been created to ensure that there are 6 replicas running.
 
 ```
-kubectl patch pod cats-lia-pod-2 --type='json' --patch='[{"op":"replace", "path":"/metadata/labels/color", "value":"pink"}]' && kubectl get rs cats-gatet-orange -w
+kubectl patch pod cats-lia-pod-2 --type='json' --patch='[{"op":"replace", "path":"/metadata/labels/cat", "value":"pink"}]' && kubectl get rs cats-lia -w
 pod/cats-lia-pod-2 patched
 NAME            DESIRED   CURRENT   READY   AGE
 cats-lia   6         6         5       8m13s
@@ -895,7 +908,7 @@ cats-lia   6         6         6       8m15s
 ```
 
 ```
-kubectl get pods -l color=pink
+kubectl get pods -l cat=pink
 NAME                  READY   STATUS    RESTARTS   AGE
 cats-lia-pod-1   1/1     Running   0          9m21s
 cats-lia-pod-2   1/1     Running   0          9m21s
@@ -904,7 +917,7 @@ cats-lia-pod-2   1/1     Running   0          9m21s
 ### Clean up
 
 ```bash
-kubectl delete rs cats-gatet-blue cats-nocolor cats-lia
+kubectl delete rs cats-liam cats-nocolor cats-lia
 replicaset.apps "cats-liam" deleted
 replicaset.apps "cats-nocolor" deleted
 replicaset.apps "cats-lia" deleted
@@ -918,7 +931,7 @@ cats-lia-pod-2   1/1     Running   0          9m50s
 ```
 
 ```
-kubectl delete pods -l color=pink 
+kubectl delete pods -l cat=pink
 pod "cats-lia-pod-1" deleted
 pod "cats-lia-pod-2" deleted
 ```
@@ -929,6 +942,8 @@ No resources found.
 ```
 
 ## 4 - Container probes
+
+Changing a ReplicaSet template does not update existing Pods. In the first sequence, additional replicas use the new template; earlier Pods keep their original probes.
 
 ### Readiness probe
 
@@ -958,14 +973,14 @@ Let's add a `ReadinessProbe`, on the port 80:
 
 ```bash
 kubectl apply -f 400_probes-rs-readiness.yaml && kubectl get pods -w -l app=cats
-replicaset.apps/probes created
+replicaset.apps/cats-neu created
 NAME           READY   STATUS              RESTARTS   AGE
-probes-m2l5h   0/1     ContainerCreating   0          0s
-probes-x56j5   0/1     ContainerCreating   0          0s
-probes-m2l5h   0/1     Running             0          2s
-probes-x56j5   0/1     Running             0          4s
-probes-x56j5   1/1     Running             0          24s
-probes-m2l5h   1/1     Running             0          24s
+cats-neu-m2l5h   0/1     ContainerCreating   0          0s
+cats-neu-x56j5   0/1     ContainerCreating   0          0s
+cats-neu-m2l5h   0/1     Running             0          2s
+cats-neu-x56j5   0/1     Running             0          4s
+cats-neu-x56j5   1/1     Running             0          24s
+cats-neu-m2l5h   1/1     Running             0          24s
 ```
 
 After about 25 seconds, the `Pods` became `READY`:
@@ -981,15 +996,15 @@ Deploy some `Pods` with failing ReadinessProbes:
 
 ```bash
 kubectl apply -f 401_probes-rs-readiness-ko.yaml && kubectl get pods -l app=cats -w
-replicaset.apps/probes configured
+replicaset.apps/cats-neu configured
 NAME           READY   STATUS              RESTARTS   AGE
-probes-csqfn   0/1     ContainerCreating   0          0s
-probes-m2l5h   1/1     Running             0          51s
-probes-np7vg   0/1     Pending             0          0s
-probes-x56j5   1/1     Running             0          51s
-probes-np7vg   0/1     ContainerCreating   0          0s
-probes-csqfn   0/1     Running             0          2s
-probes-np7vg   0/1     Running             0          3s
+cats-neu-csqfn   0/1     ContainerCreating   0          0s
+cats-neu-m2l5h   1/1     Running             0          51s
+cats-neu-np7vg   0/1     Pending             0          0s
+cats-neu-x56j5   1/1     Running             0          51s
+cats-neu-np7vg   0/1     ContainerCreating   0          0s
+cats-neu-csqfn   0/1     Running             0          2s
+cats-neu-np7vg   0/1     Running             0          3s
 ```
 
 They are not getting `READY` at all:
@@ -997,10 +1012,10 @@ They are not getting `READY` at all:
 ```
 kubectl get pods -l app=cats
 NAME           READY   STATUS    RESTARTS   AGE
-probes-csqfn   0/1     Running   0          86s
-probes-m2l5h   1/1     Running   0          2m17s
-probes-np7vg   0/1     Running   0          86s
-probes-x56j5   1/1     Running   0          2m17s
+cats-neu-csqfn   0/1     Running   0          86s
+cats-neu-m2l5h   1/1     Running   0          2m17s
+cats-neu-np7vg   0/1     Running   0          86s
+cats-neu-x56j5   1/1     Running   0          2m17s
 ```
 
 And if we look the status of the `READY 0/1` pods, we'll see the reason in the `Events:` section:
@@ -1021,7 +1036,7 @@ Events:
   -     ---
   -               ---
   -                                  -------
-  Normal   Scheduled  109s               default-scheduler                     Successfully assigned default/probes-np7vg to cnbcn-k8s-study-jam-np-fw7x
+  Normal   Scheduled  109s               default-scheduler                     Successfully assigned default/cats-neu-np7vg to cnbcn-k8s-study-jam-np-fw7x
   Normal   Pulled     107s               kubelet, cnbcn-k8s-study-jam-np-fw7x  Container image "raelga/cats:neu" already present on machine
   Normal   Created    107s               kubelet, cnbcn-k8s-study-jam-np-fw7x  Created container
   Normal   Started    107s               kubelet, cnbcn-k8s-study-jam-np-fw7x  Started container
@@ -1059,16 +1074,16 @@ Let's add a `LivenessProbe`, on the port 80:
 
 ```bash
 kubectl apply -f 402_probes-rs-liveness.yaml && kubectl get pods -l app=cats -w
-replicaset.apps/probes configured
+replicaset.apps/cats-neu configured
 NAME           READY   STATUS              RESTARTS   AGE
-probes-csqfn   0/1     Running             0          2m19s
-probes-hhn5x   0/1     ContainerCreating   0          0s
-probes-m2l5h   1/1     Running             0          3m10s
-probes-np7vg   0/1     Running             0          2m19s
-probes-ntl94   0/1     ContainerCreating   0          0s
-probes-x56j5   1/1     Running             0          3m10s
-probes-hhn5x   1/1     Running             0          2s
-probes-ntl94   1/1     Running             0          2s
+cats-neu-csqfn   0/1     Running             0          2m19s
+cats-neu-hhn5x   0/1     ContainerCreating   0          0s
+cats-neu-m2l5h   1/1     Running             0          3m10s
+cats-neu-np7vg   0/1     Running             0          2m19s
+cats-neu-ntl94   0/1     ContainerCreating   0          0s
+cats-neu-x56j5   1/1     Running             0          3m10s
+cats-neu-hhn5x   1/1     Running             0          2s
+cats-neu-ntl94   1/1     Running             0          2s
 ```
 
 The `Pods` using the `LivenessProbe` get `READY` in a few seconds, just when the container starts and responds the first probe request. Why don't we check the `failureThreshold` instead of the `successThreshold`?
@@ -1079,49 +1094,49 @@ Let's launch a failing `LivenessProbe` to see this behavior:
 
 ```bash
 kubectl apply -f 403_probes-rs-liveness-ko.yaml && kubectl get pods -l app=cats -w
-replicaset.apps/probes configured
+replicaset.apps/cats-neu configured
 NAME           READY   STATUS              RESTARTS   AGE
-probes-csqfn   0/1     Running             0          7m10s
-probes-fzbgb   0/1     Pending             0          0s
-probes-hhn5x   1/1     Running             0          4m51s
-probes-m2l5h   1/1     Running             0          8m1s
-probes-np7vg   0/1     Running             0          7m10s
-probes-ntl94   1/1     Running             0          4m51s
-probes-tmlln   0/1     ContainerCreating   0          0s
-probes-x56j5   1/1     Running             0          8m1s
-probes-fzbgb   0/1     ContainerCreating   0          0s
-probes-fzbgb   0/1     Running             0          3s
-probes-tmlln   0/1     Running             0          3s
-probes-tmlln   0/1     Running             1          19s
-probes-fzbgb   0/1     Running             1          20s
-probes-tmlln   1/1     Running             1          33s
-probes-tmlln   0/1     Running             2          34s
-probes-fzbgb   1/1     Running             1          34s
-probes-fzbgb   0/1     Running             2          40s
-probes-tmlln   1/1     Running             2          48s
-probes-tmlln   0/1     Running             3          50s
-probes-fzbgb   1/1     Running             2          54s
-probes-fzbgb   0/1     Running             3          61s
-probes-tmlln   1/1     Running             3          63s
-probes-tmlln   0/1     CrashLoopBackOff    3          65s
-probes-fzbgb   1/1     Running             3          74s
-probes-fzbgb   0/1     Running             4          80s
-probes-tmlln   0/1     Running             4          94s
-probes-fzbgb   1/1     Running             4          94s
-probes-fzbgb   0/1     CrashLoopBackOff    4          100s
-probes-tmlln   1/1     Running             4          108s
-probes-tmlln   0/1     Running             5          109s
-probes-tmlln   1/1     Running             5          2m3s
-probes-tmlln   0/1     CrashLoopBackOff    5          2m5s
-probes-fzbgb   0/1     Running             5          2m28s
-probes-fzbgb   1/1     Running             5          2m39s
-probes-fzbgb   0/1     CrashLoopBackOff    5          2m45s
-probes-tmlln   0/1     Running             6          3m27s
-probes-tmlln   1/1     Running             6          3m38s
-probes-tmlln   0/1     CrashLoopBackOff    6          3m44s
-probes-fzbgb   0/1     Running             6          4m14s
-probes-fzbgb   1/1     Running             6          4m24s
-probes-fzbgb   0/1     CrashLoopBackOff    6          4m31s
+cats-neu-csqfn   0/1     Running             0          7m10s
+cats-neu-fzbgb   0/1     Pending             0          0s
+cats-neu-hhn5x   1/1     Running             0          4m51s
+cats-neu-m2l5h   1/1     Running             0          8m1s
+cats-neu-np7vg   0/1     Running             0          7m10s
+cats-neu-ntl94   1/1     Running             0          4m51s
+cats-neu-tmlln   0/1     ContainerCreating   0          0s
+cats-neu-x56j5   1/1     Running             0          8m1s
+cats-neu-fzbgb   0/1     ContainerCreating   0          0s
+cats-neu-fzbgb   0/1     Running             0          3s
+cats-neu-tmlln   0/1     Running             0          3s
+cats-neu-tmlln   0/1     Running             1          19s
+cats-neu-fzbgb   0/1     Running             1          20s
+cats-neu-tmlln   1/1     Running             1          33s
+cats-neu-tmlln   0/1     Running             2          34s
+cats-neu-fzbgb   1/1     Running             1          34s
+cats-neu-fzbgb   0/1     Running             2          40s
+cats-neu-tmlln   1/1     Running             2          48s
+cats-neu-tmlln   0/1     Running             3          50s
+cats-neu-fzbgb   1/1     Running             2          54s
+cats-neu-fzbgb   0/1     Running             3          61s
+cats-neu-tmlln   1/1     Running             3          63s
+cats-neu-tmlln   0/1     CrashLoopBackOff    3          65s
+cats-neu-fzbgb   1/1     Running             3          74s
+cats-neu-fzbgb   0/1     Running             4          80s
+cats-neu-tmlln   0/1     Running             4          94s
+cats-neu-fzbgb   1/1     Running             4          94s
+cats-neu-fzbgb   0/1     CrashLoopBackOff    4          100s
+cats-neu-tmlln   1/1     Running             4          108s
+cats-neu-tmlln   0/1     Running             5          109s
+cats-neu-tmlln   1/1     Running             5          2m3s
+cats-neu-tmlln   0/1     CrashLoopBackOff    5          2m5s
+cats-neu-fzbgb   0/1     Running             5          2m28s
+cats-neu-fzbgb   1/1     Running             5          2m39s
+cats-neu-fzbgb   0/1     CrashLoopBackOff    5          2m45s
+cats-neu-tmlln   0/1     Running             6          3m27s
+cats-neu-tmlln   1/1     Running             6          3m38s
+cats-neu-tmlln   0/1     CrashLoopBackOff    6          3m44s
+cats-neu-fzbgb   0/1     Running             6          4m14s
+cats-neu-fzbgb   1/1     Running             6          4m24s
+cats-neu-fzbgb   0/1     CrashLoopBackOff    6          4m31s
 ```
 
 A `CrashloopBackOff` means that we have a pod starting, crashing, starting again, and then crashing again. Failed containers that are restarted by the kubelet are restarted with an exponential back-off delay (10s, 20s, 40s …) capped at five minutes, and is reset after ten minutes of successful execution.
@@ -1132,6 +1147,7 @@ What happens when we have a liveness probe that fails but **no readiness probe**
 
 ```bash
 kubectl delete rs cats-neu
+kubectl delete pods -l app=cats --ignore-not-found
 kubectl apply -f 404_probes-rs-liveness-ko.yaml && kubectl get pods -l app=cats -w --sort-by=.metadata.creationTimestamp
 ```
 
@@ -1151,6 +1167,8 @@ Without a readiness probe, these failing pods would still receive traffic — a 
 Now let's add both a failing readiness probe (wrong port 81) and a failing liveness probe (wrong path):
 
 ```bash
+kubectl delete rs cats-neu
+kubectl delete pods -l app=cats --ignore-not-found
 kubectl apply -f 405_probes-rs-both-ko.yaml && kubectl get pods -l app=cats -w --sort-by=.metadata.creationTimestamp
 ```
 
@@ -1161,6 +1179,8 @@ The pods are **not READY** (readiness probe fails on port 81) **and** keep resta
 Finally, let's fix both probes — readiness on the correct port 80, liveness on the correct path `/`:
 
 ```bash
+kubectl delete rs cats-neu
+kubectl delete pods -l app=cats --ignore-not-found
 kubectl apply -f 406_probes-rs-both-ok.yaml && kubectl get pods -l app=cats -w --sort-by=.metadata.creationTimestamp
 ```
 
@@ -1170,45 +1190,45 @@ cats-neu-xxxxx   0/1     Running   0          5s
 cats-neu-xxxxx   1/1     Running   0          25s
 ```
 
-All pods become READY after ~25 seconds (10s `initialDelaySeconds` + 3 × 5s `successThreshold` × `periodSeconds`) and stay healthy with zero restarts.
+The new Pods become Ready after the probe succeeds three times and should remain healthy. Exact timing depends on scheduling and probe intervals.
 
 ### Clean up
 
 ```bash
 kubectl delete rs cats-neu && kubectl get pods -w -l app=cats
-replicaset.apps "probes" deleted
+replicaset.apps "cats-neu" deleted
 NAME           READY   STATUS        RESTARTS   AGE
-probes-csqfn   0/1     Terminating   0          29m
-probes-fzbgb   0/1     Terminating   11         22m
-probes-hhn5x   1/1     Terminating   0          27m
-probes-m2l5h   1/1     Terminating   0          30m
-probes-np7vg   0/1     Terminating   0          29m
-probes-ntl94   1/1     Terminating   0          27m
-probes-tmlln   0/1     Terminating   11         22m
-probes-x56j5   1/1     Terminating   0          30m
-probes-x56j5   0/1     Terminating   0          30m
-probes-ntl94   0/1     Terminating   0          27m
-probes-np7vg   0/1     Terminating   0          30m
-probes-csqfn   0/1     Terminating   0          30m
-probes-hhn5x   0/1     Terminating   0          27m
-probes-m2l5h   0/1     Terminating   0          30m
-probes-m2l5h   0/1     Terminating   0          30m
-probes-tmlln   0/1     Terminating   11         22m
-probes-tmlln   0/1     Terminating   11         22m
-probes-csqfn   0/1     Terminating   0          30m
-probes-csqfn   0/1     Terminating   0          30m
-probes-hhn5x   0/1     Terminating   0          27m
-probes-hhn5x   0/1     Terminating   0          27m
-probes-fzbgb   0/1     Terminating   11         22m
-probes-fzbgb   0/1     Terminating   11         22m
-probes-m2l5h   0/1     Terminating   0          30m
-probes-m2l5h   0/1     Terminating   0          30m
-probes-x56j5   0/1     Terminating   0          30m
-probes-x56j5   0/1     Terminating   0          30m
-probes-ntl94   0/1     Terminating   0          27m
-probes-ntl94   0/1     Terminating   0          27m
-probes-np7vg   0/1     Terminating   0          30m
-probes-np7vg   0/1     Terminating   0          30m
+cats-neu-csqfn   0/1     Terminating   0          29m
+cats-neu-fzbgb   0/1     Terminating   11         22m
+cats-neu-hhn5x   1/1     Terminating   0          27m
+cats-neu-m2l5h   1/1     Terminating   0          30m
+cats-neu-np7vg   0/1     Terminating   0          29m
+cats-neu-ntl94   1/1     Terminating   0          27m
+cats-neu-tmlln   0/1     Terminating   11         22m
+cats-neu-x56j5   1/1     Terminating   0          30m
+cats-neu-x56j5   0/1     Terminating   0          30m
+cats-neu-ntl94   0/1     Terminating   0          27m
+cats-neu-np7vg   0/1     Terminating   0          30m
+cats-neu-csqfn   0/1     Terminating   0          30m
+cats-neu-hhn5x   0/1     Terminating   0          27m
+cats-neu-m2l5h   0/1     Terminating   0          30m
+cats-neu-m2l5h   0/1     Terminating   0          30m
+cats-neu-tmlln   0/1     Terminating   11         22m
+cats-neu-tmlln   0/1     Terminating   11         22m
+cats-neu-csqfn   0/1     Terminating   0          30m
+cats-neu-csqfn   0/1     Terminating   0          30m
+cats-neu-hhn5x   0/1     Terminating   0          27m
+cats-neu-hhn5x   0/1     Terminating   0          27m
+cats-neu-fzbgb   0/1     Terminating   11         22m
+cats-neu-fzbgb   0/1     Terminating   11         22m
+cats-neu-m2l5h   0/1     Terminating   0          30m
+cats-neu-m2l5h   0/1     Terminating   0          30m
+cats-neu-x56j5   0/1     Terminating   0          30m
+cats-neu-x56j5   0/1     Terminating   0          30m
+cats-neu-ntl94   0/1     Terminating   0          27m
+cats-neu-ntl94   0/1     Terminating   0          27m
+cats-neu-np7vg   0/1     Terminating   0          30m
+cats-neu-np7vg   0/1     Terminating   0          30m
 ```
 
 ```
@@ -1221,7 +1241,7 @@ No resources found.
 ### Deploy the initial `ReplicaSet`
 
 ```bash
-kubectl apply -f 501_cats-neu-rs.yaml && kubectl get pods -l app=cats -w
+kubectl apply -f 501_probes-images-rs.yaml && kubectl get pods -l app=cats -w
 replicaset.apps/cats-neu created
 NAME                  READY   STATUS    RESTARTS   AGE
 cats-neu-dtfv4   0/1     Pending   0          0s
@@ -1258,7 +1278,7 @@ cats-neu-jnck4   raelga/cats:neu   Running   2019-05-11T16:20:36Z
 Let's update the `ReplicaSet` `Pod` template and include a new template, that will fail the `ReadinessProbe`.
 
 ```diff
-kubectl diff -f 502_cats-neu-rs-update-image-ko.yaml 
+kubectl diff -f 502_probes-images-rs-update-image-ko.yaml
 diff -u -N /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.cats-neu /tmp/MERGED-353118084/apps.v1.ReplicaSet.default.cats-neu
 --
 - /tmp/LIVE-839052409/apps.v1.ReplicaSet.default.cats-neu        2019-05-11 16:21:15.916702182 +0000
@@ -1299,7 +1319,7 @@ exit status 1
 ```
 
 ```bash
-kubectl apply -f 502_cats-neu-rs-update-image-ko.yaml && kubectl get pods -l app=cats -w
+kubectl apply -f 502_probes-images-rs-update-image-ko.yaml && kubectl get pods -l app=cats -w
 replicaset.apps/cats-neu configured
 NAME                  READY   STATUS    RESTARTS   AGE
 cats-neu-dtfv4   1/1     Running   0          56s
@@ -1318,7 +1338,7 @@ cats-neu   3         3         3       20m
 Let's increase the number of replicas to 6:
 
 ```diff
-kubectl diff -f 503_cats-neu-rs-6-update-image-ko.yaml 
+kubectl diff -f 503_probes-images-rs-6-update-image-ko.yaml
 diff -u -N /tmp/LIVE-648056706/apps.v1.ReplicaSet.default.cats-neu /tmp/MERGED-796264697/apps.v1.ReplicaSet.default.cats-neu
 --
 - /tmp/LIVE-648056706/apps.v1.ReplicaSet.default.cats-neu        2019-05-11 16:23:07.606688192 +0000
@@ -1349,7 +1369,7 @@ exit status 1
 Now the start but never get `READY`, as they are not passing the `ReadinessProbe`:
 
 ```bash
-kubectl apply -f 503_cats-neu-rs-6-update-image-ko.yaml && kubectl get pods -l app=cats -w
+kubectl apply -f 503_probes-images-rs-6-update-image-ko.yaml && kubectl get pods -l app=cats -w
 replicaset.apps/cats-neu configured
 NAME                  READY   STATUS              RESTARTS   AGE
 cats-neu-42vbb   0/1     ContainerCreating   0          0s
@@ -1394,7 +1414,7 @@ kubectl describe pods -l app=cats | grep Warning
 ### Update the `ReplicaSet` `Pod` template with the fixed `ReadinessProbe`
 
 ```diff
-kubectl diff -f 504_cats-neu-rs-9-update-image-ok.yaml 
+kubectl diff -f 504_probes-images-rs-9-update-image-ok.yaml
 diff -u -N /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.cats-neu /tmp/MERGED-362151945/apps.v1.ReplicaSet.default.cats-neu
 --
 - /tmp/LIVE-210527442/apps.v1.ReplicaSet.default.cats-neu        2019-05-11 16:30:04.733986406 +0000
@@ -1433,7 +1453,7 @@ exit status 1
 ```
 
 ```bash
-kubectl apply -f 504_cats-neu-rs-9-update-image-ok.yaml && kubectl get rs cats-neu -w
+kubectl apply -f 504_probes-images-rs-9-update-image-ok.yaml && kubectl get rs cats-neu -w
 replicaset.apps/cats-neu configured
 NAME            DESIRED   CURRENT   READY   AGE
 cats-neu   9         9         3       11m
@@ -1529,7 +1549,7 @@ cats-neu-ssxzx   0/1     Terminating   0          9m13s
 
 Wow! It removed the new ones instead of the old ones! Why?
 
-In the first scenario, the `ReplicaSet` saw that some of the replicas weren't `READY` and removed then. But now, both the ones with the new image and the ones with the old are healthy, so in that scenario, will remove always the newest ones.
+The controller prefers certain Pods for deletion, including unready Pods. When Pods are healthy, several factors affect selection; don't rely on a particular version or age always being deleted.
 
 [pkg/controller/replicaset/replica_set.go:getPodsToDelete](https://github.com/kubernetes/kubernetes/blob/ed2bdd53dc6f44f36f7912ed0e1a7e5ba800151b/pkg/controller/replicaset/replica_set.go#L684)
 ```go
@@ -1625,7 +1645,7 @@ exit status 1
 ```
 
 ```
-kubectl apply -f 505_cats-neu-rs-6-update-image-ok.yaml && kubectl get pods -l app=cats -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime --sort-by=.status.startTime -w
+kubectl apply -f 505_probes-images-rs-6-update-image-ok.yaml && kubectl get pods -l app=cats -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime --sort-by=.status.startTime -w
 replicaset.apps/cats-neu configured
 NAME                  IMAGE                STATUS    STARTED
 cats-neu-dtfv4   raelga/cats:neu      Running   2019-05-11T16:20:36Z
@@ -1701,10 +1721,10 @@ That worked! The problem, is that now the `ReplicaSet` selector is not the same 
 So let's update the `ReplicaSet` with the new selector!
 
 ```diff
-diff -U5 505_cats-neu-rs-6-update-image-ok.yaml 506_cats-neu-rs-update-selector.yaml 
+diff -U5 505_probes-images-rs-6-update-image-ok.yaml 506_probes-images-rs-update-selector.yaml
 --
-- 505_cats-neu-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
-+++ 506_cats-neu-rs-update-selector.yaml   2019-05-11 17:09:35.580954662 +0000
+- 505_probes-images-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
++++ 506_probes-images-rs-update-selector.yaml   2019-05-11 17:09:35.580954662 +0000
 @@ -7,10 +7,11 @@
  spec:
    replicas: 6
@@ -1720,17 +1740,17 @@ diff -U5 505_cats-neu-rs-6-update-image-ok.yaml 506_cats-neu-rs-update-selector.
 ```
 
 ```
-kubectl apply -f 506_cats-neu-rs-update-selector.yaml
+kubectl apply -f 506_probes-images-rs-update-selector.yaml
 The ReplicaSet "cats-neu" is invalid: spec.selector: Invalid value: v1.LabelSelector{MatchLabels:map[string]string{"app":"cats-neu", "version":"v2.0"}, MatchExpressions:[]v1.LabelSelectorRequirement(nil)}: field is immutable
 ```
 
 As we already saw before, the `ReplicaSet` selector field is `immutable`, so we need to create a new `ReplicaSet`.
 
 ```diff
-diff -U5 505_cats-neu-rs-6-update-image-ok.yaml 507_cats-blanca-rs.yaml 
+diff -U5 505_probes-images-rs-6-update-image-ok.yaml 507_probes-images-v2.0-rs.yaml
 --
-- 505_cats-neu-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
-+++ 507_cats-blanca-rs.yaml      2019-05-11 17:09:20.425599538 +0000
+- 505_probes-images-rs-6-update-image-ok.yaml 2019-05-11 16:58:45.738851782 +0000
++++ 507_probes-images-v2.0-rs.yaml      2019-05-11 17:09:20.425599538 +0000
 @@ -1,16 +1,17 @@
  apiVersion: apps/v1
  kind: ReplicaSet
@@ -1764,7 +1784,7 @@ cats-neu   6         6         6       52m
 Let's add the new `ReplicaSet`!
 
 ```
-kubectl apply -f 507_cats-blanca-rs.yaml && kubectl get rs -l app=cats -w
+kubectl apply -f 507_probes-images-v2.0-rs.yaml && kubectl get rs -l app=cats -w
 replicaset.apps/cats-blanca unchanged
 NAME                 DESIRED   CURRENT   READY   AGE
 cats-neu        6         6         6       53m
@@ -1799,7 +1819,7 @@ We can see, that all the pods have the same `labels`, but are managed by differe
 Let's scale down both `ReplicaSets` and see what happens:
 
 ```diff
-kubectl diff -f 508_cats-neu-scale-down-both-rs.yaml 
+kubectl diff -f 508_probes-images-scale-down-both-rs.yaml
 diff -u -N /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.cats-neu /tmp/MERGED-238269447/apps.v1.ReplicaSet.default.cats-neu
 --
 - /tmp/LIVE-427424072/apps.v1.ReplicaSet.default.cats-neu        2019-05-11 17:41:33.346631258 +0000
@@ -1852,7 +1872,7 @@ exit status 1
 ```
 
 ```
-kubectl apply -f 508_cats-neu-scale-down-both-rs.yaml && kubectl get pods -w -l app=cats
+kubectl apply -f 508_probes-images-scale-down-both-rs.yaml && kubectl get pods -w -l app=cats
 replicaset.apps/cats-neu configured
 replicaset.apps/cats-blanca configured
 NAME                       READY   STATUS        RESTARTS   AGE
@@ -1913,7 +1933,7 @@ cats-blanca-9kpln   map[app:cats-neu version:v2.0]   ReplicaSet   cats-blanca
 And now scale both up!
 
 ```diff
-kubectl diff -f 509_cats-neu-scale-up-both-rs.yaml   
+kubectl diff -f 509_probes-images-scale-up-both-rs.yaml
 diff -u -N /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.cats-neu /tmp/MERGED-606903056/apps.v1.ReplicaSet.default.cats-neu
 --
 - /tmp/LIVE-749110581/apps.v1.ReplicaSet.default.cats-neu        2019-05-11 17:43:39.257897487 +0000
@@ -1966,7 +1986,7 @@ exit status 1
 ```
 
 ```
-kubectl apply -f 509_cats-neu-scale-up-both-rs.yaml && kubectl get rs -l app=cats -w 
+kubectl apply -f 509_probes-images-scale-up-both-rs.yaml && kubectl get rs -l app=cats -w
 replicaset.apps/cats-neu configured
 replicaset.apps/cats-blanca configured
 NAME                 DESIRED   CURRENT   READY   AGE
@@ -2001,7 +2021,7 @@ In this lab, you have learned:
 
 1. **ReplicaSet Basics**: How to create and manage ReplicaSets to maintain a desired number of Pod replicas
 2. **Scaling Operations**: How to scale ReplicaSets up and down using `kubectl scale`
-3. **Label Selectors**: How ReplicaSets use label selectors to manage Pods and how selector precedence works
+3. **Label Selectors**: How ReplicaSets use label selectors and ownership to manage Pods
 4. **Container Probes**: How to configure readiness and liveness probes for health checking
 5. **Manual Rolling Updates**: The manual process of updating applications with ReplicaSets and its limitations
 6. **ReplicaSet Limitations**: Why ReplicaSets alone are not suitable for application deployments

@@ -52,6 +52,12 @@ Both versions should be visible. Resume and wait for completion:
 ```sh
 kubectl rollout resume deployment/my-app
 kubectl rollout status deployment/my-app --timeout=600s
+```
+
+On Kind, restart the port-forward after the rollout: it targets one v1 Pod,
+which is replaced during the update. Then verify:
+
+```sh
 curl "$APP_URL"
 ```
 

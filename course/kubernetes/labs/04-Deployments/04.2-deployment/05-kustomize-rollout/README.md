@@ -2,7 +2,7 @@
 
 ## The problem with plain ConfigMaps
 
-In the [previous lab](../01-cats/) you saw that updating a ConfigMap **does not restart pods**. Pods that consume ConfigMaps via environment variables (`envFrom`) keep the old values until they are manually restarted. This is a common source of configuration drift in production.
+Pods that consume ConfigMaps via environment variables (`envFrom`) keep the old values until they are manually restarted. Updating a ConfigMap does not itself restart Pods. This is a common source of configuration drift in production.
 
 ## The Kustomize solution: content-hashed names
 
@@ -112,7 +112,7 @@ API_KEY=abc123
 Change `LOG_LEVEL` from `info` to `debug` in `app.env`:
 
 ```sh
-sed -i 's/LOG_LEVEL=info/LOG_LEVEL=debug/' app.env
+printf 'APP_ENV=production\nLOG_LEVEL=debug\n' > app.env
 ```
 
 Preview the new hash — it changed because the content changed:
@@ -155,7 +155,7 @@ LOG_LEVEL=debug
 Change `API_KEY` in `secrets.env`:
 
 ```sh
-sed -i 's/API_KEY=abc123/API_KEY=xyz789/' secrets.env
+printf 'DB_HOST=mysql.default.svc.cluster.local\nAPI_KEY=xyz789\n' > secrets.env
 ```
 
 ```sh
@@ -178,7 +178,7 @@ kubectl exec deploy/hello -- bash -c 'env | grep API_KEY'
 API_KEY=xyz789
 ```
 
-The old secret (`app-secrets-mtdd5khm58`) is kept around until garbage-collected, so a rollback can still reference it.
+The old Secret (`app-secrets-mtdd5khm58`) remains in the cluster for rollback. Kubernetes does not automatically garbage-collect these generated objects; remove them when no longer needed.
 
 ## Rollback
 
@@ -223,12 +223,13 @@ API_KEY=abc123
 | Config change triggers rollout | ❌ No | ✅ Yes (hash change → new name → new pod template) |
 | Env vars pick up new values | ❌ Not until pod restart | ✅ New pods start with latest values |
 | Rollback includes config state | ❌ No — config drifts | ✅ Each revision pins specific hashed names |
-| Old versions kept for rollback | ❌ Overwritten in place | ✅ Old ConfigMaps/Secrets remain until GC'd |
+| Old versions kept for rollback | ❌ Overwritten in place | ✅ Old ConfigMaps/Secrets remain until explicitly deleted |
 
 ### Cleanup
 
 ```sh
 kubectl delete -k .
-sed -i 's/LOG_LEVEL=debug/LOG_LEVEL=info/' app.env
+kubectl delete configmap,secret -l lab=kustomize-rollout
+printf 'APP_ENV=production\nLOG_LEVEL=info\n' > app.env
 rm -f secrets.env
 ```

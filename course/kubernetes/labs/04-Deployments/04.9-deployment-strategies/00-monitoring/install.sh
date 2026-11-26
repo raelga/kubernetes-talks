@@ -59,5 +59,7 @@ helm upgrade --install grafana-operator \
 
 kubectl apply -f "$SCRIPT_DIR/grafana.yaml"
 kubectl apply -f "$SCRIPT_DIR/deployments-dashboard.yaml"
+kubectl wait --for=create deployment/grafana-deployment \
+  --namespace monitoring --timeout=5m
 kubectl rollout status deployment/grafana-deployment \
   --namespace monitoring --timeout=5m

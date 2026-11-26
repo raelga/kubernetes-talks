@@ -29,7 +29,7 @@ cats   3         3         3       20s
 
 `DESIRED` is what you asked for, `CURRENT` is how many exist, and `READY` is how many pass their readiness probe.
 
-List the Pods — note they are spread across the worker nodes and their names are derived from the ReplicaSet name:
+List the Pods. Their names are derived from the ReplicaSet name; their placement depends on the cluster and scheduler:
 
 ```sh
 kubectl get pods -l app=cats -o wide
@@ -47,7 +47,7 @@ cats-xcj6w   1/1     Running   0          30s   10.244.2.5   labs-test-worker   
 Delete one Pod and watch the ReplicaSet immediately recreate it to maintain 3 replicas:
 
 ```sh
-kubectl delete pod -l app=cats --field-selector status.phase=Running --wait=false | head -1
+kubectl delete pod "$(kubectl get pods -l app=cats --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}')"
 kubectl get pods -l app=cats
 ```
 
@@ -123,9 +123,7 @@ lia    3         3         3       30s
 liam   3         3         3       30s
 ```
 
-Because each ReplicaSet has a **more specific** selector (`app=cats,cat=lia`), they only manage their own Pods and don't fight over each other's. The shared `app=cats` label means the Service now load-balances across all 9 Pods.
-
-> ⚠️ Be careful with overlapping selectors. If two ReplicaSets had the *same* selector, they would each try to delete the other's "extra" Pods.
+The `cats` selector is broad (`app=cats`), so it overlaps both specific selectors. Existing Pods owned by a ReplicaSet are not adopted by another, and each controller creates its own replicas. The Service selects all ready Pods with `app=cats`, regardless of their owner. Unowned matching Pods can be adopted by either matching ReplicaSet, however, so avoid overlapping selectors in real workloads.
 
 ### Cleanup
 

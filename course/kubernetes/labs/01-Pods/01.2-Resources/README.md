@@ -4,7 +4,7 @@ This lab covers how to configure CPU and memory **requests** and **limits** for 
 
 ## Key concepts
 
-- **Requests**: The amount of CPU/memory the scheduler guarantees to the container. Used for scheduling decisions.
+- **Requests**: The CPU/memory amount reserved for scheduling; the scheduler uses it to find a node with sufficient allocatable capacity. Actual runtime availability also depends on node conditions and enforcement.
 - **Limits**: The maximum amount of CPU/memory the container is allowed to use. Enforced at runtime.
 - **QoS Classes**: Kubernetes assigns a Quality of Service class to each pod based on its resource configuration:
   - `Guaranteed` — requests equal limits for all containers
@@ -26,7 +26,7 @@ pod/busybox-resources-both created
 Inspect the pod to see the assigned QoS class:
 
 ```sh
-kubectl describe pod busybox-resources-both | grep -A1 "QoS\|Limits\|Requests"
+kubectl describe pod busybox-resources-both | grep -A3 "QoS\|Limits\|Requests"
 ```
 
 Since requests and limits are equal (100m CPU, 100Mi memory), the pod gets the `Guaranteed` QoS class.
@@ -54,7 +54,7 @@ pod/busybox-resources-limits created
 ```
 
 ```sh
-kubectl describe pod busybox-resources-limits | grep -A1 "QoS\|Limits\|Requests"
+kubectl describe pod busybox-resources-limits | grep -A3 "QoS\|Limits\|Requests"
 ```
 
 ```
@@ -82,7 +82,7 @@ pod/busybox-resources-requests-0 created
 ```
 
 ```sh
-kubectl describe pod busybox-resources-requests-0 | grep -A1 "QoS\|Limits\|Requests"
+kubectl describe pod busybox-resources-requests-0 | grep -A3 "QoS\|Limits\|Requests"
 ```
 
 ```
@@ -95,7 +95,7 @@ kubectl describe pod busybox-resources-requests-0 | grep -A1 "QoS\|Limits\|Reque
 QoS Class:                   Burstable
 ```
 
-The container is guaranteed 25m CPU and 256Mi memory, but can burst up to 1 CPU and 512Mi memory if available.
+The scheduler reserves 25m CPU and 256Mi memory for this container. It can use up to 1 CPU and 512Mi memory when available; CPU is throttled at its limit, whereas exceeding the memory limit can result in an OOM kill.
 
 ## Unschedulable pods
 
@@ -131,7 +131,7 @@ Events:
   Warning  FailedScheduling  10s   default-scheduler  0/1 nodes are available: 1 Insufficient cpu.
 ```
 
-The pod requests 4 CPUs, which exceeds what the node can allocate. It will remain `Pending` until enough resources become available.
+The pod requests 4 CPUs. It remains `Pending` only if no eligible node has at least 4 CPUs and 1000Mi memory available for requests; on a larger cluster it may schedule successfully. Adjust the request above each node's allocatable capacity to reproduce the pending state.
 
 ## Deploying multiple pods with resources
 

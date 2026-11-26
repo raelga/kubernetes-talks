@@ -29,7 +29,7 @@ $ docker run -d \
 
 ```
 $ curl localhost:8080
-2018-01-28T00:22:04+01:00 - Host: host-1, Version: v1.0.0
+Host: host-1, Version: v1.0.0
 ```
 
 Liveness and readiness probes are replying on `:8086/live` and `:8086/ready`.
@@ -39,5 +39,5 @@ Prometheus metrics are served at `:9101/metrics`.
 #### Cleanup
 
 ```
-$ docker stop app
+$ docker rm -f app
 ```

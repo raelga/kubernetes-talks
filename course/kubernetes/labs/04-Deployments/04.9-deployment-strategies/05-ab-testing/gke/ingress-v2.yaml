@@ -6,7 +6,7 @@ metadata:
 spec:
   defaultBackend:
     service:
-      name: "my-app-v1"
+      name: "my-app-v2"
       port:
         number: 80
   rules:

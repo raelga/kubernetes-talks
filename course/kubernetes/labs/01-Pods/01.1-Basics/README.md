@@ -381,6 +381,16 @@ pod/busybox-29 created
 pod/busybox-30 created
 ```
 
+For a larger scheduling exercise, `08-busybox-100.yaml` defines 100 pods
+(`busybox-1` through `busybox-100`). It overlaps with the previous batch:
+applying it after the 30-pod manifest leaves those pods unchanged and creates the rest.
+The number that can run depends on the cluster's capacity and pod-per-node limit.
+
+```sh
+kubectl apply -f 08-busybox-100.yaml
+kubectl get pods -l app=busybox -o wide
+```
+
 To view the status of all pods, you can use the `kubectl get pods` command:
 
 ```sh
@@ -419,6 +429,10 @@ pod "busybox-30" deleted
 
 ### Equality
 
+This pod requires a node with `accelerator=nvidia-tesla-p100`. On a kind
+cluster without that label it stays Pending; a matching node also needs the
+appropriate NVIDIA hardware and runtime for the CUDA workload.
+
 To create a new pod with the configuration in `09-pod-selector-equality.yaml`, run the following command:
 
 ```sh
@@ -447,7 +461,12 @@ Events:
   Warning  FailedScheduling  51s   default-scheduler  0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
 ```
 
-# Set
+### Set
+
+Unlike the required equality selector above, this node affinity is a preference:
+the scheduler can place the pod on another node if no node has
+`environment=pre` or `environment=dev`.
+
 To create a new pod with the configuration in `10-pod-selector-set.yaml`, run the following command:
 
 ```sh
@@ -476,13 +495,10 @@ dummy-test   1/1     Running   0               4m6s
 
 ### Cleanup
 
+Some pods may already have been deleted in earlier steps:
+
 ```sh
-kubectl delete -f 09-pod-selector-equality.yaml
-kubectl delete -f 10-pod-selector-set.yaml
-kubectl delete -f 01-shell.yaml
-kubectl delete -f 02-shell-restart-policy.yaml
-kubectl delete -f 03-hello-sh.yaml
-kubectl delete -f 05-hello-web.yaml
-kubectl delete -f 06-busybox-single.yaml
+kubectl delete -f 09-pod-selector-equality.yaml -f 10-pod-selector-set.yaml --ignore-not-found
+kubectl delete -f 01-shell.yaml -f 02-shell-restart-policy.yaml -f 03-hello-sh.yaml -f 05-hello-web.yaml --ignore-not-found
 kubectl delete pod -l app=busybox
 ```

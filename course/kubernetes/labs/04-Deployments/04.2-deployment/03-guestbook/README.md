@@ -42,11 +42,16 @@ docker login
 ### 2. Set your Docker registry variable
 
 ```bash
-export DOCKER_REGISTRY=$(docker info | sed '/Username:/!d;s/.* //') \
-  && echo ${DOCKER_REGISTRY}
+export DOCKER_REGISTRY=your-docker-hub-username
+echo "${DOCKER_REGISTRY}"
 ```
 
-This command should output your Docker registry username.
+Use your actual registry namespace; Docker no longer reliably reports the logged-in username in `docker info`.
+
+The manifests contain example images under `raelga/guestbook`. Before applying
+them, change the `image` in `k8s/guestbook-deployment.yml` to
+`<your-registry>/guestbook:v1` and in `k8s-v2/guestbook-deployment.yml` to
+`<your-registry>/guestbook:v2`. Replace `<your-registry>` with the value above.
 
 ## Part 1: Version 1 Deployment
 
@@ -79,7 +84,7 @@ This deploys:
 kubectl get svc guestbook -w
 ```
 
-Once the external IP is assigned, access the guestbook in your browser.
+On a cloud cluster, once the external IP is assigned, access the guestbook in your browser. On Kind, keep `kubectl port-forward svc/guestbook 8080:80` running in another terminal and open <http://localhost:8080>.
 
 ## Part 2: Version 2 Rolling Update
 

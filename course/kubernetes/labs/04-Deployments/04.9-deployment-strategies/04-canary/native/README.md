@@ -29,11 +29,17 @@ Create a short-lived client Pod and count response versions:
 ```bash
 kubectl run canary-client --rm -i --restart=Never \
   --image=curlimages/curl:8.17.0 -- \
-  sh -c 'for i in $(seq 1 110); do curl -s http://my-app; done' \
+  sh -c 'for i in $(seq 1 110); do curl -s --max-time 5 http://my-app; done' \
   | grep -o 'Version: v[0-9.]*' | sort | uniq -c
 ```
 
 Both versions should appear, with substantially fewer v2 responses.
+The client times out after five seconds per request; a sample with fewer than
+110 responses includes failed or timed-out requests. Check Pod readiness and
+Service endpoints, allow endpoint changes to propagate, and repeat the sample.
+An existing port-forward to the Service targets one Pod, so it cannot measure
+the Service's traffic split.
+
 
 ## Access on EKS
 
@@ -72,7 +78,7 @@ kubectl rollout status deployment/my-app-v2 --timeout=5m
 
 kubectl run canary-client --rm -i --restart=Never \
   --image=curlimages/curl:8.17.0 -- \
-  sh -c 'for i in $(seq 1 100); do curl -s http://my-app; done' \
+  sh -c 'for i in $(seq 1 100); do curl -s --max-time 5 http://my-app; done' \
   | grep -o 'Version: v[0-9.]*' | sort | uniq -c
 ```
 
@@ -85,7 +91,7 @@ kubectl rollout status deployment/my-app-v1 --timeout=5m
 
 kubectl run canary-client --rm -i --restart=Never \
   --image=curlimages/curl:8.17.0 -- \
-  sh -c 'for i in $(seq 1 20); do curl -s http://my-app; done' \
+  sh -c 'for i in $(seq 1 20); do curl -s --max-time 5 http://my-app; done' \
   | grep -o 'Version: v[0-9.]*' | sort | uniq -c
 
 kubectl delete deployment/my-app-v1

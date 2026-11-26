@@ -65,7 +65,7 @@ Events:
   Warning  Unhealthy  2s (x10 over 45s)  kubelet            Readiness probe failed: cat: can't open '/tmp/healthy': No such file or directory
 ```
 
-The last event shows that the readiness probe failed because the file `/tmp/healthy` does not exist in the container.
+The event shows that the readiness probe failed because the file `/tmp/healthy` does not exist. This example creates the file after 20 seconds, then removes it 10 seconds later, so the pod is briefly ready before becoming not ready again.
 
 Now we can deploy the correct configuration file:
 
@@ -172,7 +172,7 @@ liveness-cmd    1/1     Running   0            10s
 liveness-cmd    1/1     Running   1 (2s ago)   45s
 ```
 
-After ~35 seconds the file is removed, the probe fails, and the container restarts. Using describe we can see the failure:
+After ~35 seconds the file is removed. Two failed checks trigger a restart; the default termination grace period and probe scheduling can delay the visible restart count.
 
 ```sh
 kubectl describe pod liveness-cmd | tail -5

@@ -52,12 +52,17 @@ kubectl apply -f wordpress-deployment.yaml
 kubectl get svc wordpress
 ```
 
-Wait for the LoadBalancer to be provisioned and note the external IP/hostname.
+On a cloud cluster, wait for the LoadBalancer external IP/hostname. On Kind,
+run `kubectl port-forward svc/wordpress 8080:80` in another terminal and open
+<http://localhost:8080>. Wait for `kubectl rollout status deployment/mysql`
+and `kubectl rollout status deployment/wordpress`, then complete the WordPress
+setup and create a post so there is database-backed data to check.
 
 ### 6. Test data persistence - Delete MySQL pod
 
 ```bash
 kubectl delete pod -l app=mysql
+kubectl rollout status deployment/mysql
 ```
 
 ### 7. Check the application
@@ -70,12 +75,20 @@ Visit the WordPress URL. You'll notice that all MySQL-backed data is gone becaus
 kubectl apply -f mysql-deployment-pvc.yaml
 ```
 
-This version includes a PVC for data persistence.
+This version includes a new, initially empty PVC; it does not migrate the
+ephemeral database. Wait for MySQL to start, complete WordPress setup again,
+and create a post before testing persistence. Both MySQL manifests use
+`Recreate` to avoid running two database instances against the same volume.
+
+```bash
+kubectl rollout status deployment/mysql
+```
 
 ### 9. Delete the MySQL pod again
 
 ```bash
 kubectl delete pod -l app=mysql
+kubectl rollout status deployment/mysql
 ```
 
 ### 10. Verify data persistence
@@ -87,10 +100,11 @@ Check the application again. This time, MySQL data should persist in the PVC and
 Remove all resources created in this lab:
 
 ```bash
-kubectl delete -f .
+kubectl delete -f . --ignore-not-found
 ```
 
-**Note**: PVCs may need to be deleted manually depending on the reclaim policy.
+This removes the PVCs too; their backing data may be deleted according to the
+StorageClass reclaim policy. This lab uses example credentials only.
 
 ## Key Concepts
 

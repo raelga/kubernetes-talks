@@ -50,7 +50,7 @@ Events:
   Normal  Pulling    0s    kubelet            Pulling image "busybox"
 ```
 
-Logs of the init container show that the init containers are waiting for the dummy-svc service to be available:
+The first init container waits for the `dummy-svc` DNS name to resolve. This checks that the Service exists in DNS, not that it has endpoints or serves traffic:
 
 ```sh
 kubectl logs -f busybox-init-containers -c init-dummy-svc-wait
@@ -74,7 +74,7 @@ Address: 10.96.0.10#53
 
 ```
 
-So we can create a dummy service to make the init containers finish:
+Create the dummy Service so the first init container can resolve its name and the next init container can start. Stop following the logs with Ctrl-C first:
 
 ```sh
 kubectl apply -f 02-dummy-service.yaml

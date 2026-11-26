@@ -7,6 +7,6 @@ metadata:
     app: shell
 spec:
   containers:
-  - name: shell
-    image: raelga/toolbox
-    command: ['bash', '-c', 'sleep 3600']
+    - name: shell
+      image: raelga/toolbox
+      command: ["bash", "-c", "sleep 3600"]

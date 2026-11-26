@@ -23,6 +23,8 @@ spec:
     matchLabels:
       app: mysql
   replicas: 1
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -35,6 +37,10 @@ spec:
           ports:
             - containerPort: 3306
               name: mysql
+          readinessProbe:
+            tcpSocket:
+              port: mysql
+            periodSeconds: 5
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
