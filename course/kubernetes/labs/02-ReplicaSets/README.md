@@ -2034,3 +2034,35 @@ The next logical step is to learn about **Deployments**, which provide:
 - Easier application lifecycle management
 
 ReplicaSets are typically managed by higher-level controllers like Deployments rather than being used directly.
+
+## 6 - HTTP Service routing
+
+`601-http-routing.yaml` starts two ReplicaSets, a NodePort Service and a
+client that continuously requests the Service. Each response identifies its
+version and Pod hostname. With the [kind configuration](../00-Kind/README.md),
+NodePort 30081 is available at `http://localhost:8081/`. Delete any other
+Service using 30081 before starting.
+
+```sh
+kubectl apply -f 601-http-routing.yaml
+kubectl wait --for=condition=Ready pod -l app=routing-demo,version=blue --timeout=120s
+kubectl wait --for=condition=Ready pod/routing-client --timeout=120s
+kubectl logs -f routing-client
+```
+
+In another terminal, add green replicas and observe the client logs:
+
+```sh
+kubectl scale rs/routing-green --replicas=2
+kubectl wait --for=condition=Ready pod -l app=routing-demo,version=green --timeout=120s
+kubectl get endpointslices -l kubernetes.io/service-name=routing-demo
+kubectl scale rs/routing-blue --replicas=0
+```
+
+After routing converges, requests reach green Pods. Distribution need not be
+even; port-forward selects one Pod and does not demonstrate Service balancing.
+Stop following logs with Ctrl-C and clean up:
+
+```sh
+kubectl delete -f 601-http-routing.yaml
+```
