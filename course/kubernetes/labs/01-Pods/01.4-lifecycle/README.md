@@ -286,6 +286,36 @@ probes-cmd   1/1     Running   1 (12s ago)   45s
 
 After restart, both files are recreated and the pod becomes ready again.
 
+## Go HTTP health checks with a Service
+
+This example uses the existing [hello-world-go](../../00-Kind/hello-world-go/) application. Build and load its image into every node of your kind cluster (replace `kind` with your cluster name if different):
+
+```sh
+docker build -t hello-world-go:probes ../../00-Kind/hello-world-go
+kind load docker-image hello-world-go:probes --name kind
+kubectl apply -f 08-hello-world-go.yaml
+kubectl wait --for=condition=Ready pod/hello-world-probes --timeout=120s
+kubectl get pod hello-world-probes
+kubectl describe pod hello-world-probes
+kubectl get endpointslice -l kubernetes.io/service-name=hello-world-probes
+kubectl port-forward service/hello-world-probes 8080:8080
+```
+
+In a second terminal:
+
+```sh
+curl http://localhost:8080/
+curl -i http://localhost:8080/health
+```
+
+Both HTTP probes use `/health`, which this simple application always returns as HTTP 200 while its HTTP server responds. Readiness determines whether the Pod receives normal Service traffic; failed liveness restarts the container. Because this application has no independently controllable health states, use the following Service exercise to demonstrate each failure separately.
+
+Stop port-forward with Ctrl+C, then clean up:
+
+```sh
+kubectl delete -f 08-hello-world-go.yaml
+```
+
 ## Service with readiness and liveness probes
 
 `07-probes-service.yaml` runs a BusyBox HTTP server in a pod and exposes it
