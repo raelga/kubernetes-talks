@@ -137,3 +137,47 @@ Or remove everything labelled `app=cats` in one shot:
 ```sh
 kubectl delete all -l app=cats
 ```
+
+## Observe Service routing as ReplicaSets change
+
+`routing-demo.yaml` creates two ReplicaSets with distinct selectors, one Service
+selecting both versions, and a fixed client Pod that makes a new HTTP request
+every second. Each server responds with its version and **Pod hostname**, not
+the Kubernetes node name. Distribution is not guaranteed to be even.
+
+```sh
+kubectl apply -f routing-demo.yaml
+kubectl wait --for=condition=Ready pod -l app=routing-demo --timeout=120s
+kubectl wait --for=condition=Ready pod/routing-client --timeout=120s
+kubectl get rs,pods -l app=routing-demo -o wide
+kubectl get endpointslices -l kubernetes.io/service-name=routing-demo
+kubectl logs -f routing-client
+```
+
+Keep the logs open and use a second terminal. Add the green replicas:
+
+```sh
+kubectl scale rs/routing-green --replicas=2
+kubectl wait --for=condition=Ready pod -l app=routing-demo,version=green --timeout=120s
+kubectl get endpointslices -l kubernetes.io/service-name=routing-demo
+```
+
+The same client can now receive blue or green responses. Scale blue to zero:
+
+```sh
+kubectl scale rs/routing-blue --replicas=0
+kubectl get rs,pods -l app=routing-demo -o wide
+kubectl get endpointslices -l kubernetes.io/service-name=routing-demo
+```
+
+After endpoint and routing updates converge, new requests go to green Pods.
+Scaling blue back up adds it again. If all replicas are scaled to zero, the
+client logs connection failures or timeouts until a backend returns.
+`kubectl port-forward service/routing-demo` selects one Pod and does not show
+this Service routing behavior.
+
+Stop following logs with Ctrl-C, then delete the example:
+
+```sh
+kubectl delete -f routing-demo.yaml
+```

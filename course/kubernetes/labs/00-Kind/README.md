@@ -2,6 +2,15 @@
 
 This lab covers setting up a local Kubernetes cluster using [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker).
 
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Install kubectl](#install-kubectl) and [kind](#install-kind)
+- [Create the multi-node cluster](#basic-cluster-creation)
+- [Use NodePort in a demo](#use-the-port-in-a-demo)
+- [WordPress and MariaDB](#wordpress-and-mariadb-from-compose-to-kind)
+- [Advanced cluster options](#advanced-cluster-options)
+
 ## Prerequisites
 
 - Docker installed and running
@@ -88,8 +97,11 @@ kind version
 
 ### Basic cluster creation
 
+From this directory, create the default multi-node cluster with one control-plane and two workers. The configuration maps `127.0.0.1:8080` on the kind host to NodePort `30080` on the control-plane node. Port mappings require cluster recreation; change `hostPort` before creation if 8080 is occupied.
+
 ```bash
-kind create cluster
+kind create cluster --config kind-nodeport.yaml
+kubectl get nodes
 ```
 
 Expected output:
@@ -109,6 +121,43 @@ kubectl cluster-info --context kind-kind
 
 Thanks for using kind! 😊
 ```
+
+## Use the port in a demo
+
+Create a Service selecting the labels of your application's Pods. Its `nodePort` must match the configuration's **containerPort**, 30080; `targetPort` must match the port on which the application actually listens. For example, for Pods labelled `app: demo` listening on port 80:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo
+spec:
+  type: NodePort
+  selector:
+    app: demo
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
+```
+
+Apply the Service alongside your application, wait for its Pods to become Ready, and check the endpoints before testing:
+
+```sh
+kubectl get svc demo
+kubectl get endpointslices -l kubernetes.io/service-name=demo
+curl http://localhost:8080/
+```
+
+Only one Service can allocate NodePort 30080 at a time: delete the previous demo Service before using that port for another. Multiple requests can reach different ready Pods; distribution is not guaranteed to be even. Unlike a Service NodePort, `kubectl port-forward service/...` selects one Pod for the forwarding session.
+
+If kind runs on a remote EC2 instance, `localhost` above refers to that instance. To access it from your laptop, create an SSH tunnel using the actual user, key and IP from your Terraform output:
+
+```sh
+ssh -i /path/to/key.pem -L 8080:localhost:8080 user@EC2_IP
+```
+
+Keep the tunnel open and visit `http://localhost:8080/` on your laptop. For direct access from other machines, the listen address and host/cloud firewalls must be configured separately; this example deliberately does not expose the port publicly.
 
 ### WordPress and MariaDB: from Compose to kind
 
