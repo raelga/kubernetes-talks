@@ -339,6 +339,15 @@ kubectl get endpointslices -l kubernetes.io/service-name=probes-service-demo -o 
 kubectl get pod probes-service-demo
 ```
 
+To watch requests continuously through the Service, run this in another terminal:
+
+```sh
+kubectl run client --image=raelga/toolbox --restart=Never -ti --rm -- /bin/bash -c 'while true; do curl http://probes-service-demo:8080; sleep 1; done'
+```
+
+Stop it with Ctrl-C; `--rm` removes the client Pod. Requests can hang temporarily when no backend is ready.
+Unlike this in-cluster client, `kubectl port-forward service/...` selects one backing Pod for the forwarding session; it does not demonstrate per-request Service load balancing. This example has only one backend, so it demonstrates readiness rather than distribution between Pods.
+
 Remove the readiness switch and allow a few seconds for the probe and
 EndpointSlice to update:
 
