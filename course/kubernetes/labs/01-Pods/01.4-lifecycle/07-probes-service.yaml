@@ -81,4 +81,4 @@ spec:
       image: raelga/toolbox
       command: ["/bin/bash", "-c"]
       args:
-        - "while true; do curl --max-time 3 -q http://probes-service-demo:8080; sleep 1; done"
+        - "while true; do curl -sS --max-time 3 http://probes-service-demo:8080; sleep 1; done"
