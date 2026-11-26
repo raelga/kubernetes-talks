@@ -318,90 +318,61 @@ kubectl delete -f 08-hello-world-go.yaml
 
 ## Service with readiness and liveness probes
 
-`07-probes-service.yaml` runs a BusyBox HTTP server in a pod and exposes it
-through a Service. Separate exec probes check `/tmp/ready` and `/tmp/live`.
-These files are switches for the exercise, not real application health checks.
-Run these commands from this directory in a cluster with DNS enabled:
+`07-probes-service.yaml` creates two BusyBox web Pods, a Service, and a
+client Pod that repeatedly requests the Service. Separate exec probes check
+`/tmp/ready` and `/tmp/live`; these are switches for the exercise, not real
+application health checks. Run in a cluster with DNS enabled:
 
 ```sh
 kubectl apply -f 07-probes-service.yaml
-kubectl wait --for=condition=Ready pod/probes-service-demo --timeout=120s
-kubectl run probes-client --image=busybox:1.36 --restart=Never --command -- sleep 3600
-kubectl wait --for=condition=Ready pod/probes-client --timeout=120s
-kubectl exec probes-client -- wget -T 3 -qO- http://probes-service-demo:8080/
+kubectl wait --for=condition=Ready pod/probes-service-demo-1 pod/probes-service-demo-2 pod/probes-service-client --timeout=120s
+kubectl logs -f probes-service-client
 ```
 
-The request returns `Hello from the probes demo`. Inspect the Service's
-EndpointSlice and the pod's restart count:
+The responses identify the backend. Stop following the logs with Ctrl-C; the
+client continues running. Distribution need not be even. Unlike this
+in-cluster client, `kubectl port-forward service/...` selects one backing Pod
+for the forwarding session.
+
+In another terminal, remove the readiness switch from one backend:
+
+```sh
+kubectl exec probes-service-demo-1 -- rm /tmp/ready
+kubectl get pods -l app=probes-service-demo -w
+```
+
+When Pod 1 shows `0/1`, stop the watch. Its restart count is unchanged.
+Inspect the EndpointSlice and client logs after allowing routing to converge:
 
 ```sh
 kubectl get endpointslices -l kubernetes.io/service-name=probes-service-demo -o yaml
-kubectl get pod probes-service-demo
+kubectl logs --tail=20 -f probes-service-client
 ```
 
-To watch requests continuously through the Service, run this in another terminal:
+Pod 1's endpoint can remain listed with `conditions.ready: false`; new Service
+connections should reach Pod 2. Readiness does not terminate existing
+connections. Restore Pod 1:
 
 ```sh
-kubectl run client --image=raelga/toolbox --restart=Never -ti --rm -- /bin/bash -c 'while true; do curl http://probes-service-demo:8080; sleep 1; done'
+kubectl exec probes-service-demo-1 -- touch /tmp/ready
+kubectl wait --for=condition=Ready pod/probes-service-demo-1 --timeout=120s
 ```
 
-Stop it with Ctrl-C; `--rm` removes the client Pod. Requests can hang temporarily when no backend is ready.
-Unlike this in-cluster client, `kubectl port-forward service/...` selects one backing Pod for the forwarding session; it does not demonstrate per-request Service load balancing. This example has only one backend, so it demonstrates readiness rather than distribution between Pods.
-
-Remove the readiness switch and allow a few seconds for the probe and
-EndpointSlice to update:
+Now trigger a liveness failure and observe the restart:
 
 ```sh
-kubectl exec probes-service-demo -- rm /tmp/ready
-kubectl get pod probes-service-demo -w
+kubectl exec probes-service-demo-1 -- rm /tmp/live
+kubectl get pod probes-service-demo-1 -w
 ```
 
-Stop the watch with Ctrl-C when the pod shows `0/1`. The restart count remains
-unchanged. Inspect the EndpointSlice again: the endpoint is not ready (it may
-remain listed with `conditions.ready: false`), so the Service does not route
-new requests to it. With this pod as the only backend, the following request
-fails or times out:
+Stop the watch once `RESTARTS` increases. Startup recreates both switches,
+and the Pod becomes Ready again. Use `kubectl describe pod probes-service-demo-1`
+to inspect probe events.
 
-```sh
-kubectl get endpointslices -l kubernetes.io/service-name=probes-service-demo -o yaml
-kubectl exec probes-client -- wget -T 3 -qO- http://probes-service-demo:8080/
-```
-
-Restore readiness and wait for it before trying the Service again:
-
-```sh
-kubectl exec probes-service-demo -- touch /tmp/ready
-kubectl wait --for=condition=Ready pod/probes-service-demo --timeout=120s
-kubectl exec probes-client -- wget -T 3 -qO- http://probes-service-demo:8080/
-```
-
-EndpointSlice and service routing updates are asynchronous; retry the request
-after a few seconds if necessary. Now trigger liveness failure:
-
-```sh
-kubectl exec probes-service-demo -- rm /tmp/live
-kubectl get pod probes-service-demo -w
-```
-
-The kubelet restarts the container after the failed liveness check; watch the
-`RESTARTS` count increase, then stop the watch with Ctrl-C. Startup recreates
-both files, and readiness returns. Confirm the events and request the Service:
-
-```sh
-kubectl describe pod probes-service-demo
-kubectl wait --for=condition=Ready pod/probes-service-demo --timeout=120s
-kubectl exec probes-client -- wget -T 3 -qO- http://probes-service-demo:8080/
-```
-
-Again, allow a few seconds for routing to converge if the request initially
-fails. The Service controls routing to ready endpoints; a readiness failure
-does not itself terminate existing connections or restart the container.
-
-Clean up this example, including its client:
+Clean up all three Pods and the Service:
 
 ```sh
 kubectl delete -f 07-probes-service.yaml
-kubectl delete pod probes-client
 ```
 
 ### Cleanup

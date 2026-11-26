@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: probes-service-demo
+  name: probes-service-demo-1
   labels:
     app: probes-service-demo
 spec:
@@ -13,7 +13,38 @@ spec:
         - -c
         - |
           mkdir -p /www
-          echo 'Hello from the probes demo' > /www/index.html
+          echo 'Hello from the probes demo 1' > /www/index.html
+          touch /tmp/live /tmp/ready
+          exec httpd -f -p 8080 -h /www
+      ports:
+        - containerPort: 8080
+      readinessProbe:
+        exec:
+          command: ["cat", "/tmp/ready"]
+        periodSeconds: 2
+        failureThreshold: 1
+      livenessProbe:
+        exec:
+          command: ["cat", "/tmp/live"]
+        periodSeconds: 2
+        failureThreshold: 1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: probes-service-demo-2
+  labels:
+    app: probes-service-demo
+spec:
+  containers:
+    - name: web
+      image: busybox:1.36
+      command:
+        - /bin/sh
+        - -c
+        - |
+          mkdir -p /www
+          echo 'Hello from the probes demo 2' > /www/index.html
           touch /tmp/live /tmp/ready
           exec httpd -f -p 8080 -h /www
       ports:
@@ -39,3 +70,15 @@ spec:
   ports:
     - port: 8080
       targetPort: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: probes-service-client
+spec:
+  containers:
+    - name: client
+      image: raelga/toolbox
+      command: ["/bin/bash", "-c"]
+      args:
+        - "while true; do curl --max-time 3 -q http://probes-service-demo:8080; sleep 1; done"
