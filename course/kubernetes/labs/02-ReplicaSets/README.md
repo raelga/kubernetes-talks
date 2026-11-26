@@ -1251,6 +1251,11 @@ cats-neu-jnck4   1/1     Running             0          7s
 cats-neu-dtfv4   1/1     Running             0          10s
 ```
 
+The manifest also creates `cats-probes`, a NodePort Service on 30080. With the
+[kind configuration](../00-Kind/README.md), open `http://localhost:8080/`.
+Delete any other Service using NodePort 30080 first. Clean up the Service with
+`kubectl delete service cats-probes` after this exercise.
+
 Let's list the pods running, including the name of the first container image, using `custom-columns` output format: 
 
 `-o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,STARTED:.status.startTime`
