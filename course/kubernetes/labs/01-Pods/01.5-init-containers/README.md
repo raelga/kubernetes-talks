@@ -32,23 +32,9 @@ We can get more details about the pod using the describe command:
 kubectl describe pods
 ```
 
-In the Events section, we can see the status of the init containers:
-
-```
-...
-Events:
-  Type    Reason     Age   From               Message
-  ----    ------     ----  ----               -------
-  Normal  Scheduled  3s    default-scheduler  Successfully assigned default/busybox-init-containers to kind-control-plane
-  Normal  Pulling    2s    kubelet            Pulling image "raelga/toolbox"
-  Normal  Pulled     2s    kubelet            Successfully pulled image "raelga/toolbox" in 941ms (941ms including waiting)
-  Normal  Created    2s    kubelet            Created container init-dummy-svc-wait
-  Normal  Started    1s    kubelet            Started container init-dummy-svc-wait
-  Normal  Pulled     1s    kubelet            Container image "google/cloud-sdk:245.0.0-alpine" already present on machine
-  Normal  Created    1s    kubelet            Created container init-gcloud-sdk
-  Normal  Started    0s    kubelet            Started container init-gcloud-sdk
-  Normal  Pulling    0s    kubelet            Pulling image "busybox"
-```
+Before the Service exists, the first init container remains running and the pod
+stays in `Init:0/2`. Its logs below explain the wait; the second init container
+and application container cannot start until it completes.
 
 The first init container waits for the `dummy-svc` DNS name to resolve. This checks that the Service exists in DNS, not that it has endpoints or serves traffic:
 

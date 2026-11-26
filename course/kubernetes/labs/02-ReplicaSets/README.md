@@ -983,14 +983,7 @@ cats-neu-x56j5   1/1     Running             0          24s
 cats-neu-m2l5h   1/1     Running             0          24s
 ```
 
-After about 25 seconds, the `Pods` became `READY`:
-
-
-- Scheduling time (From `Pending` to `Running`)
-
-- 10 seconds of `initialDelaySeconds`
-
-- 15 seconds (5 `periodSeconds` x 3 `successThreshold`)
+After roughly 20 seconds plus scheduling and startup time, the Pods can become `READY`: the probe starts after its initial delay and must succeed three times. The precise timing varies; readiness probes may also run more frequently while a container is not Ready.
 
 Deploy some `Pods` with failing ReadinessProbes:
 
@@ -1018,16 +1011,15 @@ cats-neu-np7vg   0/1     Running   0          86s
 cats-neu-x56j5   1/1     Running   0          2m17s
 ```
 
-And if we look the status of the `READY 0/1` pods, we'll see the reason in the `Events:` section:
+Choose a Pod showing `0/1` from the preceding list and inspect its events:
 
-```
-kubectl describe pods $(kubectl get pods | sed -n 's:\(\S\+\)\s\+0/1.*:\1:p') | grep Warning
-  Warning  Unhealthy  2s (x17 over 82s)  kubelet, cnbcn-k8s-study-jam-np-fw7y  Readiness probe failed: dial tcp 10.244.1.225:81: connect: connection refused
-  Warning  Unhealthy  0s (x17 over 80s)  kubelet, cnbcn-k8s-study-jam-np-fw7x  Readiness probe failed: dial tcp 10.244.0.55:81: connect: connection refused
+```bash
+kubectl describe pod <not-ready-pod-name>
 ```
 
-```
-kubectl describe pods $(kubectl get pods | sed -n 's:\(\S\+\)\s\+0/1.*:\1:p')
+For example:
+
+```text
 ...
 Events:
   Type     Reason     Age                From                                  Message
@@ -1043,7 +1035,7 @@ Events:
   Warning  Unhealthy  3s (x19 over 93s)  kubelet, cnbcn-k8s-study-jam-np-fw7x  Readiness probe failed: dial tcp 10.244.0.55:81: connect: connection refused
 ```
 
-The good thing, is the failing `Pods` never get `READY` and won't receive any traffic.
+The failing Pods are not `READY`, so ordinary Services do not route traffic to them. Readiness does not prevent direct access to a Pod IP.
 
 ### Liveness probe
 
@@ -1086,9 +1078,7 @@ cats-neu-hhn5x   1/1     Running             0          2s
 cats-neu-ntl94   1/1     Running             0          2s
 ```
 
-The `Pods` using the `LivenessProbe` get `READY` in a few seconds, just when the container starts and responds the first probe request. Why don't we check the `failureThreshold` instead of the `successThreshold`?
-
-Because this only checks that the application is live, and if fails, will restart the container instead of keep re-checking untill the application to become ready again.
+These Pods have no readiness probe, so they can become `READY` once the container starts; they do not wait for a successful liveness probe. A liveness probe instead restarts a container after its configured consecutive failures. It is not a substitute for readiness.
 
 Let's launch a failing `LivenessProbe` to see this behavior:
 

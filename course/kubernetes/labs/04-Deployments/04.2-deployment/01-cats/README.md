@@ -2,9 +2,9 @@
 
 A **Deployment** manages ReplicaSets and provides declarative updates for Pods. Instead of editing Pods directly, you describe the desired state and the Deployment controller changes the actual state at a controlled rate. It adds the features a bare ReplicaSet lacks:
 
-- **Rolling updates** — replace Pods gradually with zero downtime.
-- **Rollback** — revert to a previous revision if something breaks.
-- **Revision history** — every change is recorded.
+- **Rolling updates** — replace Pods gradually, subject to availability and application behavior.
+- **Rollback** — revert the Pod template to a previous revision if something breaks.
+- **Revision history** — track changes to the Pod template.
 
 The `cats.yaml` manifest defines a Deployment of **5 replicas** with a `RollingUpdate` strategy (`maxSurge: 2`, `maxUnavailable: 1`).
 
@@ -46,17 +46,19 @@ replicaset.apps/cats-64645d55c7   5         5         5       16s
 
 ## Access the application
 
-On Kind, reach the `LoadBalancer` Service through a port-forward:
+On Kind, reach the `LoadBalancer` Service through a port-forward. A local Kind cluster does not provision an external load balancer by itself, so an external IP may remain pending:
 
 ```sh
 kubectl port-forward svc/cats 8080:80
 ```
 
+In another terminal, using the same context and namespace:
+
 ```sh
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
 ```
 
-```
+```text
 200
 ```
 
@@ -90,11 +92,13 @@ Waiting for deployment "cats" rollout to finish: 1 old replicas are pending term
 deployment "cats" successfully rolled out
 ```
 
-Because of `maxSurge: 2` / `maxUnavailable: 1`, Kubernetes brings up to 2 extra Pods at a time and never drops more than 1 below the desired count — so the app stays available throughout. The page should now show a different cat.
+With `maxSurge: 2` / `maxUnavailable: 1`, the controller targets at most 2 extra non-terminating Pods and allows up to 1 unavailable replica during the rollout. This is not a guarantee against unrelated failures or application-level downtime.
+
+The port-forward connects to one selected Pod, not to a load-balanced stream. If that Pod is replaced the forward ends; restart `kubectl port-forward svc/cats 8080:80` after the rollout, then refresh the page to see the new cat.
 
 ## Revision history & rollback
 
-Every applied change creates a revision:
+A change to the Deployment's Pod template creates a revision; scaling alone does not:
 
 ```sh
 kubectl rollout history deployment/cats
@@ -121,18 +125,18 @@ deployment "cats" successfully rolled out
 Confirm the image reverted:
 
 ```sh
-kubectl get pods -l app=cats -o jsonpath='{.items[0].spec.containers[0].image}{"\n"}'
+kubectl get deployment cats -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
 ```
 
 ```
 raelga/cats:blanca
 ```
 
-> 💡 Tip: add `--record` (deprecated) or set a `kubernetes.io/change-cause` annotation to populate the `CHANGE-CAUSE` column, e.g.
-> `kubectl annotate deployment/cats kubernetes.io/change-cause="deploy lia" --overwrite`.
+To populate the `CHANGE-CAUSE` column, set a `kubernetes.io/change-cause` annotation, e.g.
+`kubectl annotate deployment/cats kubernetes.io/change-cause="deploy lia" --overwrite`.
 
 ### Cleanup
 
 ```sh
-kubectl delete all -l app=cats
+kubectl delete -f cats.yaml -f service.yml
 ```

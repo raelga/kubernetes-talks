@@ -28,7 +28,7 @@ spec:
   containers:
     - name: mariadb
       image: mariadb:10.6.4-focal
-      args: ['--default-authentication-plugin=mysql_native_password']
+      args: ["--default-authentication-plugin=mysql_native_password"]
       env:
         - name: MYSQL_ROOT_PASSWORD
           value: somewordpress

@@ -155,8 +155,10 @@ PID   USER     TIME  COMMAND
    13 root      0:00 /bin/sh
    18 root      0:00 ps aux
 ```
+Exit the container shell with `exit` to return to your local terminal.
 
-To delete the pod, you can use the `kubectl delete` command followed by `-f and the name of the configuration file:
+
+To delete the pod, use `kubectl delete` with `-f` and the configuration file:
 
 ```sh
 kubectl delete -f 01-shell.yaml
@@ -201,7 +203,7 @@ kubectl delete -f 02-shell-restart-policy.yaml
 
 ## Hello Sh
 
-The output will confirm that the pod was created:
+Create the pod:
 
 ```sh
 kubectl apply -f 03-hello-sh.yaml
@@ -219,7 +221,7 @@ To view the logs of the `hello-sh` pod, use the following command:
 kubectl logs -f hello-sh
 ```
 
-The output will display the message printed by the `hello-sh` pod:
+The output will display the message printed by the `hello-sh` pod. Stop following logs with Ctrl-C before continuing:
 
 ```
 Hello Kubernetes from hello-sh!
@@ -243,13 +245,13 @@ The output will show the lines that differ between the two files:
 
 ```
 
-To update the `hello-sh` pod with the configuration in `04-hello-sh-updated.yaml`, run the following command:
+The following command intentionally attempts to update the immutable container command:
 
 ```sh
 kubectl apply -f 04-hello-sh-updated.yaml
 ```
 
-However, you may encounter an error message like the one below. This is because some fields in the pod spec cannot be updated once the pod is created.
+The API server rejects this update because the container command cannot be changed on an existing pod. The exact error varies by Kubernetes version:
 
 ```
 The Pod "hello-sh" is invalid: spec: Forbidden: pod updates may not change fields other than `spec.containers[*].image`,`spec.initContainers[*].image`,`spec.activeDeadlineSeconds`,`spec.tolerations` (only additions to existing tolerations),`spec.terminationGracePeriodSeconds` (allow it to be set to 1 if it was previously negative)
@@ -291,6 +293,14 @@ The output will confirm that the pod was deleted:
 ```
 pod "hello-sh" deleted
 ```
+To run the updated command, recreate the pod and inspect its logs:
+
+```sh
+kubectl apply -f 04-hello-sh-updated.yaml
+kubectl logs hello-sh
+kubectl delete -f 04-hello-sh-updated.yaml
+```
+
 
 ## Hello Web
 
@@ -334,6 +344,8 @@ The output will display the startup logs of the `hello-web` pod:
 2024/07/01 15:50:38 [notice] 1#1: start worker process 36
 ^C
 ```
+
+The following command is an intentional failure:
 
 ```sh
 kubectl delete hello-web
@@ -381,10 +393,10 @@ pod/busybox-29 created
 pod/busybox-30 created
 ```
 
-For a larger scheduling exercise, `08-busybox-100.yaml` defines 100 pods
+Optional capacity exercise: `08-busybox-100.yaml` defines 100 pods
 (`busybox-1` through `busybox-100`). It overlaps with the previous batch:
 applying it after the 30-pod manifest leaves those pods unchanged and creates the rest.
-The number that can run depends on the cluster's capacity and pod-per-node limit.
+The number that can run depends on cluster capacity and pod-per-node limits; skip it on shared or resource-constrained clusters.
 
 ```sh
 kubectl apply -f 08-busybox-100.yaml
@@ -411,10 +423,10 @@ busybox-12   1/1     Running   0          51s
 ...
 ```
 
-To delete all pods with the label `app=busybox`, you can use the `kubectl delete pod -l` command:
+To delete the pods created by the batch manifests, use their files rather than a broad label selector:
 
 ```sh
-kubectl delete pod -l app=busybox
+kubectl delete -f 06-busybox-single.yaml -f 07-busybox-30.yaml -f 08-busybox-100.yaml --ignore-not-found
 ```
 
 The output will confirm that the pods were deleted:
@@ -500,5 +512,5 @@ Some pods may already have been deleted in earlier steps:
 ```sh
 kubectl delete -f 09-pod-selector-equality.yaml -f 10-pod-selector-set.yaml --ignore-not-found
 kubectl delete -f 01-shell.yaml -f 02-shell-restart-policy.yaml -f 03-hello-sh.yaml -f 05-hello-web.yaml --ignore-not-found
-kubectl delete pod -l app=busybox
+kubectl delete -f 06-busybox-single.yaml -f 07-busybox-30.yaml -f 08-busybox-100.yaml --ignore-not-found
 ```

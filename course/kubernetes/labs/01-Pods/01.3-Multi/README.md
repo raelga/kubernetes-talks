@@ -48,6 +48,8 @@ Commercial support is available at
 </body>
 </html>
 ```
+Exit the container shell with `exit` before running local `kubectl` commands.
+
 
 And we can check the logs of the Nginx container.
 
@@ -60,6 +62,8 @@ Should look like this:
 ```
 127.0.0.1 - - [02/Jul/2024:10:58:50 +0000] "GET / HTTP/1.1" 200 612 "-" "curl/7.64.0" "-"
 ```
+Stop following the logs with Ctrl-C.
+
 
 ## Volume sharing
 
@@ -81,7 +85,7 @@ The following command runs a curl command in the container.
 kubectl exec nginx-and-shell-volume --container shell --stdin --tty -- curl localhost
 ```
 
-The expected output is the 403 error page from Nginx.
+The expected initial response is HTTP 403: the empty shared volume hides Nginx's default index page. This is intentional.
 
 ```
 <html>
@@ -105,6 +109,8 @@ And create a new file in the volume.
 
 /bin/echo "Hola UPC!" > /html/index.html
 ```
+Exit the container shell with `exit` before running the next local command.
+
 
 Now the curl command should return the content of the new file.
 
@@ -145,13 +151,19 @@ The content container writes the date to `/html/index.html` every second. We can
 kubectl exec pod-multi --container content -- cat /html/index.html
 ```
 
-Or by port-forwarding to the nginx container:
+Or start port-forwarding to the pod in one terminal:
 
 ```sh
-kubectl port-forward pod/pod-multi 8080:80 &
-curl http://localhost:8080
-kill %1
+kubectl port-forward pod/pod-multi 8080:80
 ```
+
+After the forwarding message appears, run this in another local terminal:
+
+```sh
+curl http://localhost:8080
+```
+
+Stop port-forwarding with Ctrl-C in the first terminal.
 
 The response will show the accumulated date entries written by the sidecar container.
 

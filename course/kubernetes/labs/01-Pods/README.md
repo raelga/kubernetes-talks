@@ -6,6 +6,8 @@ A Pod is the smallest deployable unit in Kubernetes. It represents a single inst
 
 - A running Kubernetes cluster (e.g., [Kind](../00-Kind/README.md))
 - `kubectl` configured to communicate with the cluster
+- Run each lab's commands from its own directory, in a disposable namespace or cluster. The examples use the current namespace and some create many pods.
+- Wait for pods and images to start before `exec` or `logs`; use `kubectl describe pod <name>` to investigate delays. Stop `-w` and `logs -f` commands with Ctrl-C.
 
 ## Labs
 
