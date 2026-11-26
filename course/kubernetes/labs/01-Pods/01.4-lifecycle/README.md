@@ -98,6 +98,15 @@ busybox-probes-readiness-ok   1/1     Running   0          15s
 
 Deploy the following configuration file:
 
+`01-readiness-probe-failing.yaml` and `03-readiness-exec.yaml` demonstrate
+the same readiness behavior: both create `/tmp/healthy` temporarily and then
+remove it, so the pod becomes ready and later not ready without a restart.
+They differ in timing: 01 creates the file after 20 seconds and checks every
+second after a 15-second initial delay; 03 creates it after 30 seconds and
+checks every 5 seconds after a 5-second initial delay. Both remove it 10
+seconds after creation. Their pod names, container names and labels also differ.
+
+
 ```sh
 kubectl apply -f 03-readiness-exec.yaml
 ```
@@ -276,6 +285,85 @@ probes-cmd   1/1     Running   1 (12s ago)   45s
 ```
 
 After restart, both files are recreated and the pod becomes ready again.
+
+## Service with readiness and liveness probes
+
+`07-probes-service.yaml` runs a BusyBox HTTP server in a pod and exposes it
+through a Service. Separate exec probes check `/tmp/ready` and `/tmp/live`.
+These files are switches for the exercise, not real application health checks.
+Run these commands from this directory in a cluster with DNS enabled:
+
+```sh
+kubectl apply -f 07-probes-service.yaml
+kubectl wait --for=condition=Ready pod/probes-service-demo --timeout=120s
+kubectl run probes-client --image=busybox:1.36 --restart=Never --command -- sleep 3600
+kubectl wait --for=condition=Ready pod/probes-client --timeout=120s
+kubectl exec probes-client -- wget -T 3 -qO- http://probes-service-demo:8080/
+```
+
+The request returns `Hello from the probes demo`. Inspect the Service's
+EndpointSlice and the pod's restart count:
+
+```sh
+kubectl get endpointslices -l kubernetes.io/service-name=probes-service-demo -o yaml
+kubectl get pod probes-service-demo
+```
+
+Remove the readiness switch and allow a few seconds for the probe and
+EndpointSlice to update:
+
+```sh
+kubectl exec probes-service-demo -- rm /tmp/ready
+kubectl get pod probes-service-demo -w
+```
+
+Stop the watch with Ctrl-C when the pod shows `0/1`. The restart count remains
+unchanged. Inspect the EndpointSlice again: the endpoint is not ready (it may
+remain listed with `conditions.ready: false`), so the Service does not route
+new requests to it. With this pod as the only backend, the following request
+fails or times out:
+
+```sh
+kubectl get endpointslices -l kubernetes.io/service-name=probes-service-demo -o yaml
+kubectl exec probes-client -- wget -T 3 -qO- http://probes-service-demo:8080/
+```
+
+Restore readiness and wait for it before trying the Service again:
+
+```sh
+kubectl exec probes-service-demo -- touch /tmp/ready
+kubectl wait --for=condition=Ready pod/probes-service-demo --timeout=120s
+kubectl exec probes-client -- wget -T 3 -qO- http://probes-service-demo:8080/
+```
+
+EndpointSlice and service routing updates are asynchronous; retry the request
+after a few seconds if necessary. Now trigger liveness failure:
+
+```sh
+kubectl exec probes-service-demo -- rm /tmp/live
+kubectl get pod probes-service-demo -w
+```
+
+The kubelet restarts the container after the failed liveness check; watch the
+`RESTARTS` count increase, then stop the watch with Ctrl-C. Startup recreates
+both files, and readiness returns. Confirm the events and request the Service:
+
+```sh
+kubectl describe pod probes-service-demo
+kubectl wait --for=condition=Ready pod/probes-service-demo --timeout=120s
+kubectl exec probes-client -- wget -T 3 -qO- http://probes-service-demo:8080/
+```
+
+Again, allow a few seconds for routing to converge if the request initially
+fails. The Service controls routing to ready endpoints; a readiness failure
+does not itself terminate existing connections or restart the container.
+
+Clean up this example, including its client:
+
+```sh
+kubectl delete -f 07-probes-service.yaml
+kubectl delete pod probes-client
+```
 
 ### Cleanup
 
