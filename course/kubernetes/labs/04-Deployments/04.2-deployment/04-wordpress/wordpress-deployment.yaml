@@ -7,10 +7,11 @@ metadata:
 spec:
   ports:
     - port: 80
+      nodePort: 30080
   selector:
     app: wordpress
     tier: frontend
-  type: LoadBalancer
+  type: NodePort
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

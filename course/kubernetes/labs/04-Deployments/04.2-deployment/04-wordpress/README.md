@@ -52,11 +52,12 @@ kubectl apply -f wordpress-deployment.yaml
 kubectl get svc wordpress
 ```
 
-On a cloud cluster, wait for the LoadBalancer external IP/hostname. On Kind,
-run `kubectl port-forward svc/wordpress 8080:80` in another terminal and open
-<http://localhost:8080>. Wait for `kubectl rollout status deployment/mysql`
-and `kubectl rollout status deployment/wordpress`, then complete the WordPress
-setup and create a post so there is database-backed data to check.
+On Kind with the [lab configuration](../../../00-Kind/README.md), NodePort 30080 maps to
+<http://localhost:8080>. Other labs use the same NodePort, so delete their
+Services first. Wait for
+`kubectl rollout status deployment/mysql` and `kubectl rollout status deployment/wordpress`,
+then complete the WordPress setup and create a post so there is database-backed
+data to check.
 
 ### 6. Test data persistence - Delete MySQL pod
 
@@ -118,4 +119,4 @@ StorageClass reclaim policy. This lab uses example credentials only.
 
 - If pods are in `Pending` state, check if storage classes are available
 - If MySQL pods fail to start, verify the secret is created correctly
-- For LoadBalancer services, ensure your cluster supports external load balancers
+- Check the kind port mapping and NodePort 30080 if the Service is unreachable.

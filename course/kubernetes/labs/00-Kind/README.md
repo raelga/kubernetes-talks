@@ -97,10 +97,10 @@ kind version
 
 ### Basic cluster creation
 
-From this directory, create the default multi-node cluster with one control-plane and two workers. The configuration maps `127.0.0.1:8080` on the kind host to NodePort `30080` on the control-plane node. Port mappings require cluster recreation; change `hostPort` before creation if 8080 is occupied.
+From this directory, create the default multi-node cluster with one control-plane and two workers. The configuration maps `127.0.0.1:8080` to NodePort `30080` and `127.0.0.1:8081` to NodePort `30081` on the control-plane node. Port mappings require cluster recreation; change the corresponding `hostPort` before creation if either port is occupied.
 
 ```bash
-kind create cluster --config kind-nodeport.yaml
+kind create cluster --config kind-config.yaml
 kubectl get nodes
 ```
 
@@ -149,7 +149,7 @@ kubectl get endpointslices -l kubernetes.io/service-name=demo
 curl http://localhost:8080/
 ```
 
-Only one Service can allocate NodePort 30080 at a time: delete the previous demo Service before using that port for another. Multiple requests can reach different ready Pods; distribution is not guaranteed to be even. Unlike a Service NodePort, `kubectl port-forward service/...` selects one Pod for the forwarding session.
+Only one Service can allocate each NodePort at a time. A second Service can use `nodePort: 30081` and be reached at `http://localhost:8081/`. The Services in these labs reuse these ports, so delete the previous lab's Service before starting another that uses the same NodePort. Multiple requests can reach different ready Pods; distribution is not guaranteed to be even. Unlike a Service NodePort, `kubectl port-forward service/...` selects one Pod for the forwarding session.
 
 If kind runs on a remote EC2 instance, `localhost` above refers to that instance. To access it from your laptop, create an SSH tunnel using the actual user, key and IP from your Terraform output:
 
@@ -158,6 +158,8 @@ ssh -i /path/to/key.pem -L 8080:localhost:8080 user@EC2_IP
 ```
 
 Keep the tunnel open and visit `http://localhost:8080/` on your laptop. For direct access from other machines, the listen address and host/cloud firewalls must be configured separately; this example deliberately does not expose the port publicly.
+
+The kind cluster reserves host ports 8080 and 8081 even when no Service uses them. Pod port-forward examples below use `18080` to avoid this conflict.
 
 ### WordPress and MariaDB: from Compose to kind
 
@@ -203,22 +205,22 @@ The first command waits for Kubernetes to create the default ServiceAccount, whi
 Once both containers are running, forward the Pod. MariaDB may still need time to initialize before the installer is ready.
 
 ```bash
-kubectl port-forward pod/wordpress 8080:80
+kubectl port-forward pod/wordpress 18080:80
 ```
 
 Keep the port-forward terminal open. In a second terminal on the EC2 instance, check the server:
 
 ```bash
-curl -I http://localhost:8080/
+curl -I http://localhost:18080/
 ```
 
 To open the WordPress installer on your laptop, create a tunnel in a laptop terminal using the key and EC2 address from the Terraform SSH output:
 
 ```bash
-ssh -o IdentitiesOnly=yes -i /path/to/terraform-k8s.pem -L 8080:localhost:8080 ec2-user@<EC2_IP>
+ssh -o IdentitiesOnly=yes -i /path/to/terraform-k8s.pem -L 18080:localhost:18080 ec2-user@<EC2_IP>
 ```
 
-Then open `http://localhost:8080/` on the laptop. If port 8080 is already in use on either machine, choose a free local port and adjust the corresponding command. Stop the tunnel and port-forward with Ctrl-C.
+Then open `http://localhost:18080/` on the laptop. If port 18080 is already in use on either machine, choose a free local port and adjust the corresponding command. Stop the tunnel and port-forward with Ctrl-C.
 
 To remove the exercise, run the following from the lab directory. **This deletes both claims and their WordPress and database data.** Deleting the kind cluster also removes its local storage.
 
@@ -342,15 +344,13 @@ kubectl get pods -l app=hello-world-go
 
 #### Test the sample app
 
-```bash
-# Port-forward to the service
-kubectl port-forward service/hello-world-go 8080:8080 &
+The Service uses NodePort `30080`, mapped to `localhost:8080` by the cluster configuration. Delete any other Service using that NodePort first.
 
-# Test the app
+```bash
 curl http://localhost:8080
 
-# Stop port-forwarding
-kill %1
+# Remove the Deployment and Service before another exercise uses the port
+kubectl delete -f hello-world-go/deployment.yaml
 ```
 
 #### Important notes about `imagePullPolicy`
@@ -368,7 +368,7 @@ containers:
 
 This exercise reuses the Go image pushed in the [ECR lab](../../../containers/labs/02-Docker/02.6-ECR/README.md). It pulls the image on the EC2 host and loads it into kind; the Kubernetes node does not need ECR credentials. The ECR repository and its `v1` image must still exist.
 
-On the EC2 instance, set `REPOSITORY` to your ECR repository URL, authenticate Docker using the ECR lab instructions, and use the default `kind` cluster:
+On the EC2 instance, set `REPOSITORY` to your ECR repository URL, authenticate Docker using the ECR lab instructions, and use the default `kind` cluster. The Service uses NodePort `30080` (`localhost:8080`); delete any other Service using it first.
 
 ```bash
 export REPOSITORY="ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/REPOSITORY_NAME"
@@ -377,14 +377,13 @@ docker tag "$REPOSITORY:v1" ecr-hello:v1
 kind load docker-image ecr-hello:v1
 kubectl apply -f ecr-hello.yaml
 kubectl wait --for=condition=Ready pod/ecr-hello --timeout=120s
-kubectl port-forward service/ecr-hello 18080:80 &
+kubectl get endpointslices -l kubernetes.io/service-name=ecr-hello
 ```
 
 In the same terminal, check the application and clean up:
 
 ```bash
-curl --retry 10 --retry-connrefused --retry-delay 1 -f http://localhost:18080/health
-kill %1
+curl --retry 10 --retry-connrefused --retry-delay 1 -f http://localhost:8080/health
 kubectl delete -f ecr-hello.yaml
 ```
 

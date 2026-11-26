@@ -7,17 +7,7 @@ Pods and ReplicaSets are the building blocks, but you rarely create them directl
 - A running Kubernetes cluster (e.g., [Kind](../00-Kind/README.md))
 - `kubectl` configured to communicate with the cluster
 - Some labs (DaemonSet, affinity/anti-affinity) are more illustrative on a **multi-node** cluster:
-
-  ```sh
-  cat <<EOF | kind create cluster --config=-
-  kind: Cluster
-  apiVersion: kind.x-k8s.io/v1alpha4
-  nodes:
-  - role: control-plane
-  - role: worker
-  - role: worker
-  EOF
-  ```
+  Use the [Kind lab configuration](../00-Kind/README.md#basic-cluster-creation), which also maps NodePorts 30080 and 30081 to localhost ports 8080 and 8081.
 
 ## Guided 3-hour session
 
@@ -39,7 +29,7 @@ If the namespace already exists, choose a different new name and use it in the c
 | 25 min | **ReplicaSets:** In [create](../02-ReplicaSets/README.md#1---create-a-replicaset) and [scaling](../02-ReplicaSets/README.md#2---scaling-replicasets), apply `101_simple-rs.yaml`, inspect `kubectl get rs cats-gatet` and scale to 2 and back to 1. Delete one of its Pods and observe a replacement. Explain desired versus current replicas. Delete `rs/cats-gatet` before the probes exercise so selectors do not overlap. Skip the later scaling examples. |
 | 25 min | **Probes:** Follow [readiness](../02-ReplicaSets/README.md#readiness-probe) through the working and failing examples, then [failing liveness](../02-ReplicaSets/README.md#liveness-probe-only-failing). The latter manifest requests 12 Pods; after applying it, optionally run `kubectl scale rs/cats-neu --replicas=2` in another terminal to reduce local resource use. Compare a Running but not Ready Pod with a restarting container; use `kubectl describe pod <pod-name>` for events. ReplicaSet template changes affect new Pods only. Finish with the [cleanup](../02-ReplicaSets/README.md#clean-up-1). |
 | 10 min | **Break.** |
-| 45 min | **Deployment:** Complete [cats](04.2-deployment/01-cats/README.md): apply the Deployment and Service, inspect Deployment → ReplicaSet → Pods, port-forward and access the app, roll out `lia.yaml`, inspect rollout history and undo. Expect the original image after rollback. Stop the port-forward and use the exercise cleanup. |
+| 45 min | **Deployment:** Complete [cats](04.2-deployment/01-cats/README.md): apply the Deployment and Service, inspect Deployment → ReplicaSet → Pods, access the app through its NodePort, roll out `lia.yaml`, inspect rollout history and undo. Expect the original image after rollback. Use the exercise cleanup. |
 | 30 min | **Configuration:** Follow [ConfigMaps](../03-Storage/03.1-ConfigMaps/README.md) through creating the two ConfigMaps and Pod and inspecting the environment and mounted files. Then follow [Secrets from a manifest](../03-Storage/03.2-Secrets/README.md#creating-secrets-from-a-manifest) and the Pod inspection using both `01-secret.yaml` and `03-secret-string.yaml`. Compare configuration and sensitive data: base64 is not encryption; use only the synthetic lab values. Clean up the objects actually created in each exercise. |
 | 15 min | **Jobs and CronJobs:** Guided demonstration of [Job with multiple completions](04.5-jobs/README.md#job-with-multiple-completions) and [CronJob](04.5-jobs/README.md#cronjob). Apply `job-5.yaml` and `cronjob.yaml`, inspect `kubectl get jobs` and `kubectl get cronjob hello`; observe a completed Pod and a scheduled Job if time permits. A Job finishes; a CronJob schedules Jobs. Delete the CronJob and Jobs as shown in the exercise. |
 | 15 min | **Recap:** Explain reconciliation, readiness versus liveness, Deployment rollback, configuration versus secrets, and Job versus CronJob. Confirm the lab resources were cleaned up; restore the namespace and delete the lab namespace using the commands below. Delete the Kind cluster only if it is no longer needed. |

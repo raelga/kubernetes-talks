@@ -70,24 +70,18 @@ kubectl apply -f service.yaml
 service/cats created
 ```
 
-The Service uses `ClusterIP`, so it works inside kind without a cloud load balancer:
+The Service uses `NodePort` 30080. With the [Kind configuration](../../00-Kind/README.md), that port is mapped to `localhost:8080`:
 
 ```sh
 kubectl get svc cats
 ```
 
 ```
-NAME   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-cats   ClusterIP   10.96.141.244   <none>        80/TCP    5s
+NAME   TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+cats   NodePort   10.96.141.244   <none>        80:30080/TCP   5s
 ```
 
-To reach the app locally, use `kubectl port-forward`:
-
-```sh
-kubectl port-forward svc/cats 8080:80
-```
-
-Then open <http://localhost:8080> in your browser (or `curl`) — you should get an `HTTP 200` and a page showing a cat:
+Open <http://localhost:8080> in your browser (or `curl`) — you should get an `HTTP 200` and a page showing a cat:
 
 ```sh
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
@@ -97,15 +91,13 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
 200
 ```
 
-Keep the port-forward running while accessing the application.
-
-On a remote EC2 instance, forward port 8080 through SSH from your laptop before opening the URL in your laptop browser:
+If Kind runs on a remote EC2 instance with that configuration, forward port 8080 through SSH from your laptop before opening the URL in your laptop browser:
 
 ```sh
 ssh -o IdentitiesOnly=yes -i /path/to/terraform-k8s.pem -L 8080:localhost:8080 ec2-user@<EC2_IP>
 ```
 
-Keep the SSH tunnel and `kubectl port-forward` running. Port-forward selects one backing Pod; it does not demonstrate balancing every browser request across replicas. If that Pod is removed, restart the port-forward.
+Keep the SSH tunnel running. Other labs use the same NodePort; clean up their Services before starting this example.
 
 ## Selector overlap
 
@@ -144,6 +136,10 @@ kubectl delete all -l app=cats
 selecting both versions, and a fixed client Pod that makes a new HTTP request
 every second. Each server responds with its version and **Pod hostname**, not
 the Kubernetes node name. Distribution is not guaranteed to be even.
+The Service uses NodePort 30081, available at `http://localhost:8081/` with
+the [kind configuration](../../00-Kind/README.md). Delete other Services using
+30081 first; the cats Service uses 30080 and can run alongside it.
+
 
 ```sh
 kubectl apply -f routing-demo.yaml

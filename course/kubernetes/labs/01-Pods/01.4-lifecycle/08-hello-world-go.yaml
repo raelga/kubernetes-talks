@@ -27,8 +27,10 @@ kind: Service
 metadata:
   name: hello-world-probes
 spec:
+  type: NodePort
   selector:
     app: hello-world-probes
   ports:
     - port: 8080
       targetPort: 8080
+      nodePort: 30080

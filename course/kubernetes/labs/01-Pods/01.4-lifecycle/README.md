@@ -288,7 +288,7 @@ After restart, both files are recreated and the pod becomes ready again.
 
 ## Go HTTP health checks with a Service
 
-This example uses the existing [hello-world-go](../../00-Kind/hello-world-go/) application. Build and load its image into every node of your kind cluster (replace `kind` with your cluster name if different):
+This example uses the existing [hello-world-go](../../00-Kind/hello-world-go/) application and a cluster created with the [kind configuration](../../00-Kind/kind-config.yaml). Its Service uses NodePort `30080`, mapped to `localhost:8080`. Delete any other lab Service using that NodePort first. Build and load its image into every node of your kind cluster (replace `kind` with your cluster name if different):
 
 ```sh
 docker build -t hello-world-go:probes ../../00-Kind/hello-world-go
@@ -298,10 +298,9 @@ kubectl wait --for=condition=Ready pod/hello-world-probes --timeout=120s
 kubectl get pod hello-world-probes
 kubectl describe pod hello-world-probes
 kubectl get endpointslice -l kubernetes.io/service-name=hello-world-probes
-kubectl port-forward service/hello-world-probes 8080:8080
 ```
 
-In a second terminal:
+Test the Service:
 
 ```sh
 curl http://localhost:8080/
@@ -310,7 +309,7 @@ curl -i http://localhost:8080/health
 
 Both HTTP probes use `/health`, which this simple application always returns as HTTP 200 while its HTTP server responds. Readiness determines whether the Pod receives normal Service traffic; failed liveness restarts the container. Because this application has no independently controllable health states, use the following Service exercise to demonstrate each failure separately.
 
-Stop port-forward with Ctrl+C, then clean up:
+Clean up:
 
 ```sh
 kubectl delete -f 08-hello-world-go.yaml
@@ -322,6 +321,10 @@ kubectl delete -f 08-hello-world-go.yaml
 client Pod that repeatedly requests the Service. Separate exec probes check
 `/tmp/ready` and `/tmp/live`; these are switches for the exercise, not real
 application health checks. Run in a cluster with DNS enabled:
+The Service uses NodePort 30081 (`http://localhost:8081/` with the
+[kind configuration](../../00-Kind/README.md)); delete any other Service using
+30081 before starting.
+
 
 ```sh
 kubectl apply -f 07-probes-service.yaml

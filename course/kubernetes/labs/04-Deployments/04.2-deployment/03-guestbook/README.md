@@ -78,13 +78,13 @@ This deploys:
 - Redis master deployment and service  
 - Redis slave deployment and service
 
-### 4. Wait for LoadBalancer and access the application
+### 4. Access the application
 
 ```bash
 kubectl get svc guestbook -w
 ```
 
-On a cloud cluster, once the external IP is assigned, access the guestbook in your browser. On Kind, keep `kubectl port-forward svc/guestbook 8080:80` running in another terminal and open <http://localhost:8080>.
+On Kind with the [lab configuration](../../../00-Kind/README.md), the Service's NodePort 30080 maps to <http://localhost:8080>. Other labs use the same NodePort, so delete their Services first.
 
 ## Part 2: Version 2 Rolling Update
 
@@ -196,5 +196,5 @@ kubectl delete -f k8s/
 
 - **Image pull errors**: Verify registry credentials and image names
 - **Service connectivity**: Check service selectors and pod labels
-- **LoadBalancer pending**: Ensure cluster supports external load balancers
+- **Service unreachable**: Check the kind port mapping and NodePort 30080.
 - **Rolling update stuck**: Check resource limits and node capacity

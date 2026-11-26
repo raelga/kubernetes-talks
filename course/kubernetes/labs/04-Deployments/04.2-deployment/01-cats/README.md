@@ -46,13 +46,9 @@ replicaset.apps/cats-64645d55c7   5         5         5       16s
 
 ## Access the application
 
-On Kind, reach the `LoadBalancer` Service through a port-forward. A local Kind cluster does not provision an external load balancer by itself, so an external IP may remain pending:
+The `NodePort` Service uses port 30080. With the [Kind configuration](../../../00-Kind/README.md), open <http://localhost:8080>.
 
-```sh
-kubectl port-forward svc/cats 8080:80
-```
-
-In another terminal, using the same context and namespace:
+Other labs use the same NodePort; delete their Services before starting this example.
 
 ```sh
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
@@ -62,7 +58,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
 200
 ```
 
-Open <http://localhost:8080> to see the cat. Press `Ctrl+C` to stop the port-forward.
+Open <http://localhost:8080> to see the cat.
 
 ## Rolling update
 
@@ -94,7 +90,7 @@ deployment "cats" successfully rolled out
 
 With `maxSurge: 2` / `maxUnavailable: 1`, the controller targets at most 2 extra non-terminating Pods and allows up to 1 unavailable replica during the rollout. This is not a guarantee against unrelated failures or application-level downtime.
 
-The port-forward connects to one selected Pod, not to a load-balanced stream. If that Pod is replaced the forward ends; restart `kubectl port-forward svc/cats 8080:80` after the rollout, then refresh the page to see the new cat.
+Refresh the page after the rollout to see the new cat. New connections are routed to ready Service endpoints.
 
 ## Revision history & rollback
 

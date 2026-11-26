@@ -151,16 +151,16 @@ The content container writes the date to `/html/index.html` every second. We can
 kubectl exec pod-multi --container content -- cat /html/index.html
 ```
 
-Or start port-forwarding to the pod in one terminal:
+Or start port-forwarding to the pod in one terminal. Use port 18080 because the kind configuration reserves host ports 8080 and 8081:
 
 ```sh
-kubectl port-forward pod/pod-multi 8080:80
+kubectl port-forward pod/pod-multi 18080:80
 ```
 
 After the forwarding message appears, run this in another local terminal:
 
 ```sh
-curl http://localhost:8080
+curl http://localhost:18080
 ```
 
 Stop port-forwarding with Ctrl-C in the first terminal.

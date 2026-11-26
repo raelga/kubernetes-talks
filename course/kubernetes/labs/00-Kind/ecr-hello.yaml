@@ -17,8 +17,10 @@ kind: Service
 metadata:
   name: ecr-hello
 spec:
+  type: NodePort
   selector:
     app: ecr-hello
   ports:
     - port: 80
       targetPort: 9999
+      nodePort: 30080
